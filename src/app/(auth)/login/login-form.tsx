@@ -24,7 +24,15 @@ export function LoginForm({ next, notice }: { next?: string; notice?: string }) 
           {next ? <input type="hidden" name="next" value={next} /> : null}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" name="email" type="email" autoComplete="email" required autoFocus />
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              defaultValue={state.email ?? ""}
+              required
+              autoFocus
+            />
           </div>
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">

@@ -7,13 +7,20 @@ import { requireUser } from "@/core/auth/current-user";
 import { db } from "@/core/db/client";
 import { findDuplicateContacts } from "./queries";
 import { contacts } from "./schema";
-import { contactInputFromForm, contactInputSchema, normalizePhone } from "./validation";
+import {
+  contactInputFromForm,
+  contactInputSchema,
+  normalizePhone,
+  type ContactInput,
+} from "./validation";
 
 export type ContactFormState = {
   error?: string;
   fieldErrors?: Record<string, string>;
   /** Nomes de contactos já existentes com o mesmo telefone/NIF. */
   duplicates?: string[];
+  /** Valores submetidos, devolvidos em caso de erro para o formulário não perder o que foi escrito. */
+  values?: ContactInput;
 };
 
 function fieldErrorsOf(issues: { path: PropertyKey[]; message: string }[]) {
@@ -30,9 +37,14 @@ export async function createContact(
   formData: FormData,
 ): Promise<ContactFormState> {
   const user = await requireUser();
-  const parsed = contactInputSchema.safeParse(contactInputFromForm(formData));
+  const values = contactInputFromForm(formData);
+  const parsed = contactInputSchema.safeParse(values);
   if (!parsed.success) {
-    return { error: "Corrige os campos assinalados.", fieldErrors: fieldErrorsOf(parsed.error.issues) };
+    return {
+      error: "Corrige os campos assinalados.",
+      fieldErrors: fieldErrorsOf(parsed.error.issues),
+      values,
+    };
   }
   const data = parsed.data;
   const phoneNormalized = normalizePhone(data.phone);
@@ -47,6 +59,7 @@ export async function createContact(
       return {
         error: "Já existe um contacto com este telefone ou NIF.",
         duplicates: dups.map((d) => d.name),
+        values,
       };
     }
   }
@@ -72,9 +85,14 @@ export async function updateContact(
   formData: FormData,
 ): Promise<ContactFormState> {
   const user = await requireUser();
-  const parsed = contactInputSchema.safeParse(contactInputFromForm(formData));
+  const values = contactInputFromForm(formData);
+  const parsed = contactInputSchema.safeParse(values);
   if (!parsed.success) {
-    return { error: "Corrige os campos assinalados.", fieldErrors: fieldErrorsOf(parsed.error.issues) };
+    return {
+      error: "Corrige os campos assinalados.",
+      fieldErrors: fieldErrorsOf(parsed.error.issues),
+      values,
+    };
   }
   const data = parsed.data;
   const phoneNormalized = normalizePhone(data.phone);
@@ -89,6 +107,7 @@ export async function updateContact(
       return {
         error: "Já existe outro contacto com este telefone ou NIF.",
         duplicates: dups.map((d) => d.name),
+        values,
       };
     }
   }

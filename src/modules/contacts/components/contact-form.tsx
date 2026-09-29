@@ -43,7 +43,20 @@ function Field({
 export function ContactForm({ action, contact, cancelHref }: Props) {
   const [state, formAction, pending] = useActionState<ContactFormState, FormData>(action, {});
   const errors = state.fieldErrors ?? {};
-  const roles = new Set<string>(contact?.roles ?? []);
+  // Depois de um erro, o React 19 limpa o formulário; repomos os valores submetidos.
+  const v = state.values;
+  const initial = {
+    kind: v?.kind ?? contact?.kind ?? "person",
+    name: v?.name ?? contact?.name ?? "",
+    companyName: v?.companyName ?? contact?.companyName ?? "",
+    phone: v?.phone ?? contact?.phone ?? "",
+    email: v?.email ?? contact?.email ?? "",
+    nif: v?.nif ?? contact?.nif ?? "",
+    address: v?.address ?? contact?.address ?? "",
+    iban: v?.iban ?? contact?.iban ?? "",
+    notes: v?.notes ?? contact?.notes ?? "",
+  };
+  const roles = new Set<string>(v?.roles ?? contact?.roles ?? []);
 
   return (
     <form action={formAction} className="flex flex-col gap-6">
@@ -53,7 +66,7 @@ export function ContactForm({ action, contact, cancelHref }: Props) {
             <select
               id="kind"
               name="kind"
-              defaultValue={contact?.kind ?? "person"}
+              defaultValue={initial.kind}
               className="h-9 rounded-md border bg-transparent px-3 text-sm"
             >
               <option value="person">Pessoa</option>
@@ -62,7 +75,7 @@ export function ContactForm({ action, contact, cancelHref }: Props) {
           </Field>
 
           <Field id="name" label="Nome" error={errors.name}>
-            <Input id="name" name="name" defaultValue={contact?.name ?? ""} required autoFocus />
+            <Input id="name" name="name" defaultValue={initial.name} required autoFocus />
           </Field>
 
           <div className="flex flex-col gap-2 md:col-span-2">
@@ -79,31 +92,31 @@ export function ContactForm({ action, contact, cancelHref }: Props) {
           </div>
 
           <Field id="companyName" label="Agência / Empresa" error={errors.companyName}>
-            <Input id="companyName" name="companyName" defaultValue={contact?.companyName ?? ""} />
+            <Input id="companyName" name="companyName" defaultValue={initial.companyName} />
           </Field>
 
           <Field id="nif" label="NIF" error={errors.nif}>
-            <Input id="nif" name="nif" inputMode="numeric" defaultValue={contact?.nif ?? ""} />
+            <Input id="nif" name="nif" inputMode="numeric" defaultValue={initial.nif} />
           </Field>
 
           <Field id="phone" label="Telefone" error={errors.phone}>
-            <Input id="phone" name="phone" type="tel" defaultValue={contact?.phone ?? ""} />
+            <Input id="phone" name="phone" type="tel" defaultValue={initial.phone} />
           </Field>
 
           <Field id="email" label="Email" error={errors.email}>
-            <Input id="email" name="email" type="email" defaultValue={contact?.email ?? ""} />
+            <Input id="email" name="email" type="email" defaultValue={initial.email} />
           </Field>
 
           <Field id="address" label="Morada" error={errors.address} className="md:col-span-2">
-            <Input id="address" name="address" defaultValue={contact?.address ?? ""} />
+            <Input id="address" name="address" defaultValue={initial.address} />
           </Field>
 
           <Field id="iban" label="IBAN" error={errors.iban} className="md:col-span-2">
-            <Input id="iban" name="iban" defaultValue={contact?.iban ?? ""} />
+            <Input id="iban" name="iban" defaultValue={initial.iban} />
           </Field>
 
           <Field id="notes" label="Notas" error={errors.notes} className="md:col-span-2">
-            <Textarea id="notes" name="notes" rows={3} defaultValue={contact?.notes ?? ""} />
+            <Textarea id="notes" name="notes" rows={3} defaultValue={initial.notes} />
           </Field>
         </CardContent>
       </Card>

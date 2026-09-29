@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "./supabase/server";
 
-export type AuthFormState = { error?: string; ok?: boolean };
+export type AuthFormState = { error?: string; ok?: boolean; email?: string };
 
 const loginSchema = z.object({
   email: z.email("Email inválido."),
@@ -26,15 +26,16 @@ export async function signIn(
   _prev: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
+  const email = String(formData.get("email") ?? "");
   const parsed = loginSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { error: parsed.error.issues[0]!.message };
+  if (!parsed.success) return { error: parsed.error.issues[0]!.message, email };
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({
     email: parsed.data.email,
     password: parsed.data.password,
   });
-  if (error) return { error: "Email ou password incorretos." };
+  if (error) return { error: "Email ou password incorretos.", email };
 
   const next = parsed.data.next;
   redirect(next && next.startsWith("/") ? next : "/dashboard");
