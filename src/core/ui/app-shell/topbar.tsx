@@ -24,7 +24,7 @@ export function Topbar({ user }: { user: CurrentUser }) {
       </Button>
 
       <Button asChild size="sm" className="gap-1">
-        <Link href="/deals">
+        <Link href="/deals/new">
           <Plus className="size-4" />
           <span className="hidden sm:inline">Novo negócio</span>
         </Link>
