@@ -3,6 +3,7 @@
 
 export * from "./enums";
 export * from "./core";
+export * from "./audit";
 export * from "@/modules/settings/schema";
 export * from "@/modules/contacts/schema";
 export * from "@/modules/properties/schema";

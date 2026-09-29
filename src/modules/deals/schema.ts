@@ -1,4 +1,5 @@
 import {
+  boolean,
   date,
   index,
   integer,
@@ -101,5 +102,24 @@ export const dealTags = pgTable(
   (t) => [primaryKey({ columns: [t.dealId, t.tagId] })],
 );
 
+/** Notas livres do negócio (a próxima ação vive no cabeçalho, não aqui). */
+export const dealNotes = pgTable(
+  "deal_notes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: organizationRef(),
+    dealId: uuid("deal_id")
+      .notNull()
+      .references(() => deals.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    isPinned: boolean("is_pinned").notNull().default(false),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
+    ...timestamps,
+  },
+  (t) => [index("deal_notes_deal_created_idx").on(t.dealId, t.createdAt)],
+);
+
 export type Deal = typeof deals.$inferSelect;
 export type NewDeal = typeof deals.$inferInsert;
+export type DealNote = typeof dealNotes.$inferSelect;

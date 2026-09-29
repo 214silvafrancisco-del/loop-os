@@ -37,15 +37,15 @@ export type DealFormState = {
  * Comprado ⇒ imóvel `owned`. Se o negócio sair da fase de compra e o imóvel
  * ainda não tiver obra, volta a `prospect`. (Obras chegam no Step 13.)
  */
-async function syncPropertyStatus(propertyId: string, stageId: string) {
+async function syncPropertyStatus(propertyId: string, stageId: string, userId: string) {
   const [stage] = await db.select({ isPurchase: dealStages.isPurchase }).from(dealStages).where(eq(dealStages.id, stageId));
   if (!stage) return;
   const [property] = await db.select({ status: properties.status }).from(properties).where(eq(properties.id, propertyId));
   if (!property) return;
   if (stage.isPurchase && property.status === "prospect") {
-    await db.update(properties).set({ status: "owned" }).where(eq(properties.id, propertyId));
+    await db.update(properties).set({ status: "owned", updatedBy: userId }).where(eq(properties.id, propertyId));
   } else if (!stage.isPurchase && property.status === "owned") {
-    await db.update(properties).set({ status: "prospect" }).where(eq(properties.id, propertyId));
+    await db.update(properties).set({ status: "prospect", updatedBy: userId }).where(eq(properties.id, propertyId));
   }
 }
 
@@ -156,7 +156,7 @@ export async function createDeal(_prev: DealFormState, formData: FormData): Prom
     return created!.id;
   });
 
-  await syncPropertyStatus(propertyId!, d.stageId);
+  await syncPropertyStatus(propertyId!, d.stageId, user.id);
   revalidatePath("/deals");
   revalidatePath("/properties");
   redirect(`/deals/${dealId}`);
@@ -187,7 +187,7 @@ export async function updateDeal(id: string, _prev: DealFormState, formData: For
     })
     .where(eq(deals.id, id));
 
-  await syncPropertyStatus(existing.propertyId, d.stageId);
+  await syncPropertyStatus(existing.propertyId, d.stageId, user.id);
   revalidatePath("/deals");
   revalidatePath(`/deals/${id}`);
   revalidatePath("/properties");
@@ -249,7 +249,7 @@ export async function changeDealStage(
   }
 
   await db.update(deals).set(patch).where(eq(deals.id, dealId));
-  await syncPropertyStatus(deal.propertyId, stageId);
+  await syncPropertyStatus(deal.propertyId, stageId, user.id);
   revalidatePath("/deals");
   revalidatePath(`/deals/${dealId}`);
   revalidatePath("/dashboard");
