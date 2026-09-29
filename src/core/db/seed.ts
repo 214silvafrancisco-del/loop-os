@@ -169,11 +169,11 @@ async function main() {
   // 2. Permissões
   for (const role of ["admin", "manager", "user"] as const) {
     for (const rule of PERMISSIONS[role]) {
-      for (const module of rule.modules) {
+      for (const moduleName of rule.modules) {
         await db
           .insert(schema.rolePermissions)
           .values({
-            organizationId, role, module,
+            organizationId, role, module: moduleName,
             canView: rule.view, canCreate: rule.create, canEdit: rule.edit,
             canDelete: rule.del, canExport: rule.exp,
           })
