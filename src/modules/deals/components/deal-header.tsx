@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Building2, ExternalLink, HardHat, Phone } from "lucide-react";
+import { Building2, ExternalLink, Phone } from "lucide-react";
+import { CreateProjectButton } from "@/modules/projects/components/create-project-button";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDate } from "@/core/lib/format";
 import { PropertyRef } from "@/modules/properties/components/property-badges";
@@ -12,10 +13,10 @@ import { DealStatusButton } from "./deal-status-button";
 import { NextActionEditor } from "./next-action-editor";
 import { StageSelect } from "./stage-select";
 
-type Props = { deal: Deal; row: DealListRow; stages: DealStage[] };
+type Props = { deal: Deal; row: DealListRow; stages: DealStage[]; project: { id: string; name: string } | null };
 
 /** Cabeçalho comum a todas as tabs do negócio. */
-export function DealHeader({ deal, row, stages }: Props) {
+export function DealHeader({ deal, row, stages, project }: Props) {
   const label = `${dealRef(row)} · ${deal.name ?? row.addressLine}`;
   const facts = [
     row.typology,
@@ -74,12 +75,7 @@ export function DealHeader({ deal, row, stages }: Props) {
               </a>
             </Button>
           ) : null}
-          {canCreateProject ? (
-            <Button size="sm" className="gap-1" disabled title="Chega no Step 13">
-              <HardHat className="size-4" />
-              Criar obra
-            </Button>
-          ) : null}
+          <CreateProjectButton dealId={deal.id} existing={project} canCreate={canCreateProject && deal.status === "active"} />
           <DealStatusButton id={deal.id} status={deal.status} />
         </div>
       </div>

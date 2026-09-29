@@ -6,6 +6,7 @@ import { DealTabs } from "@/modules/deals/components/deal-tabs";
 import { countDealNotes } from "@/modules/deals/notes-queries";
 import { getDeal, getDealRow } from "@/modules/deals/queries";
 import { dealRef } from "@/modules/deals/utils";
+import { getProjectForDeal } from "@/modules/projects/queries";
 import { listDealStages } from "@/modules/settings/queries";
 
 type Params = Promise<{ id: string }>;
@@ -21,17 +22,18 @@ export default async function DealLayout({ children, params }: { children: React
   const user = await requireUser();
   const { id } = await params;
   const orgId = user.organizationId;
-  const [deal, row, stages, notesCount] = await Promise.all([
+  const [deal, row, stages, notesCount, project] = await Promise.all([
     getDeal(orgId, id),
     getDealRow(orgId, id),
     listDealStages(orgId, false),
     countDealNotes(orgId, id),
+    getProjectForDeal(orgId, id),
   ]);
   if (!deal || !row) notFound();
 
   return (
     <div className="mx-auto max-w-5xl">
-      <DealHeader deal={deal} row={row} stages={stages} />
+      <DealHeader deal={deal} row={row} stages={stages} project={project} />
       <DealTabs dealId={deal.id} counts={{ notas: notesCount }} />
       {children}
     </div>
