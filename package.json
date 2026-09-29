@@ -11,9 +11,13 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "tsx --env-file=.env.local src/core/db/seed.ts"
+    "db:seed": "tsx --env-file=.env.local src/core/db/seed.ts",
+    "user:invite": "node --env-file=.env.local scripts/invite-user.mjs",
+    "user:create": "node --env-file=.env.local scripts/create-user.mjs"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.117.2",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.4.0",
     "drizzle-orm": "^0.45.3",

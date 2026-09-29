@@ -1,15 +1,16 @@
 import Link from "next/link";
 import { Plus, Search, Settings } from "lucide-react";
+import type { CurrentUser } from "@/core/auth/current-user";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Brand } from "./brand";
+import { UserMenu } from "./user-menu";
 
-export function Topbar() {
+export function Topbar({ user }: { user: CurrentUser }) {
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-background/80 px-4 backdrop-blur">
       {/* Em mobile a marca vive aqui, porque a sidebar está escondida. */}
-      <div className="md:hidden [&_span]:text-foreground">
-        <Brand className="px-0" />
+      <div className="md:hidden">
+        <Brand variant="page" className="px-0" />
       </div>
 
       <Button
@@ -35,11 +36,7 @@ export function Topbar() {
         </Link>
       </Button>
 
-      <Avatar className="size-8">
-        <AvatarFallback className="bg-primary/15 text-xs font-semibold text-primary">
-          FS
-        </AvatarFallback>
-      </Avatar>
+      <UserMenu user={user} />
     </header>
   );
 }
