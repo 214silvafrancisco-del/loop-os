@@ -219,19 +219,27 @@ export async function listImtDeadlines(organizationId: string, until: string): P
     .orderBy(asc(deals.imtResaleDeadline));
 }
 
-/** Total investido em compras (valor final) dos imóveis ainda detidos. */
+/**
+ * Imóveis comprados e ainda detidos, com o valor investido: valor final de
+ * compra quando registado, senão o preço pedido (negócios importados do Notion
+ * sem valor final).
+ */
 export async function sumPurchases(organizationId: string): Promise<{ count: number; total: string }> {
   const [row] = await db
-    .select({ count: sql<number>`count(*)::int`, total: sql<string>`coalesce(sum(${deals.finalPrice}), 0)::text` })
+    .select({
+      count: sql<number>`count(*)::int`,
+      total: sql<string>`coalesce(sum(coalesce(${deals.finalPrice}, ${deals.askingPrice})), 0)::text`,
+    })
     .from(deals)
     .innerJoin(properties, eq(deals.propertyId, properties.id))
+    .innerJoin(dealStages, eq(deals.stageId, dealStages.id))
     .where(
       and(
         eq(deals.organizationId, organizationId),
         eq(deals.status, "active"),
         isNull(deals.deletedAt),
         eq(properties.status, "owned"),
-        sql`${deals.finalPrice} is not null`,
+        eq(dealStages.isPurchase, true),
       ),
     );
   return row ?? { count: 0, total: "0" };
