@@ -85,6 +85,13 @@
       "when": 1790710721470,
       "tag": "0011_budget_lines",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1790711295845,
+      "tag": "0012_measurements",
+      "breakpoints": true
     }
   ]
 }

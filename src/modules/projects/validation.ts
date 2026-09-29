@@ -40,14 +40,4 @@ export function projectUpdateInputFromForm(formData: FormData): ProjectUpdateInp
   return stringsFromForm(formData, PROJECT_UPDATE_KEYS) as unknown as ProjectUpdateInput;
 }
 
-export function addDays(iso: string, days: number): string {
-  const d = new Date(iso + "T00:00:00");
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
-export function addMonths(iso: string, months: number): string {
-  const d = new Date(iso + "T00:00:00");
-  d.setMonth(d.getMonth() + months);
-  return d.toISOString().slice(0, 10);
-}
+export { addDaysIso as addDays, addMonthsIso as addMonths } from "@/core/lib/dates";
