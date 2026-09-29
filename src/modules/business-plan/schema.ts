@@ -14,6 +14,7 @@ import {
 import { imtRegime } from "@/core/db/schema/enums";
 import { organizationRef, timestamps } from "@/core/db/schema/helpers";
 import { deals } from "@/modules/deals/schema";
+import { propertyCondition } from "@/modules/properties/schema";
 
 export const scenarioKind = pgEnum("scenario_kind", ["ato_continuo", "remodelacao", "custom"]);
 export const taxRegime = pgEnum("tax_regime", ["empresa", "particular"]);
@@ -157,6 +158,42 @@ export const bpScenarios = pgTable(
   ],
 );
 
+/**
+ * Comparáveis do estudo de mercado (folha "Avaliações" do Excel): preço, área,
+ * e ajustes de homogeneização em fração com sinal (−0.05 = −5 %).
+ */
+export const bpComparables = pgTable(
+  "bp_comparables",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: organizationRef(),
+    businessPlanId: uuid("business_plan_id")
+      .notNull()
+      .references(() => businessPlans.id, { onDelete: "cascade" }),
+    sort: integer("sort").notNull().default(0),
+    label: text("label"),
+    sourceUrl: text("source_url"),
+    price: money("price").notNull().default("0"),
+    area: numeric("area", { precision: 10, scale: 2 }).notNull().default("0"),
+    floor: text("floor"),
+    hasElevator: boolean("has_elevator"),
+    condition: propertyCondition("condition"),
+    adjNegotiation: pct("adj_negotiation").notNull().default("-0.0500"),
+    adjArea: pct("adj_area").notNull().default("0"),
+    adjLocation: pct("adj_location").notNull().default("0"),
+    adjAge: pct("adj_age").notNull().default("0"),
+    adjCondition: pct("adj_condition").notNull().default("0"),
+    adjOther: pct("adj_other").notNull().default("0"),
+    notes: text("notes"),
+    isIncluded: boolean("is_included").notNull().default(true),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
+    ...timestamps,
+  },
+  (t) => [index("bp_comparables_plan_sort_idx").on(t.businessPlanId, t.sort)],
+);
+
+export type BpComparable = typeof bpComparables.$inferSelect;
 export type BusinessPlan = typeof businessPlans.$inferSelect;
 export type BpScenario = typeof bpScenarios.$inferSelect;
 export type NewBpScenario = typeof bpScenarios.$inferInsert;

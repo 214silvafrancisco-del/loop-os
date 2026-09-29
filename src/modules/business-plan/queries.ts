@@ -3,7 +3,15 @@ import { and, asc, desc, eq } from "drizzle-orm";
 import { db } from "@/core/db/client";
 import { imtBrackets } from "@/modules/settings/schema";
 import type { CalcContext } from "./calc";
-import { businessPlans, bpScenarios, type BpScenario, type BusinessPlan } from "./schema";
+import { bpComparables, businessPlans, bpScenarios, type BpComparable, type BpScenario, type BusinessPlan } from "./schema";
+
+export async function listComparables(organizationId: string, businessPlanId: string): Promise<BpComparable[]> {
+  return db
+    .select()
+    .from(bpComparables)
+    .where(and(eq(bpComparables.organizationId, organizationId), eq(bpComparables.businessPlanId, businessPlanId)))
+    .orderBy(asc(bpComparables.sort), asc(bpComparables.createdAt));
+}
 
 export async function getBusinessPlanByDeal(organizationId: string, dealId: string): Promise<BusinessPlan | null> {
   const [row] = await db
