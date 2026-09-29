@@ -6,8 +6,13 @@ export type ProjectSummaryData = {
   projectId: string;
   budgeted: number;
   executed: number;
+  /** Faturado sem IVA (comparável com o orçamentado). */
   invoiced: number;
+  /** Pago sobre o total com IVA. */
   paid: number;
+  /** Total com IVA − pago. */
+  unpaid: number;
+  overdueCount: number;
   lastMeasurement: { number: number; month: string } | null;
 };
 
@@ -25,7 +30,7 @@ function Card({ label, value, hint, href, tone }: { label: string; value: string
 export function ProjectSummary({ s }: { s: ProjectSummaryData }) {
   const base = `/projects/${s.projectId}`;
   const deviation = s.invoiced - s.budgeted;
-  const unpaid = s.invoiced - s.paid;
+  const aheadOfExecution = s.executed > 0 && s.invoiced > s.executed;
   return (
     <div className="mb-5 grid gap-3 sm:grid-cols-3 xl:grid-cols-6">
       <Card label="Orçamentado" value={formatMoney(s.budgeted)} hint="sem IVA" href={`${base}/orcamento`} />
@@ -35,9 +40,9 @@ export function ProjectSummary({ s }: { s: ProjectSummaryData }) {
         hint={s.budgeted ? `${formatPercent(s.executed / s.budgeted)}${s.lastMeasurement ? ` · auto ${s.lastMeasurement.number}` : ""}` : "sem autos"}
         href={`${base}/autos`}
       />
-      <Card label="Faturado" value={formatMoney(s.invoiced)} hint={s.invoiced > s.executed && s.executed > 0 ? "acima do executado" : undefined} href={`${base}/faturas`} tone={s.invoiced > s.executed && s.executed > 0 ? "warn" : undefined} />
-      <Card label="Pago" value={formatMoney(s.paid)} href={`${base}/faturas`} />
-      <Card label="Por pagar" value={formatMoney(unpaid)} href={`${base}/faturas`} tone={unpaid > 0 ? "warn" : undefined} />
+      <Card label="Faturado" value={formatMoney(s.invoiced)} hint={aheadOfExecution ? "acima do executado" : "sem IVA"} href={`${base}/faturas`} tone={aheadOfExecution ? "warn" : undefined} />
+      <Card label="Pago" value={formatMoney(s.paid)} hint="com IVA" href={`${base}/faturas`} />
+      <Card label="Por pagar" value={formatMoney(s.unpaid)} hint={s.overdueCount ? `${s.overdueCount} em atraso` : "com IVA"} href={`${base}/faturas`} tone={s.overdueCount ? "bad" : s.unpaid > 0 ? "warn" : undefined} />
       <Card label="Desvio" value={`${deviation > 0 ? "+" : ""}${formatMoney(deviation)}`} hint="faturado − orçamentado" href={`${base}/faturas`} tone={deviation > 0 ? "bad" : undefined} />
     </div>
   );

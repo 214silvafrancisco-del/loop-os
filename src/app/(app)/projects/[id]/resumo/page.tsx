@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 import { requireUser } from "@/core/auth/current-user";
 import { updateProject } from "@/modules/projects/actions";
-import { sumBudget } from "@/modules/projects/budget/queries";
 import { ProjectForm } from "@/modules/projects/components/project-form";
 import { ProjectSummary } from "@/modules/projects/components/project-summary";
+import { getProjectFinancials } from "@/modules/projects/invoices/queries";
 import { getExecutedTotal } from "@/modules/projects/measurements/queries";
 import { getProject } from "@/modules/projects/queries";
 import { listUsers } from "@/modules/settings/queries";
@@ -12,10 +12,10 @@ export default async function ProjectResumoPage({ params }: { params: Promise<{ 
   const user = await requireUser();
   const { id } = await params;
   const orgId = user.organizationId;
-  const [project, users, budgeted, executed] = await Promise.all([
+  const [project, users, fin, executed] = await Promise.all([
     getProject(orgId, id),
     listUsers(orgId),
-    sumBudget(orgId, id),
+    getProjectFinancials(orgId, id),
     getExecutedTotal(orgId, id),
   ]);
   if (!project) notFound();
@@ -25,10 +25,12 @@ export default async function ProjectResumoPage({ params }: { params: Promise<{ 
       <ProjectSummary
         s={{
           projectId: id,
-          budgeted,
-          executed: executed.executed,
-          invoiced: 0,
-          paid: 0,
+          budgeted: fin.budgeted,
+          executed: fin.executed,
+          invoiced: fin.invoicedNet,
+          paid: fin.paid,
+          unpaid: fin.unpaid,
+          overdueCount: fin.overdueCount,
           lastMeasurement: executed.lastNumber && executed.lastMonth ? { number: executed.lastNumber, month: executed.lastMonth } : null,
         }}
       />

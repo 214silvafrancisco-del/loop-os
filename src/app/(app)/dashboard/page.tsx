@@ -14,6 +14,9 @@ import {
   sumPurchases,
 } from "@/modules/deals/queries";
 import { dealRef, isOverdue, todayIso } from "@/modules/deals/utils";
+import { formatMoney, formatPercent } from "@/core/lib/format";
+import { listActiveProjectFinancials, listUnpaidInvoices } from "@/modules/projects/invoices/queries";
+import { PROJECT_STATUS_LABEL } from "@/modules/projects/validation";
 import { listDealStages } from "@/modules/settings/queries";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -56,14 +59,18 @@ export default async function DashboardPage() {
   const weekEnd = endOfWeek(today);
   const sixMonths = addDays(today, 182);
 
-  const [stages, counts, actions, withoutAction, purchases, imtAlerts] = await Promise.all([
+  const [stages, counts, actions, withoutAction, purchases, imtAlerts, activeProjects, unpaidInvoices] = await Promise.all([
     listDealStages(orgId),
     countDealsByStage(orgId),
     listUpcomingActions(orgId, weekEnd),
     countDealsWithoutAction(orgId),
     sumPurchases(orgId),
     listImtDeadlines(orgId, sixMonths),
+    listActiveProjectFinancials(orgId),
+    listUnpaidInvoices(orgId, 8),
   ]);
+  const unpaidTotal = unpaidInvoices.reduce((a, i) => a + i.unpaid, 0);
+  const overdueInvoices = unpaidInvoices.filter((i) => i.overdue).length;
 
   const countByStage = new Map(counts.map((c) => [c.stageId, c]));
   const purchaseStage = stages.find((s) => s.isPurchase);
@@ -108,9 +115,56 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <section className="lg:col-span-2">
-          <h2 className="mb-2 text-sm font-semibold">Próximas ações</h2>
-          <ActionsList deals={actions} />
+        <section className="flex flex-col gap-6 lg:col-span-2">
+          <div>
+            <h2 className="mb-2 text-sm font-semibold">Próximas ações</h2>
+            <ActionsList deals={actions} />
+          </div>
+
+          <div>
+            <h2 className="mb-2 text-sm font-semibold">Obras em curso</h2>
+            {activeProjects.length === 0 ? (
+              <p className="rounded-lg border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">Sem obras ativas.</p>
+            ) : (
+              <div className="overflow-x-auto rounded-lg border bg-card">
+                <table className="w-full min-w-[40rem] text-sm">
+                  <thead className="text-xs text-muted-foreground">
+                    <tr className="border-b">
+                      <th className="px-3 py-2 text-left">Obra</th>
+                      <th className="px-3 py-2 text-left">Estado</th>
+                      <th className="px-3 py-2 text-right">Orçamentado</th>
+                      <th className="px-3 py-2 text-right">Executado</th>
+                      <th className="px-3 py-2 text-right">Faturado</th>
+                      <th className="px-3 py-2 text-right">Por pagar</th>
+                      <th className="px-3 py-2 text-right">Desvio</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {activeProjects.map((p) => {
+                      const dev = p.fin.invoicedNet - p.fin.budgeted;
+                      return (
+                        <tr key={p.id} className="border-b last:border-0">
+                          <td className="px-3 py-2">
+                            <Link href={`/projects/${p.id}`} className="font-medium hover:underline">{p.name}</Link>
+                            <span className="ml-2 font-mono text-[11px] text-muted-foreground">{p.ref}</span>
+                          </td>
+                          <td className="px-3 py-2 text-muted-foreground">{PROJECT_STATUS_LABEL[p.status]}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{formatMoney(p.fin.budgeted)}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">
+                            {formatMoney(p.fin.executed)}
+                            {p.fin.budgeted ? <span className="ml-1 text-xs text-muted-foreground">{formatPercent(p.fin.executed / p.fin.budgeted)}</span> : null}
+                          </td>
+                          <td className="px-3 py-2 text-right tabular-nums">{formatMoney(p.fin.invoicedNet)}</td>
+                          <td className={`px-3 py-2 text-right tabular-nums ${p.fin.overdueCount ? "font-medium text-destructive" : ""}`}>{formatMoney(p.fin.unpaid)}</td>
+                          <td className={`px-3 py-2 text-right tabular-nums ${dev > 0 ? "text-destructive" : "text-muted-foreground"}`}>{dev > 0 ? "+" : ""}{formatMoney(dev)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </section>
 
         <div className="flex flex-col gap-6">
@@ -143,6 +197,36 @@ export default async function DashboardPage() {
                   </Link>
                 );
               })}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Faturas por pagar</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {unpaidInvoices.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Tudo pago.</p>
+              ) : (
+                <>
+                  <p className="mb-2 text-sm">
+                    <span className="text-lg font-semibold tabular-nums">{formatMoney(unpaidTotal)}</span>
+                    {overdueInvoices ? <span className="ml-2 text-xs font-medium text-destructive">{overdueInvoices} em atraso</span> : null}
+                  </p>
+                  <ul className="flex flex-col gap-1.5 text-sm">
+                    {unpaidInvoices.map((i) => (
+                      <li key={i.id} className="flex items-center justify-between gap-2">
+                        <Link href={`/projects/${i.projectId}/faturas`} className="truncate hover:underline">
+                          <span className="font-mono text-[11px] text-muted-foreground">{i.number}</span> {i.supplierName}
+                        </Link>
+                        <span className={`shrink-0 text-xs tabular-nums ${i.overdue ? "font-medium text-destructive" : "text-muted-foreground"}`}>
+                          {formatMoney(i.unpaid)}{i.dueDate ? ` · ${formatDate(i.dueDate)}` : ""}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </CardContent>
           </Card>
 

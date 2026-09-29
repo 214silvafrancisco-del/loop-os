@@ -133,7 +133,66 @@ export const measurementLines = pgTable(
   (t) => [uniqueIndex("measurement_lines_report_line_idx").on(t.reportId, t.budgetLineId)],
 );
 
+export const paymentMethod = pgEnum("payment_method", ["transferencia", "mb", "cartao", "numerario", "outro"]);
+
+/** Fatura de fornecedor. Compara-se com o auto (opcional) e, em soma, com o orçamentado. */
+export const invoices = pgTable(
+  "invoices",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: organizationRef(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    supplierId: uuid("supplier_id")
+      .notNull()
+      .references(() => contacts.id),
+    number: text("number").notNull(),
+    issueDate: date("issue_date").notNull(),
+    dueDate: date("due_date"),
+    description: text("description"),
+    netAmount: numeric("net_amount", { precision: 14, scale: 2 }).notNull(),
+    vatRate: numeric("vat_rate", { precision: 7, scale: 4 }).notNull().default("0.2300"),
+    vatAmount: numeric("vat_amount", { precision: 14, scale: 2 }).notNull().default("0"),
+    total: numeric("total", { precision: 14, scale: 2 }).notNull(),
+    measurementReportId: uuid("measurement_report_id").references(() => measurementReports.id, { onDelete: "set null" }),
+    documentId: uuid("document_id"),
+    notes: text("notes"),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    index("invoices_project_date_idx").on(t.projectId, t.issueDate),
+    index("invoices_org_due_idx").on(t.organizationId, t.dueDate),
+    index("invoices_supplier_idx").on(t.supplierId),
+  ],
+);
+
+export const payments = pgTable(
+  "payments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    invoiceId: uuid("invoice_id")
+      .notNull()
+      .references(() => invoices.id, { onDelete: "cascade" }),
+    paidOn: date("paid_on").notNull(),
+    amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
+    method: paymentMethod("method").notNull().default("transferencia"),
+    reference: text("reference"),
+    documentId: uuid("document_id"),
+    notes: text("notes"),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("payments_invoice_idx").on(t.invoiceId)],
+);
+
 export type Project = typeof projects.$inferSelect;
 export type BudgetLine = typeof budgetLines.$inferSelect;
+export type Invoice = typeof invoices.$inferSelect;
+export type Payment = typeof payments.$inferSelect;
 export type MeasurementReport = typeof measurementReports.$inferSelect;
 export type MeasurementLine = typeof measurementLines.$inferSelect;
