@@ -22,6 +22,17 @@ export async function getBusinessPlanByDeal(organizationId: string, dealId: stri
   return row ?? null;
 }
 
+/** Cenário ativo do negócio (para sugestões de preço na proposta). */
+export async function getActiveScenarioForDeal(organizationId: string, dealId: string): Promise<BpScenario | null> {
+  const [row] = await db
+    .select({ scenario: bpScenarios })
+    .from(bpScenarios)
+    .innerJoin(businessPlans, eq(bpScenarios.businessPlanId, businessPlans.id))
+    .where(and(eq(businessPlans.organizationId, organizationId), eq(businessPlans.dealId, dealId), eq(bpScenarios.isActive, true)))
+    .limit(1);
+  return row?.scenario ?? null;
+}
+
 export async function listScenarios(organizationId: string, businessPlanId: string): Promise<BpScenario[]> {
   return db
     .select()
