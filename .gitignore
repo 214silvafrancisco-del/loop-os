@@ -43,3 +43,6 @@ next-env.d.ts
 
 # ficheiros locais (adaptador de storage em dev)
 .storage/
+
+# relatorios de importacao
+import-report*.md
