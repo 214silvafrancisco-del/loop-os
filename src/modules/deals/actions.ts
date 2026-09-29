@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/core/auth/current-user";
 import { db } from "@/core/db/client";
-import { fieldErrorsOf } from "@/core/lib/form-schemas";
+import { z } from "zod";
+import { fieldErrorsOf, optionalDate, optionalDecimal, optionalText } from "@/core/lib/form-schemas";
 import { contacts } from "@/modules/contacts/schema";
 import { normalizePhone } from "@/modules/contacts/validation";
 import { findPropertiesByAddress } from "@/modules/properties/queries";
@@ -191,6 +192,104 @@ export async function updateDeal(id: string, _prev: DealFormState, formData: For
   revalidatePath(`/deals/${id}`);
   revalidatePath("/properties");
   redirect(`/deals/${id}`);
+}
+
+export type StageChangeResult =
+  | { ok: true }
+  | { ok: false; needsPurchase: true }
+  | { ok: false; error: string };
+
+const purchaseSchema = z.object({
+  finalPrice: optionalDecimal,
+  cpcvDate: optionalDate,
+  deedDate: optionalDate,
+  actualAcquisitionCosts: optionalDecimal,
+});
+export type PurchaseInput = z.input<typeof purchaseSchema>;
+
+/**
+ * Muda a fase (Kanban, badge). Ao entrar na fase de compra exige valor final
+ * e data de escritura: se faltarem, devolve `needsPurchase` e o cliente abre
+ * o diálogo de compra.
+ */
+export async function changeDealStage(
+  dealId: string,
+  stageId: string,
+  purchase?: PurchaseInput,
+): Promise<StageChangeResult> {
+  const user = await requireUser();
+  const [deal] = await db
+    .select({ propertyId: deals.propertyId, deedDate: deals.deedDate, finalPrice: deals.finalPrice })
+    .from(deals)
+    .where(and(eq(deals.id, dealId), eq(deals.organizationId, user.organizationId), isNull(deals.deletedAt)));
+  if (!deal) return { ok: false, error: "Negócio não encontrado." };
+
+  const [stage] = await db
+    .select({ isPurchase: dealStages.isPurchase })
+    .from(dealStages)
+    .where(and(eq(dealStages.id, stageId), eq(dealStages.organizationId, user.organizationId)));
+  if (!stage) return { ok: false, error: "Fase inválida." };
+
+  const patch: Partial<typeof deals.$inferInsert> = { stageId, updatedBy: user.id };
+
+  if (stage.isPurchase) {
+    const parsed = purchaseSchema.safeParse(purchase ?? {});
+    if (!parsed.success) return { ok: false, error: parsed.error.issues[0]!.message };
+    const p = parsed.data;
+    const finalPrice = p.finalPrice ?? deal.finalPrice;
+    const deedDate = p.deedDate ?? deal.deedDate;
+    if (!finalPrice || !deedDate) return { ok: false, needsPurchase: true };
+    Object.assign(patch, {
+      finalPrice,
+      deedDate,
+      cpcvDate: p.cpcvDate ?? undefined,
+      actualAcquisitionCosts: p.actualAcquisitionCosts ?? undefined,
+      imtResaleDeadline: imtResaleDeadline(deedDate),
+    });
+  }
+
+  await db.update(deals).set(patch).where(eq(deals.id, dealId));
+  await syncPropertyStatus(deal.propertyId, stageId);
+  revalidatePath("/deals");
+  revalidatePath(`/deals/${dealId}`);
+  revalidatePath("/dashboard");
+  revalidatePath("/properties");
+  return { ok: true };
+}
+
+const nextActionSchema = z.object({
+  nextAction: optionalText,
+  nextActionDate: optionalDate,
+});
+
+/** Edição inline da próxima ação (cartão do Kanban, dashboard). */
+export async function updateNextAction(
+  dealId: string,
+  input: { nextAction: string; nextActionDate: string },
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const user = await requireUser();
+  const parsed = nextActionSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]!.message };
+  await db
+    .update(deals)
+    .set({ nextAction: parsed.data.nextAction ?? null, nextActionDate: parsed.data.nextActionDate ?? null, updatedBy: user.id })
+    .where(and(eq(deals.id, dealId), eq(deals.organizationId, user.organizationId)));
+  revalidatePath("/deals");
+  revalidatePath(`/deals/${dealId}`);
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+/** Marca a próxima ação como feita (limpa texto e data). */
+export async function completeNextAction(dealId: string): Promise<void> {
+  const user = await requireUser();
+  await db
+    .update(deals)
+    .set({ nextAction: null, nextActionDate: null, updatedBy: user.id })
+    .where(and(eq(deals.id, dealId), eq(deals.organizationId, user.organizationId)));
+  revalidatePath("/deals");
+  revalidatePath(`/deals/${dealId}`);
+  revalidatePath("/dashboard");
 }
 
 /** Excluir (sai do pipeline) ou reativar. Reversível. */

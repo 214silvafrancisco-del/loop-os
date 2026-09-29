@@ -10,11 +10,11 @@ import {
 import { formatCurrency, formatDate, formatPercent } from "@/core/lib/format";
 import { PropertyRef } from "@/modules/properties/components/property-badges";
 import type { DealListRow } from "../queries";
-import { DealStatusBadge, NextAction, StageBadge } from "./deal-badges";
+import { dealRef } from "../utils";
+import { DealStatusBadge, StageBadge } from "./deal-badges";
+import { NextActionEditor } from "./next-action-editor";
 
-export function dealRef(row: { ref: string; seq: number }) {
-  return row.seq > 1 ? `${row.ref}·${row.seq}` : row.ref;
-}
+export { dealRef };
 
 export function DealsTable({ deals }: { deals: DealListRow[] }) {
   if (deals.length === 0) {
@@ -68,7 +68,7 @@ export function DealsTable({ deals }: { deals: DealListRow[] }) {
                 <StageBadge name={d.stageName} color={d.stageColor} />
               </TableCell>
               <TableCell className="hidden lg:table-cell max-w-56">
-                <NextAction action={d.nextAction} date={d.nextActionDate} />
+                <NextActionEditor dealId={d.id} action={d.nextAction} date={d.nextActionDate} compact />
               </TableCell>
               <TableCell className="hidden xl:table-cell text-muted-foreground">
                 {d.sourceName ?? "—"}

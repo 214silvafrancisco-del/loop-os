@@ -160,6 +160,83 @@ export async function countDealsByStage(organizationId: string): Promise<{ stage
     .groupBy(deals.stageId);
 }
 
+/**
+ * Negócios ativos com próxima ação até `until` (inclui atrasadas), por data.
+ * Negócios com texto de ação mas sem data aparecem no fim.
+ */
+export async function listUpcomingActions(organizationId: string, until: string): Promise<DealListRow[]> {
+  return baseQuery()
+    .where(
+      and(
+        eq(deals.organizationId, organizationId),
+        eq(deals.status, "active"),
+        isNull(deals.deletedAt),
+        or(sql`${deals.nextActionDate} <= ${until}`, and(isNull(deals.nextActionDate), sql`${deals.nextAction} is not null`))!,
+      ),
+    )
+    .orderBy(sql`${deals.nextActionDate} asc nulls last`, desc(deals.enteredAt))
+    .limit(50);
+}
+
+/** Negócios ativos (fora da fase de compra) sem próxima ação definida. */
+export async function countDealsWithoutAction(organizationId: string): Promise<number> {
+  const [row] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(deals)
+    .innerJoin(dealStages, eq(deals.stageId, dealStages.id))
+    .where(
+      and(
+        eq(deals.organizationId, organizationId),
+        eq(deals.status, "active"),
+        isNull(deals.deletedAt),
+        isNull(deals.nextAction),
+        isNull(deals.nextActionDate),
+        eq(dealStages.isPurchase, false),
+      ),
+    );
+  return row?.n ?? 0;
+}
+
+/** Compras com prazo de revenda IMT até `until`. */
+export async function listImtDeadlines(organizationId: string, until: string): Promise<(DealListRow & { imtResaleDeadline: string | null; finalPrice: string | null })[]> {
+  return db
+    .select({ ...listSelection, imtResaleDeadline: deals.imtResaleDeadline, finalPrice: deals.finalPrice })
+    .from(deals)
+    .innerJoin(properties, eq(deals.propertyId, properties.id))
+    .innerJoin(dealStages, eq(deals.stageId, dealStages.id))
+    .leftJoin(sourceChannels, eq(deals.sourceChannelId, sourceChannels.id))
+    .leftJoin(profiles, eq(deals.ownerUserId, profiles.id))
+    .leftJoin(contacts, eq(deals.sourceContactId, contacts.id))
+    .where(
+      and(
+        eq(deals.organizationId, organizationId),
+        eq(deals.status, "active"),
+        isNull(deals.deletedAt),
+        sql`${deals.imtResaleDeadline} <= ${until}`,
+        eq(properties.status, "owned"),
+      ),
+    )
+    .orderBy(asc(deals.imtResaleDeadline));
+}
+
+/** Total investido em compras (valor final) dos imóveis ainda detidos. */
+export async function sumPurchases(organizationId: string): Promise<{ count: number; total: string }> {
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int`, total: sql<string>`coalesce(sum(${deals.finalPrice}), 0)::text` })
+    .from(deals)
+    .innerJoin(properties, eq(deals.propertyId, properties.id))
+    .where(
+      and(
+        eq(deals.organizationId, organizationId),
+        eq(deals.status, "active"),
+        isNull(deals.deletedAt),
+        eq(properties.status, "owned"),
+        sql`${deals.finalPrice} is not null`,
+      ),
+    );
+  return row ?? { count: 0, total: "0" };
+}
+
 /** Valores distintos para os filtros da lista. */
 export async function listDealFilterOptions(organizationId: string): Promise<{ municipalities: string[]; typologies: string[] }> {
   const rows = await db
