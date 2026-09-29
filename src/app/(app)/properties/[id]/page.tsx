@@ -53,7 +53,14 @@ export default async function PropertyPage({ params }: { params: Params }) {
       <PageHeader
         title={property.name ?? property.addressLine}
         description={subtitle}
-        actions={canDelete && deals.length === 0 ? <DeletePropertyButton id={property.id} label={property.ref} /> : null}
+        actions={
+          <>
+            <Button asChild variant="outline" size="sm">
+              <Link href={`/properties/${property.id}/documentos`}>Documentos</Link>
+            </Button>
+            {canDelete && deals.length === 0 ? <DeletePropertyButton id={property.id} label={property.ref} /> : null}
+          </>
+        }
       />
 
       <section className="mb-5 rounded-xl border bg-card p-5">
