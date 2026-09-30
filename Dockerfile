@@ -8,7 +8,9 @@ WORKDIR /app
 # ── Dependências ──────────────────────────────────────────────────────────
 FROM base AS deps
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN pnpm install --frozen-lockfile
+# O Coolify injeta as variáveis de build como ARG (incluindo NODE_ENV=production).
+# Forçamos a instalação das devDependencies, necessárias para compilar.
+RUN NODE_ENV=development pnpm install --frozen-lockfile --prod=false
 
 # ── Build ─────────────────────────────────────────────────────────────────
 FROM base AS build

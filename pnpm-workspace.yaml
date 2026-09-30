@@ -1,4 +1,7 @@
+# Pacotes autorizados a correr scripts de instalação (pnpm 10+).
+# esbuild: binário usado pelo tsx, drizzle-kit e vitest.
+# sharp e unrs-resolver: não são necessários (sem otimização de imagens; resolver opcional do ESLint).
 allowBuilds:
-  esbuild: set this to true or false
+  esbuild: true
   sharp: false
   unrs-resolver: false
