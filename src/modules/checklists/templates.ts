@@ -54,7 +54,7 @@ export const NOVO_NEGOCIO: TemplateDef = {
   code: "novo_negocio",
   name: "Novo Negócio",
   entityType: "deal",
-  version: 1,
+  version: 2,
   items: [
     // Registo
     { code: "registo.identificacao", section: "registo", label: "Identificação", help: "Nome do negócio ou tipologia e freguesia do imóvel.", kind: "auto", ruleKey: "deal.identified", linkPath: "resumo" },
@@ -72,8 +72,8 @@ export const NOVO_NEGOCIO: TemplateDef = {
     { code: "qualificacao.envolvente", section: "qualificacao", label: "Analisei a envolvente", help: "Rua, estacionamento, ruído, comércio.", kind: "manual", defaultAssignee: "owner" },
 
     // Documentação (auto por categoria de documento)
-    { code: "documentacao.caderneta", section: "documentacao", label: "Caderneta predial", kind: "auto", ruleKey: doc("Caderneta predial"), gates: ["warn:deal:stage:proposta"], linkPath: "documentos?categoria=Caderneta predial" },
-    { code: "documentacao.certidao_permanente", section: "documentacao", label: "Certidão permanente", kind: "auto", ruleKey: doc("Certidão permanente"), gates: ["warn:deal:stage:proposta"], linkPath: "documentos?categoria=Certidão permanente" },
+    { code: "documentacao.caderneta", section: "documentacao", label: "Caderneta predial", kind: "auto", ruleKey: doc("Caderneta predial"), required: true, gates: ["warn:deal:stage:proposta"], linkPath: "documentos?categoria=Caderneta predial" },
+    { code: "documentacao.certidao_permanente", section: "documentacao", label: "Certidão permanente", kind: "auto", ruleKey: doc("Certidão permanente"), required: true, gates: ["warn:deal:stage:proposta"], linkPath: "documentos?categoria=Certidão permanente" },
     { code: "documentacao.licenca_utilizacao", section: "documentacao", label: "Licença de utilização", help: "Não aplicável a prédios anteriores a 1951.", kind: "auto", ruleKey: doc("Licença de utilização"), appliesWhen: "needs_licenca", linkPath: "documentos?categoria=Licença de utilização" },
     { code: "documentacao.certificado_energetico", section: "documentacao", label: "Certificado energético", kind: "auto", ruleKey: doc("Certificado energético"), linkPath: "documentos?categoria=Certificado energético" },
     { code: "documentacao.plantas", section: "documentacao", label: "Plantas", kind: "auto", ruleKey: doc("Plantas"), linkPath: "documentos?categoria=Plantas" },
@@ -82,9 +82,9 @@ export const NOVO_NEGOCIO: TemplateDef = {
 
     // Análise
     { code: "analise.dados_imovel", section: "analise", label: "Dados do imóvel completos", help: "Área bruta, tipologia, andar, ano de construção e estado.", kind: "auto", ruleKey: "deal.property_data", linkPath: "resumo" },
-    { code: "analise.comparaveis", section: "analise", label: "Comparáveis (mínimo 3)", kind: "auto", ruleKey: "deal.comparables", linkPath: "analise" },
+    { code: "analise.comparaveis", section: "analise", label: "Comparáveis (mínimo 3)", kind: "auto", ruleKey: "deal.comparables", required: true, linkPath: "analise" },
     { code: "analise.business_plan", section: "analise", label: "Business Plan com cenário ativo", kind: "auto", ruleKey: "deal.business_plan", required: true, gates: ["hard:proposal:generate", "warn:deal:stage:proposta"], linkPath: "business-plan" },
-    { code: "analise.preco_maximo", section: "analise", label: "Preço máximo definido", help: "Calculado no Business Plan e aplicado ao negócio.", kind: "auto", ruleKey: "deal.max_price", required: true, gates: ["hard:proposal:generate", "warn:deal:stage:proposta"], linkPath: "business-plan" },
+    { code: "analise.preco_maximo", section: "analise", label: "Preço máximo definido", help: "Calculado no Business Plan e aplicado ao negócio.", kind: "auto", ruleKey: "deal.max_price", gates: ["warn:proposal:generate", "warn:deal:stage:proposta"], linkPath: "business-plan" },
 
     // Decisão
     { code: "decisao.condicoes", section: "decisao", label: "Confirmei as condições da negociação", help: "Prazo de escritura, sinal, inquilinos, contingências.", kind: "manual", defaultAssignee: "owner" },
@@ -104,7 +104,7 @@ export const NOVA_OBRA: TemplateDef = {
   code: "nova_obra",
   name: "Nova Obra",
   entityType: "project",
-  version: 2,
+  version: 3,
   items: [
     // Criação
     { code: "criacao.responsavel", section: "criacao", label: "Responsável definido", kind: "auto", ruleKey: "project.manager", required: true, gates: ["hard:project:em_curso"], linkPath: "resumo" },
@@ -119,7 +119,7 @@ export const NOVA_OBRA: TemplateDef = {
     // Documentação
     { code: "documentacao.projeto", section: "documentacao", label: "Projeto carregado", kind: "auto", ruleKey: doc("Projeto"), linkPath: "documentos?categoria=Projeto" },
     { code: "documentacao.orcamento", section: "documentacao", label: "Orçamento (ficheiro) carregado", kind: "auto", ruleKey: doc("Orçamento"), linkPath: "documentos?categoria=Orçamento" },
-    { code: "documentacao.contrato", section: "documentacao", label: "Contrato de empreitada carregado", kind: "auto", ruleKey: doc("Contrato de empreitada"), required: true, gates: ["warn:project:em_curso"], linkPath: "documentos?categoria=Contrato de empreitada" },
+    { code: "documentacao.contrato", section: "documentacao", label: "Contrato de empreitada carregado", kind: "auto", ruleKey: doc("Contrato de empreitada"), gates: ["warn:project:em_curso"], linkPath: "documentos?categoria=Contrato de empreitada" },
     { code: "documentacao.licenciamento", section: "documentacao", label: "Licenciamento / comunicação prévia tratado", help: "Marca \"não aplicável\" quando a obra não precisa.", kind: "manual", gates: ["warn:project:em_curso"], defaultAssignee: "manager" },
 
     // Execução

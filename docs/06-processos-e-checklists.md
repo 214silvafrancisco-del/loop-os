@@ -2,6 +2,8 @@
 
 > Validado em 2026-09-30. **Step 19 feito**: tabelas (migração 0015), `src/modules/checklists/` (rules, engine, context, sync, queries, actions, templates, setup), 20 testes, `pnpm checklists:sync` (22 checklists de negócio criadas em produção). **Step 20 feito**: tab Processo na ficha do negócio (`/deals/[id]/processo`), progresso e próximo passo no cabeçalho, itens manuais (checkbox), não aplicável com nota, responsável por item, links "resolver" (Documentos abre com a categoria pré-escolhida), Histórico em linguagem corrente; a sincronização corre ao abrir a ficha (layout). **Step 21 feito**: tab Processo e progresso no cabeçalho da obra (`/projects/[id]/processo`), coluna Processo na lista de negócios (com ponto vermelho quando há obrigatórios em falta) e na lista de obras, progresso no cartão do Kanban, filtro "Processo" na lista de negócios (com obrigatórios em falta / completo). **Step 22 feito**: portas do processo (`gate-rules.ts` + `gates.ts`): gerar proposta bloqueia sem preço pedido, BP ativo e preço máximo (aviso com links e formulário desativado); avançar para Proposta/Compra pede confirmação com a lista do que falta; obra → Em curso bloqueia sem responsável e orçamento, → Concluída bloqueia com autos em rascunho, e o resto avisa. Dashboard: cartão "Processo: obrigatórios em falta" (negócios em Proposta/Compra + alertas das obras). Definições → Procedimentos (leitura). Fica para a Phase 2: editor de procedimentos, versões, prazos, template Venda.
 
+> **Versões**: ao subir `version` num template, `ensureChecklistSetup` cria a versão nova e `upgradeInstances` passa as checklists existentes para ela (itens pelo código mantêm o estado; novos entram pendentes; removidos saem). Corre com `pnpm checklists:sync`.
+
 > **Step 23 (fornecedores por obra)**: template Nova Obra v2; regras `project.budget_suppliers` (capítulos com fornecedor), `project.measurements_current` e `project.measurements_complete` avaliam cada fornecedor por autos (N/A se não houver nenhum).
 
 Objetivo da ronda: transformar os procedimentos da LOOP Homes em checklists operacionais dentro da app, ligadas aos dados reais. Este documento é a análise pedida; **não há código alterado**. No fim está a proposta de implementação por steps e as decisões a validar.
@@ -117,9 +119,9 @@ Regra: itens manuais marcam-se com um clique e ficam com quem/quando. Itens auto
 
 Obrigatório = conta para os bloqueios (secção 9) e aparece assinalado. Progresso conta todos os itens aplicáveis.
 
-**Negócio**: preço pedido; origem; contacto; morada completa; Business Plan com cenário ativo; preço máximo; condições de compra (a partir de Compra).
+**Negócio** (v2, 2026-10-01): preço pedido; origem; contacto; morada completa; caderneta predial; certidão permanente; comparáveis (≥ 3); Business Plan com cenário ativo; condições de compra (a partir de Compra). O preço máximo deixou de ser obrigatório e a porta "gerar proposta" passou a aviso para ele.
 
-**Obra**: responsável; orçamento criado; contrato de empreitada carregado; início registado; autos a 100 % e faturas pagas (para fechar).
+**Obra** (v3, 2026-10-01): responsável; orçamento criado; início registado; autos a 100 % e faturas pagas (para fechar). O contrato de empreitada deixou de ser obrigatório.
 
 ## 7. Itens opcionais
 
@@ -245,17 +247,17 @@ Princípio visual: a checklist não é um formulário a mais. É a "página de e
 | Qualificação | Visita realizada | manual | | propõe fase Visita |
 | Qualificação | Validei a informação com o vendedor | manual | | |
 | Qualificação | Analisei a envolvente | manual | | |
-| Documentação | Caderneta predial | auto | | recomendada a partir de Proposta |
-| Documentação | Certidão permanente | auto | | idem |
+| Documentação | Caderneta predial | auto | ✓ | |
+| Documentação | Certidão permanente | auto | ✓ | |
 | Documentação | Licença de utilização | auto | | N/A se < 1951 |
 | Documentação | Certificado energético | auto | | |
 | Documentação | Plantas | auto | | |
 | Documentação | Fotografias | auto | | |
 | Documentação | Documentação verificada | manual | | |
 | Análise | Dados do imóvel completos | auto | | área, tipologia, andar, ano, estado |
-| Análise | Comparáveis (≥ 3) | auto | | |
+| Análise | Comparáveis (≥ 3) | auto | ✓ | |
 | Análise | Business Plan com cenário ativo | auto | ✓ | |
-| Análise | Preço máximo definido | auto | ✓ | |
+| Análise | Preço máximo definido | auto | | avisa ao gerar proposta |
 | Decisão | Confirmei as condições da negociação | manual | | |
 | Decisão | Proposta gerada | auto | | bloqueada até BP + preço máximo |
 | Decisão | Proposta enviada | auto | | estado marcado pelo utilizador |
@@ -277,7 +279,7 @@ Princípio visual: a checklist não é um formulário a mais. É a "página de e
 | Orçamento | Orçamento validado com o empreiteiro | manual | | |
 | Documentação | Projeto carregado | auto | | |
 | Documentação | Orçamento (ficheiro) carregado | auto | | |
-| Documentação | Contrato de empreitada carregado | auto | ✓ | categoria nova |
+| Documentação | Contrato de empreitada carregado | auto | | categoria nova |
 | Documentação | Licenciamento tratado | manual | | N/A se não aplicável |
 | Execução | Início registado | auto | ✓ | |
 | Execução | Primeiro auto fechado | auto | | |

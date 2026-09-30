@@ -2,7 +2,7 @@ import "server-only";
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/core/db/client";
 import { documentCategories } from "@/modules/settings/schema";
-import { checklistTemplateItems, checklistTemplates } from "./schema";
+import { checklistItems, checklistTemplateItems, checklistTemplates, checklists } from "./schema";
 import { CHECKLIST_DOCUMENT_CATEGORIES, CHECKLIST_TEMPLATES } from "./templates";
 
 /**
@@ -51,6 +51,7 @@ export async function ensureChecklistSetup(organizationId: string): Promise<{ cr
         .where(and(eq(checklistTemplates.organizationId, organizationId), eq(checklistTemplates.code, def.code), sql`${checklistTemplates.version} < ${def.version}`));
     });
     created.push(`${def.code} v${def.version}`);
+    await upgradeInstances(organizationId, def.code, def.version);
   }
 
   for (const c of CHECKLIST_DOCUMENT_CATEGORIES) {
@@ -65,4 +66,54 @@ export async function ensureChecklistSetup(organizationId: string): Promise<{ cr
   }
 
   return { createdTemplates: created };
+}
+
+/**
+ * Passa as checklists existentes de um procedimento para a versão nova:
+ * itens com o mesmo código mantêm o estado e passam a apontar para o item
+ * novo (secção, ordem, obrigatoriedade atualizadas); itens que deixaram de
+ * existir são apagados; itens novos entram pendentes. Os contadores são
+ * refeitos na sincronização seguinte.
+ */
+export async function upgradeInstances(organizationId: string, code: string, version: number): Promise<number> {
+  const [template] = await db
+    .select({ id: checklistTemplates.id })
+    .from(checklistTemplates)
+    .where(and(eq(checklistTemplates.organizationId, organizationId), eq(checklistTemplates.code, code), eq(checklistTemplates.version, version)));
+  if (!template) return 0;
+  const newItems = await db.select().from(checklistTemplateItems).where(eq(checklistTemplateItems.templateId, template.id));
+  const byCode = new Map(newItems.map((i) => [i.code, i]));
+
+  const old = await db
+    .select({ id: checklists.id, templateId: checklists.templateId })
+    .from(checklists)
+    .innerJoin(checklistTemplates, eq(checklists.templateId, checklistTemplates.id))
+    .where(and(eq(checklists.organizationId, organizationId), eq(checklistTemplates.code, code), sql`${checklistTemplates.version} < ${version}`));
+
+  for (const c of old) {
+    await db.transaction(async (tx) => {
+      const items = await tx.select({ id: checklistItems.id, code: checklistItems.code }).from(checklistItems).where(eq(checklistItems.checklistId, c.id));
+      const present = new Set<string>();
+      for (const it of items) {
+        const n = byCode.get(it.code);
+        if (!n) {
+          await tx.delete(checklistItems).where(eq(checklistItems.id, it.id));
+          continue;
+        }
+        present.add(it.code);
+        await tx
+          .update(checklistItems)
+          .set({ templateItemId: n.id, section: n.section, sort: n.sort, kind: n.kind, isRequired: n.isRequired })
+          .where(eq(checklistItems.id, it.id));
+      }
+      const missing = newItems.filter((n) => !present.has(n.code));
+      if (missing.length) {
+        await tx.insert(checklistItems).values(
+          missing.map((n) => ({ checklistId: c.id, templateItemId: n.id, code: n.code, section: n.section, sort: n.sort, kind: n.kind, isRequired: n.isRequired })),
+        );
+      }
+      await tx.update(checklists).set({ templateId: template.id, templateVersion: version }).where(eq(checklists.id, c.id));
+    });
+  }
+  return old.length;
 }
