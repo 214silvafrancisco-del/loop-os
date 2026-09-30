@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AlertTriangle, Building2, CalendarClock, Handshake } from "lucide-react";
+import { AlertTriangle, Building2, CalendarClock, Handshake, ListChecks } from "lucide-react";
+import { listDealsRequiredMissing, listProjectAlerts } from "@/modules/checklists/queries";
 import { requireUser } from "@/core/auth/current-user";
 import { formatCurrency, formatDate } from "@/core/lib/format";
 import { PageHeader } from "@/core/ui/page-header";
@@ -59,7 +60,7 @@ export default async function DashboardPage() {
   const weekEnd = endOfWeek(today);
   const sixMonths = addDays(today, 182);
 
-  const [stages, counts, actions, withoutAction, purchases, imtAlerts, activeProjects, unpaidInvoices] = await Promise.all([
+  const [stages, counts, actions, withoutAction, purchases, imtAlerts, activeProjects, unpaidInvoices, requiredMissing, projectAlerts] = await Promise.all([
     listDealStages(orgId),
     countDealsByStage(orgId),
     listUpcomingActions(orgId, weekEnd),
@@ -68,6 +69,8 @@ export default async function DashboardPage() {
     listImtDeadlines(orgId, sixMonths),
     listActiveProjectFinancials(orgId),
     listUnpaidInvoices(orgId, 8),
+    listDealsRequiredMissing(orgId, 8),
+    listProjectAlerts(orgId, 8),
   ]);
   const unpaidTotal = unpaidInvoices.reduce((a, i) => a + i.unpaid, 0);
   const overdueInvoices = unpaidInvoices.filter((i) => i.overdue).length;
@@ -197,6 +200,44 @@ export default async function DashboardPage() {
                   </Link>
                 );
               })}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <ListChecks className="size-4 text-primary" /> Processo: obrigatórios em falta
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {requiredMissing.length === 0 && projectAlerts.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Negócios em Proposta/Compra e obras em curso estão com o processo em dia.</p>
+              ) : (
+                <ul className="flex flex-col gap-2 text-sm">
+                  {requiredMissing.map((d) => (
+                    <li key={d.dealId}>
+                      <Link href={`/deals/${d.dealId}/processo`} className="flex items-center justify-between gap-2 hover:underline">
+                        <span className="truncate">
+                          <span className="font-mono text-[11px] text-muted-foreground">{d.ref}</span> {d.name ?? d.addressLine}
+                        </span>
+                        <span className="shrink-0 text-xs text-muted-foreground">{d.stageName} · {d.missing.length}</span>
+                      </Link>
+                      <p className="truncate text-xs text-muted-foreground">{d.missing.join(" · ")}</p>
+                    </li>
+                  ))}
+                  {projectAlerts.map((p) => (
+                    <li key={p.projectId}>
+                      <Link href={`/projects/${p.projectId}/processo`} className="flex items-center justify-between gap-2 hover:underline">
+                        <span className="truncate">
+                          <span className="font-mono text-[11px] text-muted-foreground">{p.ref}</span> Obra {p.name}
+                        </span>
+                        <span className="shrink-0 text-xs font-medium text-warning">{p.alerts.length}</span>
+                      </Link>
+                      <p className="truncate text-xs text-muted-foreground">{p.alerts.join(" · ")}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </CardContent>
           </Card>
 

@@ -16,6 +16,7 @@ import { useState, useTransition } from "react";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/core/lib/format";
 import type { DealStage } from "@/modules/settings/queries";
+import { confirmMissing } from "@/modules/checklists/components/gate-confirm";
 import { changeDealStage, type PurchaseInput } from "../actions";
 import type { DealListRow } from "../queries";
 import { dealRef } from "../utils";
@@ -84,7 +85,10 @@ export function KanbanBoard({ stages, deals: initialDeals }: Props) {
     const previousStage = deal.stageId;
     moveLocally(deal.id, stageId);
     startTransition(async () => {
-      const result = await changeDealStage(deal.id, stageId, purchase);
+      let result = await changeDealStage(deal.id, stageId, purchase);
+      if (!result.ok && "needsConfirm" in result) {
+        if (confirmMissing(result.missing, "mudar a fase")) result = await changeDealStage(deal.id, stageId, purchase, { force: true });
+      }
       if (result.ok) {
         setPendingPurchase(null);
         router.refresh();
@@ -92,7 +96,7 @@ export function KanbanBoard({ stages, deals: initialDeals }: Props) {
       }
       moveLocally(deal.id, previousStage);
       if ("needsPurchase" in result) setPendingPurchase({ deal, stageId });
-      else alert(result.error);
+      else if ("error" in result) alert(result.error);
     });
   }
 
@@ -129,7 +133,11 @@ export function KanbanBoard({ stages, deals: initialDeals }: Props) {
           askingPrice={pendingPurchase.deal.askingPrice}
           onCancel={() => setPendingPurchase(null)}
           onConfirm={async (input) => {
-            const result = await changeDealStage(pendingPurchase.deal.id, pendingPurchase.stageId, input);
+            let result = await changeDealStage(pendingPurchase.deal.id, pendingPurchase.stageId, input);
+            if (!result.ok && "needsConfirm" in result) {
+              if (!confirmMissing(result.missing, "marcar como comprado")) return "Mudança de fase cancelada.";
+              result = await changeDealStage(pendingPurchase.deal.id, pendingPurchase.stageId, input, { force: true });
+            }
             if (result.ok) {
               setPendingPurchase(null);
               router.refresh();

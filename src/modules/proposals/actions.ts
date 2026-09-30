@@ -4,6 +4,8 @@ import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/core/auth/current-user";
+import { missingSentence } from "@/modules/checklists/gate-rules";
+import { checkGate } from "@/modules/checklists/gates";
 import { db } from "@/core/db/client";
 import { fieldErrorsOf, optionalInt, optionalText } from "@/core/lib/form-schemas";
 import { dealStages } from "@/modules/settings/schema";
@@ -43,6 +45,10 @@ export async function createProposal(dealId: string, _prev: ProposalFormState, f
   const values = Object.fromEntries(["templateId", "offerPrice", "deadlineDays", "validityDays", "conditions", "observations"].map((k) => [k, String(formData.get(k) ?? "")]));
   const parsed = schema.safeParse(values);
   if (!parsed.success) return { error: "Corrige os campos assinalados.", fieldErrors: fieldErrorsOf(parsed.error.issues), values };
+
+  // Porta dura do processo: sem Business Plan ativo, preço máximo e preço pedido não há proposta.
+  const gate = await checkGate(user.organizationId, "deal", dealId, "proposal:generate", user.id);
+  if (gate.hard.length) return { error: missingSentence(gate.hard, "Não é possível gerar a proposta sem"), values };
 
   try {
     const created = await generateProposal(user, dealId, {

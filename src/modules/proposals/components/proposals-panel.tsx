@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { formatCurrency, formatDate } from "@/core/lib/format";
 import { FormField, FormSection, NativeSelect } from "@/core/ui/form-field";
+import { GateNotice } from "@/modules/checklists/components/gate-notice";
+import type { GateMissing } from "@/modules/checklists/gate-rules";
 import { createProposal, setProposalStatus, type ProposalFormState } from "../actions";
 import type { ProposalRow } from "../queries";
 import type { ProposalTemplate } from "../schema";
@@ -21,6 +23,8 @@ type Props = {
   proposals: ProposalRow[];
   suggestions: Suggestion[];
   defaultConditions: string;
+  /** Porta "gerar proposta": `hard` bloqueia o formulário. */
+  gate?: { hard: GateMissing[]; warn: GateMissing[] };
 };
 
 const STATUS_LABEL: Record<ProposalRow["status"], string> = {
@@ -38,7 +42,8 @@ const STATUS_CLASS: Record<ProposalRow["status"], string> = {
   rejected: "bg-destructive/10 text-destructive",
 };
 
-export function ProposalsPanel({ dealId, templates, proposals, suggestions, defaultConditions }: Props) {
+export function ProposalsPanel({ dealId, templates, proposals, suggestions, defaultConditions, gate }: Props) {
+  const blocked = (gate?.hard.length ?? 0) > 0;
   const router = useRouter();
   const [state, formAction, pending] = useActionState<ProposalFormState, FormData>(createProposal.bind(null, dealId), {});
   const [price, setPrice] = useState<string>(state.values?.offerPrice ?? "");
@@ -76,7 +81,9 @@ export function ProposalsPanel({ dealId, templates, proposals, suggestions, defa
         </p>
       ) : null}
 
-      <form action={formAction} className="flex flex-col gap-5">
+      {gate ? <GateNotice hard={gate.hard} warn={gate.warn} basePath={`/deals/${dealId}`} action="gerar a proposta" /> : null}
+
+      <form action={formAction} className={cn("flex flex-col gap-5", blocked && "pointer-events-none opacity-50")}>
         <FormSection title="Nova proposta" description="Gera o PDF e o texto para WhatsApp. Nunca envia nada automaticamente.">
           <FormField id="templateId" label="Template" error={errors.templateId}>
             <NativeSelect id="templateId" name="templateId" value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
@@ -119,7 +126,7 @@ export function ProposalsPanel({ dealId, templates, proposals, suggestions, defa
         </FormSection>
         {state.error ? <p className="text-sm text-destructive">{state.error}</p> : null}
         <div className="flex justify-end">
-          <Button type="submit" disabled={pending} className="gap-1">
+          <Button type="submit" disabled={pending || blocked} className="gap-1">
             <FileText className="size-4" />
             {pending ? "A gerar PDF…" : proposals.length ? "Gerar nova versão" : "Gerar proposta PDF"}
           </Button>

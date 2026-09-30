@@ -4,6 +4,8 @@ import { and, eq, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/core/auth/current-user";
+import { gateForProjectStatus, missingSentence, type GateMissing } from "@/modules/checklists/gate-rules";
+import { checkGate } from "@/modules/checklists/gates";
 import { db } from "@/core/db/client";
 import { fieldErrorsOf } from "@/core/lib/form-schemas";
 import { getActiveScenarioForDeal } from "@/modules/business-plan/queries";
@@ -70,6 +72,14 @@ export async function updateProject(id: string, _prev: ProjectFormState, formDat
   if (d.actualStart && d.actualEnd && d.actualEnd < d.actualStart) {
     return { error: "Corrige os campos assinalados.", fieldErrors: { actualEnd: "Antes do início." }, values };
   }
+  const [before] = await db.select({ status: projects.status }).from(projects).where(and(eq(projects.id, id), eq(projects.organizationId, user.organizationId)));
+  if (before && before.status !== d.status) {
+    const gate = gateForProjectStatus(d.status);
+    if (gate) {
+      const g = await checkGate(user.organizationId, "project", id, gate, user.id);
+      if (g.hard.length) return { error: missingSentence(g.hard, `Não é possível passar a "${d.status === "em_curso" ? "Em curso" : "Concluída"}" sem`), fieldErrors: { status: "Bloqueado pelo processo." }, values };
+    }
+  }
   const res = await db
     .update(projects)
     .set({ ...d, updatedBy: user.id })
@@ -84,13 +94,23 @@ export async function updateProject(id: string, _prev: ProjectFormState, formDat
 }
 
 /** Mudança rápida de estado pelo cabeçalho. Em curso preenche o início real; concluída o fim real. */
-export async function setProjectStatus(id: string, status: (typeof projects.$inferSelect)["status"]): Promise<{ ok: true } | { ok: false; error: string }> {
+export type ProjectStatusResult = { ok: true } | { ok: false; needsConfirm: true; missing: GateMissing[] } | { ok: false; error: string };
+
+export async function setProjectStatus(id: string, status: (typeof projects.$inferSelect)["status"], options?: { force?: boolean }): Promise<ProjectStatusResult> {
   const user = await requireUser();
   const [project] = await db
-    .select({ actualStart: projects.actualStart, actualEnd: projects.actualEnd })
+    .select({ status: projects.status, actualStart: projects.actualStart, actualEnd: projects.actualEnd })
     .from(projects)
     .where(and(eq(projects.id, id), eq(projects.organizationId, user.organizationId), isNull(projects.deletedAt)));
   if (!project) return { ok: false, error: "Obra não encontrada." };
+
+  // Portas do processo: "hard" bloqueia, "warn" pede confirmação.
+  const gate = project.status !== status ? gateForProjectStatus(status) : null;
+  if (gate) {
+    const g = await checkGate(user.organizationId, "project", id, gate, user.id);
+    if (g.hard.length) return { ok: false, error: missingSentence(g.hard, "Não é possível sem") };
+    if (g.warn.length && !options?.force) return { ok: false, needsConfirm: true, missing: g.warn };
+  }
   const today = new Date().toISOString().slice(0, 10);
   await db
     .update(projects)

@@ -4,6 +4,8 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/core/auth/current-user";
+import { gateForStage, type GateMissing } from "@/modules/checklists/gate-rules";
+import { checkGate } from "@/modules/checklists/gates";
 import { db } from "@/core/db/client";
 import { z } from "zod";
 import { fieldErrorsOf, optionalDate, optionalDecimal, optionalText } from "@/core/lib/form-schemas";
@@ -197,6 +199,8 @@ export async function updateDeal(id: string, _prev: DealFormState, formData: For
 export type StageChangeResult =
   | { ok: true }
   | { ok: false; needsPurchase: true }
+  /** Porta do processo com avisos: o cliente confirma e repete com `force`. */
+  | { ok: false; needsConfirm: true; missing: GateMissing[] }
   | { ok: false; error: string };
 
 const purchaseSchema = z.object({
@@ -216,19 +220,31 @@ export async function changeDealStage(
   dealId: string,
   stageId: string,
   purchase?: PurchaseInput,
+  options?: { force?: boolean },
 ): Promise<StageChangeResult> {
   const user = await requireUser();
   const [deal] = await db
-    .select({ propertyId: deals.propertyId, deedDate: deals.deedDate, finalPrice: deals.finalPrice })
+    .select({ propertyId: deals.propertyId, deedDate: deals.deedDate, finalPrice: deals.finalPrice, stageId: deals.stageId })
     .from(deals)
     .where(and(eq(deals.id, dealId), eq(deals.organizationId, user.organizationId), isNull(deals.deletedAt)));
   if (!deal) return { ok: false, error: "Negócio não encontrado." };
 
   const [stage] = await db
-    .select({ isPurchase: dealStages.isPurchase })
+    .select({ isPurchase: dealStages.isPurchase, name: dealStages.name, sort: dealStages.sort })
     .from(dealStages)
     .where(and(eq(dealStages.id, stageId), eq(dealStages.organizationId, user.organizationId)));
   if (!stage) return { ok: false, error: "Fase inválida." };
+
+  // Porta do processo (só avisa): ao avançar para Proposta ou Compra com passos em falta.
+  if (!options?.force) {
+    const [current] = await db.select({ sort: dealStages.sort }).from(dealStages).where(eq(dealStages.id, deal.stageId));
+    const gate = gateForStage(current ?? { sort: 0 }, stage);
+    if (gate) {
+      const g = await checkGate(user.organizationId, "deal", dealId, gate, user.id);
+      const missing = [...g.hard, ...g.warn];
+      if (missing.length) return { ok: false, needsConfirm: true, missing };
+    }
+  }
 
   const patch: Partial<typeof deals.$inferInsert> = { stageId, updatedBy: user.id };
 

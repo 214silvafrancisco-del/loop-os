@@ -51,6 +51,7 @@ Pedido: colocar em `Brand/` o logótipo em SVG ou PNG com fundo transparente (ve
 /contacts
 /contacts/[id]
 /settings                       geral | utilizadores | fases | fontes | categorias orçamento | categorias documentos | IMT | tags
+/settings/procedimentos         checklists de processo (leitura, Step 22)
 ```
 
 Sidebar (desktop): Dashboard · Negócios · Obras · Imóveis · Contactos · (separador) · Definições. Futuro: Vendas, Financeiro, Fornecedores, Documentos, Reporting, Tarefas, Calendário, CRM entram como itens novos sem alterar os existentes.

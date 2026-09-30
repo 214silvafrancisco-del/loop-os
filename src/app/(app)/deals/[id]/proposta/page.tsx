@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireUser } from "@/core/auth/current-user";
 import { getActiveScenarioForDeal } from "@/modules/business-plan/queries";
+import { checkGate } from "@/modules/checklists/gates";
 import { getDeal } from "@/modules/deals/queries";
 import { ProposalsPanel } from "@/modules/proposals/components/proposals-panel";
 import { listProposals, listTemplates } from "@/modules/proposals/queries";
@@ -13,10 +14,11 @@ export default async function DealPropostaPage({ params }: { params: Promise<{ i
   const deal = await getDeal(orgId, id);
   if (!deal) notFound();
 
-  const [templates, proposals, scenario] = await Promise.all([
+  const [templates, proposals, scenario, gate] = await Promise.all([
     listTemplates(orgId),
     listProposals(orgId, id),
     getActiveScenarioForDeal(orgId, id),
+    checkGate(orgId, "deal", id, "proposal:generate", user.id),
   ]);
 
   const suggestions = [
@@ -33,6 +35,7 @@ export default async function DealPropostaPage({ params }: { params: Promise<{ i
       proposals={proposals}
       suggestions={suggestions}
       defaultConditions={DEFAULT_CONDITIONS}
+      gate={gate}
     />
   );
 }

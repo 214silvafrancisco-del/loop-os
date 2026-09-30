@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { cn } from "@/lib/utils";
 import type { DealStage } from "@/modules/settings/queries";
+import { confirmMissing } from "@/modules/checklists/components/gate-confirm";
 import { changeDealStage } from "../actions";
 import { PurchaseDialog } from "./purchase-dialog";
 
@@ -26,10 +27,14 @@ export function StageSelect({ dealId, dealLabel, stageId, stages, askingPrice, d
   function change(nextStageId: string) {
     if (nextStageId === stageId) return;
     startTransition(async () => {
-      const result = await changeDealStage(dealId, nextStageId);
+      let result = await changeDealStage(dealId, nextStageId);
+      if (!result.ok && "needsConfirm" in result) {
+        if (!confirmMissing(result.missing, "mudar a fase")) return;
+        result = await changeDealStage(dealId, nextStageId, undefined, { force: true });
+      }
       if (result.ok) router.refresh();
       else if ("needsPurchase" in result) setPendingStage(nextStageId);
-      else alert(result.error);
+      else if ("error" in result) alert(result.error);
     });
   }
 
@@ -65,7 +70,11 @@ export function StageSelect({ dealId, dealLabel, stageId, stages, askingPrice, d
           askingPrice={askingPrice}
           onCancel={() => setPendingStage(null)}
           onConfirm={async (input) => {
-            const result = await changeDealStage(dealId, pendingStage, input);
+            let result = await changeDealStage(dealId, pendingStage, input);
+            if (!result.ok && "needsConfirm" in result) {
+              if (!confirmMissing(result.missing, "marcar como comprado")) return "Mudança de fase cancelada.";
+              result = await changeDealStage(dealId, pendingStage, input, { force: true });
+            }
             if (result.ok) {
               setPendingStage(null);
               router.refresh();

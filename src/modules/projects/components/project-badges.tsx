@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { cn } from "@/lib/utils";
+import { confirmMissing } from "@/modules/checklists/components/gate-confirm";
 import { setProjectStatus } from "../actions";
 import { PROJECT_STATUSES, PROJECT_STATUS_COLOR, PROJECT_STATUS_LABEL, type ProjectStatus } from "../validation";
 
@@ -30,8 +31,16 @@ export function ProjectStatusSelect({ projectId, status }: { projectId: string; 
         disabled={pending}
         onChange={(e) =>
           startTransition(async () => {
-            const r = await setProjectStatus(projectId, e.target.value as ProjectStatus);
-            if (!r.ok) alert(r.error);
+            const next = e.target.value as ProjectStatus;
+            let r = await setProjectStatus(projectId, next);
+            if (!r.ok && "needsConfirm" in r) {
+              if (!confirmMissing(r.missing, "mudar o estado")) {
+                router.refresh();
+                return;
+              }
+              r = await setProjectStatus(projectId, next, { force: true });
+            }
+            if (!r.ok && "error" in r) alert(r.error);
             router.refresh();
           })
         }

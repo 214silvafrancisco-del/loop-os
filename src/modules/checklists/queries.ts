@@ -1,8 +1,12 @@
 import "server-only";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "@/core/db/client";
 import { profiles } from "@/core/db/schema/core";
+import { deals } from "@/modules/deals/schema";
+import { projects } from "@/modules/projects/schema";
+import { properties } from "@/modules/properties/schema";
+import { dealStages } from "@/modules/settings/schema";
 import { checklistItems, checklistTemplateItems, checklistTemplates, checklists, type ChecklistEntityType, type ChecklistItemStatus } from "./schema";
 import { SECTION_LABELS } from "./templates";
 
@@ -189,4 +193,111 @@ export async function listChecklistLabels(organizationId: string): Promise<Recor
   const out: Record<string, string> = {};
   for (const r of rows) out[r.code] = r.label; // versão mais recente ganha
   return out;
+}
+
+export type DealRequiredMissingRow = {
+  dealId: string;
+  ref: string;
+  name: string | null;
+  addressLine: string;
+  stageName: string;
+  missing: string[];
+};
+
+/**
+ * Negócios ativos em Proposta ou Compra com itens obrigatórios pendentes
+ * (dashboard). Devolve os labels em falta por negócio.
+ */
+export async function listDealsRequiredMissing(organizationId: string, limit = 8): Promise<DealRequiredMissingRow[]> {
+  const rows = await db
+    .select({
+      dealId: deals.id,
+      ref: properties.ref,
+      name: deals.name,
+      addressLine: properties.addressLine,
+      stageName: dealStages.name,
+      stageSort: dealStages.sort,
+      label: checklistTemplateItems.label,
+      sort: checklistItems.sort,
+    })
+    .from(checklistItems)
+    .innerJoin(checklists, eq(checklistItems.checklistId, checklists.id))
+    .innerJoin(checklistTemplateItems, eq(checklistItems.templateItemId, checklistTemplateItems.id))
+    .innerJoin(deals, eq(checklists.entityId, deals.id))
+    .innerJoin(properties, eq(deals.propertyId, properties.id))
+    .innerJoin(dealStages, eq(deals.stageId, dealStages.id))
+    .where(
+      and(
+        eq(checklists.organizationId, organizationId),
+        eq(checklists.entityType, "deal"),
+        eq(checklistItems.status, "pending"),
+        eq(checklistItems.isRequired, true),
+        eq(deals.status, "active"),
+        isNull(deals.deletedAt),
+        or(eq(dealStages.isPurchase, true), sql`lower(${dealStages.name}) like 'proposta%'`)!,
+      ),
+    )
+    .orderBy(dealStages.sort, properties.ref, checklistItems.sort);
+  const map = new Map<string, DealRequiredMissingRow>();
+  for (const r of rows) {
+    let d = map.get(r.dealId);
+    if (!d) {
+      d = { dealId: r.dealId, ref: r.ref, name: r.name, addressLine: r.addressLine, stageName: r.stageName, missing: [] };
+      map.set(r.dealId, d);
+    }
+    d.missing.push(r.label);
+  }
+  return [...map.values()].slice(0, limit);
+}
+
+export type ProjectAlertRow = { projectId: string; ref: string; name: string; status: string; alerts: string[] };
+
+/** Obras com alertas do processo: autos em atraso, faturas vencidas, ou obrigatórios em falta enquanto em curso. */
+export async function listProjectAlerts(organizationId: string, limit = 8): Promise<ProjectAlertRow[]> {
+  const ALERT_CODES = ["execucao.autos_em_dia", "controlo.sem_vencidas"];
+  const rows = await db
+    .select({ projectId: projects.id, ref: properties.ref, name: projects.name, status: projects.status, code: checklistItems.code, label: checklistTemplateItems.label, isRequired: checklistItems.isRequired })
+    .from(checklistItems)
+    .innerJoin(checklists, eq(checklistItems.checklistId, checklists.id))
+    .innerJoin(checklistTemplateItems, eq(checklistItems.templateItemId, checklistTemplateItems.id))
+    .innerJoin(projects, eq(checklists.entityId, projects.id))
+    .innerJoin(properties, eq(projects.propertyId, properties.id))
+    .where(
+      and(
+        eq(checklists.organizationId, organizationId),
+        eq(checklists.entityType, "project"),
+        eq(checklistItems.status, "pending"),
+        isNull(projects.deletedAt),
+        inArray(projects.status, ["a_iniciar", "em_curso", "pausada"]),
+        or(inArray(checklistItems.code, ALERT_CODES), and(eq(checklistItems.isRequired, true), eq(projects.status, "em_curso")))!,
+      ),
+    )
+    .orderBy(properties.ref, checklistItems.sort);
+  const map = new Map<string, ProjectAlertRow>();
+  for (const r of rows) {
+    let p = map.get(r.projectId);
+    if (!p) {
+      p = { projectId: r.projectId, ref: r.ref, name: r.name, status: r.status, alerts: [] };
+      map.set(r.projectId, p);
+    }
+    p.alerts.push(r.label);
+  }
+  return [...map.values()].slice(0, limit);
+}
+
+/** Templates com os seus itens, para Definições → Procedimentos (só leitura). */
+export async function listTemplatesWithItems(organizationId: string) {
+  const ts = await db
+    .select()
+    .from(checklistTemplates)
+    .where(eq(checklistTemplates.organizationId, organizationId))
+    .orderBy(checklistTemplates.entityType, checklistTemplates.version);
+  const items = ts.length
+    ? await db
+        .select()
+        .from(checklistTemplateItems)
+        .where(inArray(checklistTemplateItems.templateId, ts.map((t) => t.id)))
+        .orderBy(checklistTemplateItems.sort)
+    : [];
+  return ts.map((t) => ({ ...t, items: items.filter((i) => i.templateId === t.id) }));
 }
