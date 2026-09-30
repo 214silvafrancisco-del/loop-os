@@ -81,7 +81,48 @@ export function InvoicesPanel({ projectId, propertyId, invoices, paymentsByInvoi
       {invoices.length === 0 ? (
         <p className="rounded-lg border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">Ainda sem faturas.</p>
       ) : (
-        <div className="rounded-xl border bg-card">
+        <>
+        {/* Telemóvel: cartões */}
+        <ul className="flex flex-col gap-2 md:hidden">
+          {invoices.map((inv) => {
+            const st = STATUS[inv.status];
+            const unpaid = Number(inv.total) - inv.paidAmount;
+            return (
+              <li key={inv.id} className="rounded-xl border bg-card p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="font-mono text-xs">{inv.number}</span>
+                      <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium", st.cls)}>{st.label}</span>
+                      {inv.measurementKind === "adiantamento" ? <span className="rounded bg-warning/20 px-1.5 text-[10px] font-semibold uppercase tracking-wide">Adiantamento</span> : null}
+                    </div>
+                    <p className="truncate font-medium">{inv.supplierName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDate(inv.issueDate)}
+                      {inv.dueDate ? ` · vence ${formatDate(inv.dueDate)}` : ""}
+                      {inv.measurementNumber !== null ? ` · auto n.º ${inv.measurementNumber}` : ""}
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="text-base font-semibold tabular-nums">{formatMoney(inv.total)}</p>
+                    <p className="text-xs tabular-nums text-muted-foreground">{unpaid > 0.005 ? `por pagar ${formatMoney(unpaid)}` : "pago"}</p>
+                  </div>
+                </div>
+                <div className="mt-2 flex gap-1.5">
+                  <Button variant="outline" size="sm" className="h-9 flex-1 gap-1" onClick={() => setPaying(inv)}><CreditCard className="size-4" /> Pagamentos</Button>
+                  {inv.versionId ? (
+                    <Button asChild variant="outline" size="sm" className="h-9 gap-1">
+                      <a href={`/api/documents/${inv.versionId}/download?inline=1`} target="_blank" rel="noreferrer"><FileText className="size-4" /> PDF</a>
+                    </Button>
+                  ) : null}
+                  <Button variant="outline" size="sm" className="h-9" onClick={() => openDialog({ mode: "edit", invoice: inv })} aria-label="Editar"><Pencil className="size-4" /></Button>
+                  {canDelete ? <Button variant="outline" size="sm" className="h-9 text-destructive" onClick={() => remove(inv)} aria-label="Eliminar"><Trash2 className="size-4" /></Button> : null}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+        <div className="hidden rounded-xl border bg-card md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -143,6 +184,7 @@ export function InvoicesPanel({ projectId, propertyId, invoices, paymentsByInvoi
             </TableBody>
           </Table>
         </div>
+        </>
       )}
 
       {fin.bySupplier.length ? (

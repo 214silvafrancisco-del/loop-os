@@ -13,6 +13,7 @@ import { PropertyRef } from "@/modules/properties/components/property-badges";
 import type { DealListRow } from "../queries";
 import { dealRef } from "../utils";
 import { DealStatusBadge, StageBadge } from "./deal-badges";
+import { DealCard } from "./deal-card";
 import { NextActionEditor } from "./next-action-editor";
 
 export { dealRef };
@@ -26,7 +27,14 @@ export function DealsTable({ deals }: { deals: DealListRow[] }) {
     );
   }
   return (
-    <div className="rounded-lg border bg-card">
+    <>
+      {/* Telemóvel: cartões com o que a tabela esconde. */}
+      <div className="flex flex-col gap-2 md:hidden">
+        {deals.map((d) => (
+          <DealCard key={d.id} deal={d} />
+        ))}
+      </div>
+      <div className="hidden rounded-lg border bg-card md:block">
       <Table>
         <TableHeader>
           <TableRow>
@@ -88,6 +96,7 @@ export function DealsTable({ deals }: { deals: DealListRow[] }) {
           ))}
         </TableBody>
       </Table>
-    </div>
+      </div>
+    </>
   );
 }

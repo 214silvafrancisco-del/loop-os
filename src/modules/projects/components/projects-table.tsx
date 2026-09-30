@@ -6,6 +6,7 @@ import type { ChecklistProgress } from "@/modules/checklists/queries";
 import { PropertyRef } from "@/modules/properties/components/property-badges";
 import type { ProjectRow } from "../queries";
 import { ProjectStatusBadge } from "./project-badges";
+import { ProjectCard } from "./project-card";
 
 export function ProjectsTable({ projects, progress }: { projects: ProjectRow[]; progress?: Map<string, ChecklistProgress> }) {
   if (projects.length === 0) {
@@ -16,7 +17,13 @@ export function ProjectsTable({ projects, progress }: { projects: ProjectRow[]; 
     );
   }
   return (
-    <div className="rounded-lg border bg-card">
+    <>
+      <div className="flex flex-col gap-2 md:hidden">
+        {projects.map((p) => (
+          <ProjectCard key={p.id} project={p} progress={progress?.get(p.id)} />
+        ))}
+      </div>
+      <div className="hidden rounded-lg border bg-card md:block">
       <Table>
         <TableHeader>
           <TableRow>
@@ -56,6 +63,7 @@ export function ProjectsTable({ projects, progress }: { projects: ProjectRow[]; 
           ))}
         </TableBody>
       </Table>
-    </div>
+      </div>
+    </>
   );
 }
