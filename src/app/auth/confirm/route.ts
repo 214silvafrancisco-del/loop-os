@@ -1,6 +1,7 @@
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/core/auth/supabase/server";
+import { publicUrl } from "@/core/lib/public-url";
 
 /**
  * Destino dos links de email (convite, reset de password).
@@ -10,14 +11,8 @@ import { createClient } from "@/core/auth/supabase/server";
  * Sem nenhum dos dois, o token vem no fragmento (#access_token=…), invisível
  * ao servidor: passa para /auth/callback (o browser mantém o fragmento).
  */
-// request.url é o endereço interno do contentor (https://0.0.0.0:3000 em produção);
-// request.nextUrl reconstrói o endereço público a partir dos cabeçalhos do proxy.
 function to(request: NextRequest, pathWithQuery: string) {
-  const url = request.nextUrl.clone();
-  const [pathname, query = ""] = pathWithQuery.split("?");
-  url.pathname = pathname;
-  url.search = query ? `?${query}` : "";
-  return NextResponse.redirect(url);
+  return NextResponse.redirect(publicUrl(request, pathWithQuery));
 }
 
 export async function GET(request: NextRequest) {
