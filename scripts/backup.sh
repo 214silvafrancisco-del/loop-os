@@ -1,25 +1,28 @@
 #!/usr/bin/env bash
-# Backup noturno da base de dados para o Cloudflare R2 (e opcionalmente uma pasta local).
+# Backup noturno da base de dados (Supabase Postgres 17) para o Cloudflare R2.
 #
-# No VPS (Coolify): cron  15 3 * * *  /opt/loop-os/scripts/backup.sh >> /var/log/loop-backup.log 2>&1
-# Requisitos: postgresql-client (pg_dump), rclone configurado com o remote "r2" (API S3 do R2).
-#   rclone config → n → nome r2 → tipo s3 → provider Cloudflare → access key / secret → endpoint https://<account>.r2.cloudflarestorage.com
+# Instalado no servidor em /opt/loop-os/backup.sh, cron diário (ver docs/05-deploy.md §7).
+# Requisitos: postgresql-client-17 (repositório PGDG) e rclone.
 #
-# Variáveis (em /etc/loop-os/backup.env, chmod 600):
-#   DIRECT_URL=postgresql://...            ligação de sessão (porta 5432)
-#   R2_BUCKET_BACKUPS=loop-backups         bucket dos backups (separado dos documentos)
-#   LOCAL_DIR=/var/backups/loop-os         opcional: cópia local
-#   RETENTION_DAYS=30
+# Configuração (ficheiros com chmod 600, fora do repositório):
+#   /etc/loop-os/backup.env     DIRECT_URL, R2_BUCKET_BACKUPS, LOCAL_DIR, RETENTION_DAYS
+#   /etc/loop-os/rclone.conf    remote [r2] tipo s3, provider Cloudflare
+#
+# Formato: pg_dump custom (-Fc), comprimido; restaura-se com pg_restore, inclusive só o
+# schema public:  pg_restore --no-owner --no-privileges -n public -d <url> loop-os-<data>.dump
 set -euo pipefail
+umask 077   # dumps só legíveis pelo root
 source "${BACKUP_ENV:-/etc/loop-os/backup.env}"
+export RCLONE_CONFIG="${RCLONE_CONFIG:-/etc/loop-os/rclone.conf}"
+PG_DUMP="${PG_DUMP:-/usr/lib/postgresql/17/bin/pg_dump}"
 
 STAMP="$(date -u +%Y%m%d-%H%M%S)"
 TMP="$(mktemp -d)"
-FILE="$TMP/loop-os-$STAMP.sql.gz"
+FILE="$TMP/loop-os-$STAMP.dump"
 trap 'rm -rf "$TMP"' EXIT
 
 echo "[$STAMP] pg_dump…"
-pg_dump --no-owner --no-privileges --format=plain "$DIRECT_URL" | gzip -9 > "$FILE"
+"$PG_DUMP" --no-owner --no-privileges --format=custom --compress=9 --file="$FILE" "$DIRECT_URL"
 SIZE="$(du -h "$FILE" | cut -f1)"
 echo "[$STAMP] dump $SIZE"
 
@@ -29,11 +32,10 @@ rclone copy "$FILE" "r2:$R2_BUCKET_BACKUPS/db/" --s3-no-check-bucket
 if [[ -n "${LOCAL_DIR:-}" ]]; then
   mkdir -p "$LOCAL_DIR"
   cp "$FILE" "$LOCAL_DIR/"
-  find "$LOCAL_DIR" -name 'loop-os-*.sql.gz' -mtime +"${RETENTION_DAYS:-30}" -delete
+  find "$LOCAL_DIR" -name 'loop-os-*.dump' -mtime +"${RETENTION_DAYS:-30}" -delete
 fi
 
-# Retenção no R2: apaga dumps com mais de RETENTION_DAYS.
+# Retenção no R2.
 rclone delete "r2:$R2_BUCKET_BACKUPS/db/" --min-age "${RETENTION_DAYS:-30}d" --s3-no-check-bucket || true
 
 echo "[$STAMP] ok"
-EOF

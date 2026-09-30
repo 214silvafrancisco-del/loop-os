@@ -1,6 +1,18 @@
-# LOOP OS — Deploy e operação (v0.1, 2026-09-29)
+# LOOP OS — Deploy e operação (v0.2, 2026-09-30)
 
-Arquitetura de produção (decisão 2026-09-29): **VPS Hetzner + Coolify** (app em Docker), **Supabase Free** (Postgres + Auth), **Cloudflare R2** (documentos e backups). Custo ~€5/mês.
+Arquitetura de produção: **VPS + Coolify** (app em Docker), **Supabase Free** (Postgres + Auth), **Cloudflare R2** (documentos e backups).
+
+## Estado atual (2026-09-30)
+
+| Item | Valor |
+|---|---|
+| Servidor | Netcup VPS Lite 1 G12.5s (2 vCPU, 4 GB, 80 GB), Ubuntu 24.04.5, IPv4 `89.58.58.97`. O registo na Hetzner falhou; os passos abaixo valem para qualquer VPS Ubuntu |
+| App | `https://app.89.58.58.97.sslip.io` (sem domínio próprio ainda; certificado Let's Encrypt automático) |
+| Acesso SSH | só por chave (`~/.ssh/id_ed25519` no PC do Francisco); login por password desligado em `/etc/ssh/sshd_config.d/99-loop-hardening.conf` |
+| Firewall | UFW (22, 80, 443) + cadeia `DOCKER-USER` para portas publicadas pelo Docker (ver §7b) |
+| Backups | diários 03:15 UTC para `r2:loop-backups/db/` e `/var/backups/loop-os`, retenção 30 dias; restauro testado em 2026-09-30 |
+
+Notas de build no Coolify: o Coolify injeta todas as variáveis marcadas "Available at Buildtime" como `ARG` (incluindo `NODE_ENV`). Só as três `NEXT_PUBLIC_*` devem estar em build; as secretas só em runtime.
 
 ## 0. O que já está no repositório
 
@@ -84,29 +96,53 @@ Depois disto, `pnpm user:invite email "Nome" manager` envia o convite aos colega
 
 Com as quatro variáveis `R2_*` definidas, a app usa o R2 automaticamente (ver `src/core/storage/index.ts`). Os documentos carregados em desenvolvimento ficaram em `.storage/` no PC e **não migram**: carregar de novo os que interessam.
 
-## 7. Backups
+## 7. Backups (instalado em 2026-09-30)
 
-No servidor:
+| Peça | Onde |
+|---|---|
+| Script | `/opt/loop-os/backup.sh` (cópia em `scripts/backup.sh`) |
+| Configuração | `/etc/loop-os/backup.env` (`DIRECT_URL`, bucket, retenção) e `/etc/loop-os/rclone.conf` (remote `r2`), ambos `chmod 600` |
+| Agendamento | `/etc/cron.d/loop-os-backup`, 03:15 UTC, registo em `/var/log/loop-backup.log` (logrotate mensal) |
+| Destino | `r2:loop-backups/db/` e `/var/backups/loop-os/`, retenção 30 dias |
+| Formato | `pg_dump --format=custom`, ~0,5 MB com os dados atuais |
+
+Requisitos que importam:
+- **`postgresql-client-17`** do repositório PGDG. O Supabase corre Postgres 17 e o cliente do Ubuntu (16) recusa o dump.
+- **rclone oficial** (`curl https://rclone.org/install.sh | bash`, v1.75+). A versão do Ubuntu (1.60) recebe `501 NotImplemented` do R2 em cada envio.
+
+Ver o último backup e correr um à mão:
 
 ```bash
-apt-get install -y postgresql-client rclone
-mkdir -p /etc/loop-os /opt/loop-os/scripts
-# copiar scripts/backup.sh para /opt/loop-os/scripts/ e chmod +x
-rclone config   # remote "r2", tipo s3, provider Cloudflare, endpoint https://<ACCOUNT_ID>.r2.cloudflarestorage.com
-cat > /etc/loop-os/backup.env <<'EOF'
-DIRECT_URL=postgresql://postgres.<ref>:<password>@aws-1-eu-west-1.pooler.supabase.com:5432/postgres
-R2_BUCKET_BACKUPS=loop-backups
-LOCAL_DIR=/var/backups/loop-os
-RETENTION_DAYS=30
-EOF
-chmod 600 /etc/loop-os/backup.env
-(crontab -l 2>/dev/null; echo "15 3 * * * /opt/loop-os/scripts/backup.sh >> /var/log/loop-backup.log 2>&1") | crontab -
-/opt/loop-os/scripts/backup.sh   # primeiro backup, à mão
+tail -5 /var/log/loop-backup.log
+/opt/loop-os/backup.sh
+RCLONE_CONFIG=/etc/loop-os/rclone.conf rclone ls r2:loop-backups/db/
 ```
 
-**Teste de restauro** (trimestral): criar um projeto Supabase temporário e `gunzip -c loop-os-<data>.sql.gz | psql "<DIRECT_URL do temporário>"`. Se correr sem erros e as contagens baterem, o backup serve.
+**Teste de restauro** (trimestral; feito em 2026-09-30 com as contagens iguais à base real):
 
-Segunda linha: copiar mensalmente a pasta `loop-backups/db/` do R2 para o OneDrive da empresa (rclone no PC ou download manual).
+```bash
+F=$(ls -t /var/backups/loop-os/*.dump | head -1)
+docker run -d --name pgrestore -e POSTGRES_PASSWORD=x postgres:17-alpine && sleep 5
+docker cp "$F" pgrestore:/tmp/b.dump
+docker exec pgrestore pg_restore -U postgres -d postgres --no-owner --no-privileges -n public /tmp/b.dump
+docker exec pgrestore psql -U postgres -tAc "select count(*) from deals"
+docker rm -f pgrestore
+```
+
+Um único erro é esperado (`schema "auth" does not exist`): é a ligação dos perfis ao Auth do Supabase. Numa recuperação real restaura-se para um projeto Supabase, que tem esse schema.
+
+Segunda linha: copiar mensalmente a pasta `loop-backups/db/` do R2 para o OneDrive da empresa.
+
+## 7b. Portas publicadas pelo Docker
+
+O Docker publica portas diretamente no iptables e **ignora o UFW**. O Coolify publica 8000 (painel), 6001–6002 (tempo real do painel) e o proxy publica 8080. O script `/opt/loop-os/docker-firewall.sh` (cópia em `scripts/docker-firewall.sh`) bloqueia o acesso externo às portas listadas em `/etc/loop-os/blocked-ports`, na cadeia `DOCKER-USER`, e é reaplicado no arranque pelo serviço `loop-docker-firewall`.
+
+```bash
+cat /etc/loop-os/blocked-ports          # portas bloqueadas
+echo 8000 >> /etc/loop-os/blocked-ports && systemctl restart loop-docker-firewall   # bloquear mais uma
+```
+
+Só bloquear 8000/6001/6002 depois de o painel do Coolify ter um domínio HTTPS (Settings → Instance Domain), senão perde-se o acesso ao painel. Recuperação se isso acontecer: `ssh -L 8000:127.0.0.1:8000 root@89.58.58.97` e abrir `http://localhost:8000`.
 
 ## 8. Checklist de segurança (estado em 2026-09-29)
 
