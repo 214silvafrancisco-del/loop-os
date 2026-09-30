@@ -137,9 +137,10 @@ export async function listDeals(
     conditions.push(sql`exists (select 1 from checklists c where c.entity_type = 'deal' and c.entity_id = ${deals.id} and c.total_count > 0 and c.done_count = c.total_count)`);
   }
 
+  // Lista por referência ascendente (LH-0001, LH-0002…); vários negócios no mesmo imóvel pela sequência.
   return baseQuery()
     .where(and(...conditions))
-    .orderBy(desc(deals.enteredAt), desc(deals.createdAt))
+    .orderBy(asc(properties.ref), asc(deals.seq))
     .limit(filters.limit ?? 300);
 }
 
