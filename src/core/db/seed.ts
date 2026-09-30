@@ -19,11 +19,10 @@ const db = drizzle(sql, { schema });
 const ORG_NAME = "LOOP Homes";
 
 const DEAL_STAGES = [
-  { name: "Lead Fria", color: "#8A8580", isDefault: true },
-  { name: "Lead Morna", color: "#E0A400" },
-  { name: "Visita", color: "#2E86C1" },
-  { name: "Proposta", color: "#8E44AD" },
-  { name: "Compra", color: "#F97B22", isPurchase: true },
+  { name: "Leads", color: "#2E86C1", isDefault: true },
+  { name: "Visita", color: "#F97B22" },
+  { name: "Proposta", color: "#D64545" },
+  { name: "Compra", color: "#2E9E5B", isPurchase: true },
 ];
 
 const SOURCE_CHANNELS = [

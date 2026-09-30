@@ -26,7 +26,8 @@ export function invoiceStatus(total: number, paid: number, dueDate: string | nul
   return "unpaid";
 }
 
-const paidSub = sql<string>`coalesce((select sum(p.amount) from ${payments} p where p.invoice_id = ${invoices.id}), 0)::text`;
+// SQL literal: interpolar `${invoices.id}` numa subconsulta com alias fazia o Drizzle emitir a coluna sem tabela.
+const paidSub = sql<string>`coalesce((select sum(p.amount) from payments p where p.invoice_id = invoices.id), 0)::text`;
 
 export async function listInvoices(organizationId: string, projectId: string): Promise<InvoiceRow[]> {
   const today = new Date().toISOString().slice(0, 10);
@@ -184,7 +185,7 @@ export async function listUnpaidInvoices(organizationId: string, limit = 10) {
     .from(invoices)
     .innerJoin(projectSuppliers, eq(invoices.projectSupplierId, projectSuppliers.id))
     .innerJoin(projects, eq(invoices.projectId, projects.id))
-    .where(and(eq(invoices.organizationId, organizationId), isNull(invoices.deletedAt), sql`${invoices.total} > coalesce((select sum(p.amount) from ${payments} p where p.invoice_id = ${invoices.id}), 0)`))
+    .where(and(eq(invoices.organizationId, organizationId), isNull(invoices.deletedAt), sql`${invoices.total} > coalesce((select sum(p.amount) from payments p where p.invoice_id = invoices.id), 0)`))
     .orderBy(sql`${invoices.dueDate} asc nulls last`)
     .limit(limit);
   return rows.map((r) => ({

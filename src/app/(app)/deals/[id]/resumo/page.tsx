@@ -23,7 +23,7 @@ export default async function DealResumoPage({ params }: { params: Promise<{ id:
     <DealForm
       action={updateDeal.bind(null, deal.id)}
       deal={deal}
-      stages={stages}
+      stages={stages.filter((s) => s.isActive || s.id === deal.stageId)}
       sources={sources}
       users={users}
       contacts={contacts.map((c) => ({ id: c.id, name: c.name, companyName: c.companyName, phone: c.phone }))}

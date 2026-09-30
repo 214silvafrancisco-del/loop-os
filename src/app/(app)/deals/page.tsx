@@ -68,7 +68,7 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
     <>
       <PageHeader
         title="Negócios"
-        description="Pipeline de aquisição: Lead Fria → Lead Morna → Visita → Proposta → Compra."
+        description="Pipeline de aquisição: Leads → Visita → Proposta → Compra."
         actions={
           <>
             <ViewToggle view={view} query={query} />

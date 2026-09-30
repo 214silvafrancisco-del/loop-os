@@ -41,7 +41,7 @@ export default async function DealLayout({ children, params }: { children: React
 
   return (
     <div className="mx-auto max-w-5xl">
-      <DealHeader deal={deal} row={row} stages={stages} project={project} checklist={checklist} />
+      <DealHeader deal={deal} row={row} stages={stages.filter((s) => s.isActive || s.id === deal.stageId)} project={project} checklist={checklist} />
       <DealTabs dealId={deal.id} counts={{ notas: notesCount, processo: checklist ? checklist.totalCount - checklist.doneCount : undefined }} />
       {children}
     </div>

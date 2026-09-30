@@ -79,6 +79,8 @@ Barra superior: pesquisa global (⌘K: negócios, imóveis, contactos, documento
 - Filtros: fase (multi), status (ativo por defeito / excluído / todos), concelho e freguesia, tipologia, tipo de imóvel, fonte, responsável, tags, intervalo de preço, próxima ação (esta semana / atrasadas / sem ação), com BP / sem BP.
 - Navegação: toggle Lista/Kanban no topo; a seleção fica guardada por utilizador.
 
+> **Fases desde 2026-10-01**: Leads (azul) → Visita (laranja) → Proposta (vermelho) → Compra (verde). "Lead Fria" e "Lead Morna" foram juntas em "Leads"; a fase antiga fica inativa para o histórico continuar legível.
+
 ### 3.4 Negócios — Kanban
 - Objetivo: ver o pipeline e mover negócios entre fases.
 - Informação: 5 colunas (Lead Fria, Lead Morna, Visita, Proposta, Compra) com contagem e soma; cartão mostra Ref, morada curta, tipologia, preço, próxima ação com data (vermelho se atrasada), avatar do responsável, ícone se tem BP.
