@@ -1,8 +1,8 @@
 "use client";
 
-import { FileSearch, Loader2 } from "lucide-react";
+import { Camera, FileSearch, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -63,6 +63,7 @@ export function InvoiceDialog({ open, onClose, projectId, propertyId, suppliers,
   const [measurementId, setMeasurementId] = useState(invoice?.measurementReportId ?? "");
   const [file, setFile] = useState<File | null>(null);
   const [reading, setReading] = useState(false);
+  const cameraInput = useRef<HTMLInputElement>(null);
   const [readNote, setReadNote] = useState<{ ok: string[]; warnings: string[]; pdfNet: number | null } | null>(null);
   const vat = r2(net * vatRate);
   const total = r2(net + vat);
@@ -186,6 +187,27 @@ export function InvoiceDialog({ open, onClose, projectId, propertyId, suppliers,
                   }}
                 />
                 {reading ? <Loader2 className="size-4 animate-spin text-muted-foreground" /> : <FileSearch className="size-4 text-muted-foreground" />}
+              </div>
+              <div className="mt-2">
+                <Button type="button" variant="outline" className="h-11 gap-2" onClick={() => cameraInput.current?.click()}>
+                  <Camera className="size-5" /> Fotografar fatura
+                </Button>
+                {/* Fotografia: fica arquivada como documento da fatura; os campos preenchem-se à mão (sem OCR). */}
+                <input
+                  ref={cameraInput}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0] ?? null;
+                    if (f) {
+                      setFile(f);
+                      setReadNote({ ok: [], warnings: ["Fotografia da fatura guardada. Preenche os campos à mão; a leitura automática só funciona com PDF."], pdfNet: null });
+                    }
+                    e.target.value = "";
+                  }}
+                />
               </div>
               {readNote ? (
                 <div className="mt-1 text-xs">

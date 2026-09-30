@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, Eye, FileText, Image as ImageIcon, MoreHorizontal, Paperclip, Pencil, Trash2, Upload } from "lucide-react";
+import { Camera, Download, Eye, FileText, Image as ImageIcon, MoreHorizontal, Paperclip, Pencil, Trash2, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,9 @@ export function DocumentsPanel({ context, documents, categories, canDelete, show
   const fileInput = useRef<HTMLInputElement>(null);
   const versionInput = useRef<HTMLInputElement>(null);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  /** Categoria forçada quando as fotografias vêm da câmara. */
+  const [forcedCategoryId, setForcedCategoryId] = useState<string | null>(null);
+  const cameraInput = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -67,10 +70,16 @@ export function DocumentsPanel({ context, documents, categories, canDelete, show
     return categories.find((c) => c.defaultEntity === context.entityType)?.id ?? categories[0]?.id ?? "";
   })();
 
-  function pick(files: FileList | File[]) {
+  function pick(files: FileList | File[], categoryId: string | null = null) {
     const list = Array.from(files);
+    setForcedCategoryId(categoryId);
     if (list.length) setPendingFiles(list);
   }
+  /** Fotografias tiradas na obra/visita vão para a categoria de fotografias do contexto. */
+  const photoCategoryId = (() => {
+    const wanted = context.entityType === "project" ? "fotografias de obra" : "fotografias";
+    return categories.find((c) => c.name.trim().toLowerCase() === wanted)?.id ?? categories.find((c) => c.name.toLowerCase().includes("fotograf"))?.id ?? null;
+  })();
 
   async function upload(formData: FormData) {
     const categoryId = String(formData.get("categoryId") ?? "");
@@ -176,7 +185,17 @@ export function DocumentsPanel({ context, documents, categories, canDelete, show
           </button>
         </p>
         <p className="text-xs text-muted-foreground">PDF, JPG, PNG, DOCX, XLSX, ZIP, DWG · até 50 MB · fotografias são comprimidas</p>
+        <div className="mt-1 flex flex-wrap justify-center gap-2">
+          <Button type="button" variant="outline" size="lg" className="h-11 gap-2" onClick={() => cameraInput.current?.click()}>
+            <Camera className="size-5" /> Tirar fotografia
+          </Button>
+          <Button type="button" variant="outline" size="lg" className="h-11 gap-2 md:hidden" onClick={() => fileInput.current?.click()}>
+            <Upload className="size-5" /> Escolher ficheiro
+          </Button>
+        </div>
         <input ref={fileInput} type="file" multiple className="hidden" onChange={(e) => e.target.files && pick(e.target.files)} />
+        {/* capture="environment" abre a câmara traseira no telemóvel; no computador abre o seletor de imagens. */}
+        <input ref={cameraInput} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { if (e.target.files) pick(e.target.files, photoCategoryId); e.target.value = ""; }} />
       </div>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
@@ -279,7 +298,7 @@ export function DocumentsPanel({ context, documents, categories, canDelete, show
                 </FormField>
               ) : null}
               <FormField id="up-cat" label="Categoria">
-                <NativeSelect id="up-cat" name="categoryId" defaultValue={defaultCategoryId}>
+                <NativeSelect id="up-cat" name="categoryId" defaultValue={forcedCategoryId ?? defaultCategoryId}>
                   {GROUP_ORDER.map((g) => (
                     <optgroup key={g} label={GROUP_LABEL[g]}>
                       {categories.filter((c) => c.group === g).map((c) => (

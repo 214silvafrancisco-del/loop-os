@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 
@@ -19,6 +19,17 @@ export const metadata: Metadata = {
     template: "%s · LOOP OS",
   },
   description: "Plataforma de gestão interna da LOOP Homes",
+  manifest: "/manifest.webmanifest",
+  icons: { icon: "/icons/icon-192.png", apple: "/icons/apple-touch-icon.png" },
+  appleWebApp: { capable: true, title: "LOOP OS", statusBarStyle: "default" },
+};
+
+/** Cor da barra do browser/PWA e ecrã completo em telemóveis com entalhe. */
+export const viewport: Viewport = {
+  themeColor: "#F97B22",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

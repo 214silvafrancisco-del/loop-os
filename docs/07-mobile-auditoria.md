@@ -1,4 +1,6 @@
-# LOOP OS — Auditoria mobile e responsividade (v0.1, 2026-10-01) · ANÁLISE PARA APROVAÇÃO
+# LOOP OS — Auditoria mobile e responsividade (v0.2, 2026-10-01)
+
+> Plano aprovado em 2026-10-01. **M1 feita**: PWA (`src/app/manifest.ts`, ícones em `public/icons`, `theme-color`, `apple-touch-icon`, `viewport-fit=cover`; `/manifest.webmanifest` é público) e câmara ("Tirar fotografia" nos Documentos com categoria Fotografias / Fotografias de obra pré-escolhida; "Fotografar fatura" no diálogo da fatura, sem OCR). Segue-se M2.
 
 Análise só de leitura do código e da app a correr num ecrã de 375 × 812 px (iPhone). **Nenhum código foi alterado.** No fim está a abordagem recomendada e o plano por etapas.
 
