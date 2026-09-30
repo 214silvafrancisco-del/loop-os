@@ -8,6 +8,7 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
+import { ensureChecklistSetup } from "@/modules/checklists/setup";
 
 const url = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
 if (!url) throw new Error("DIRECT_URL/DATABASE_URL não definida em .env.local");
@@ -227,6 +228,10 @@ async function main() {
   );
   await db.insert(schema.imtBrackets).values(rows).onConflictDoNothing();
   console.log("✓ escalões IMT 2026:", rows.length);
+
+  // 8. Procedimentos (checklists) e categorias de documento que usam
+  const setup = await ensureChecklistSetup(organizationId);
+  console.log("✓ procedimentos:", setup.createdTemplates.length ? setup.createdTemplates.join(", ") : "já existiam");
 }
 
 main()

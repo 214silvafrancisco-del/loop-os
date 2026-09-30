@@ -438,6 +438,53 @@ Sem tabela de repartição por rubricas (decisão 2026-09-29). A fatura liga-se,
 | created_by, created_at | | |
 | Trigger: soma dos pagamentos não pode exceder `total` | | |
 
+## 8b. Checklists de processo (Step 19, 2026-09-30)
+
+Procedimentos da LOOP Homes como dados, ligados aos dados reais (ver `06-processos-e-checklists.md`). Regras automáticas em código (`src/modules/checklists/rules.ts`), templates em `templates.ts` gravados por `ensureChecklistSetup`.
+
+### checklist_templates
+| Coluna | Tipo | Notas |
+|---|---|---|
+| id, organization_id | | |
+| code | text | `novo_negocio`, `nova_obra` |
+| name | text | |
+| entity_type | enum checklist_entity | deal, project |
+| version | int | versão nova = linha nova; só a mais recente fica ativa |
+| is_active, trigger | | trigger `on_create` |
+
+### checklist_template_items
+| Coluna | Notas |
+|---|---|
+| template_id, code, section, label, help, sort | `code` único por template |
+| kind | enum auto / manual |
+| rule_key | chave da regra (só auto); `doc:<categoria>` verifica documentos |
+| is_required | conta para as portas |
+| applies_when | condição de contexto (falsa → não aplicável) |
+| depends_on_code | item que tem de estar concluído antes (bloqueado, derivado) |
+| default_assignee | owner (negócio) / manager (obra) |
+| gates | text[]: `hard:<porta>` bloqueia, `warn:<porta>` avisa |
+| link_path | onde se resolve, relativo à ficha |
+
+### checklists (instância)
+| Coluna | Notas |
+|---|---|
+| template_id, template_version, entity_type, entity_id | única por entidade |
+| property_id | para o Histórico |
+| done_count, total_count, progress | contadores (excluem não aplicáveis) para listas e Kanban |
+| synced_at | última sincronização |
+
+### checklist_items
+| Coluna | Notas |
+|---|---|
+| checklist_id, template_item_id, code, section, sort, kind, is_required | copiados do template |
+| status | enum pending / done / not_applicable |
+| source | enum auto / manual / context |
+| detail | "12 de 15", "último: 2026-08" |
+| completed_at, completed_by, na_note | quem e quando |
+| assignee_user_id, due_date, priority | prazos/prioridade sem UI no MVP |
+
+Triggers: `set_updated_at`, `checklist_items_audit` (o `audit_trigger()` resolve imóvel e organização pela checklist; contadores e `detail` ignorados). Sincronização: `syncChecklist()` (`sync.ts`) ao abrir a ficha e depois das ações; script `pnpm checklists:sync` para todos.
+
 ## 9. Documentos
 
 ### documents

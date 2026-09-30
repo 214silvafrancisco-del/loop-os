@@ -289,6 +289,10 @@ Assistente sobre os dados da LOOP (Claude API): "que documentos faltam", "preço
 | 16 | Faturas + alocação + pagamentos + controlo orçamento vs real | inserir fatura parcialmente paga e ver desvio |
 | 17 | Importação Notion (dry-run, relatório, importação) + validação | 216 negócios importados sem duplicados |
 | 18 | Deploy: Dockerfile, VPS Hetzner + Coolify, domínio + HTTPS, R2 em produção, cron de backups, revisão de segurança | acesso por URL, 2 utilizadores, backup restaurado com sucesso |
+| 19 | Checklists de processo (docs/06): tabelas, regras automáticas, templates Novo Negócio / Nova Obra, sincronização, backfill | `pnpm test` verde; `pnpm checklists:sync` cria as checklists dos negócios ativos |
+| 20 | Negócio: tab Processo, progresso + próximo passo no cabeçalho, itens manuais / N/A / responsável, Histórico | carregar uma caderneta e ver o item concluir-se sozinho |
+| 21 | Obra: tab Processo; progresso na lista e no Kanban de negócios; filtro | criar obra e ver a checklist nascer |
+| 22 | Portas (gerar proposta, fases, obra em curso/concluída), cartões no dashboard, Definições → Procedimentos (leitura) | gerar proposta sem BP → mensagem com link |
 
 Cada step é uma sessão curta: ficheiros indicados, comandos, teste, resultado esperado.
 

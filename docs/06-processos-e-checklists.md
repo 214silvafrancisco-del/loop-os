@@ -1,4 +1,6 @@
-# LOOP OS — Processos e checklists (v0.1, 2026-09-30) · ANÁLISE PARA VALIDAÇÃO
+# LOOP OS — Processos e checklists (v0.2, 2026-09-30)
+
+> Validado em 2026-09-30. **Step 19 feito**: tabelas (migração 0015), `src/modules/checklists/` (rules, engine, context, sync, queries, actions, templates, setup), 20 testes, `pnpm checklists:sync` (22 checklists de negócio criadas em produção). Steps 20–22 (UI e portas) a seguir.
 
 Objetivo da ronda: transformar os procedimentos da LOOP Homes em checklists operacionais dentro da app, ligadas aos dados reais. Este documento é a análise pedida; **não há código alterado**. No fim está a proposta de implementação por steps e as decisões a validar.
 
