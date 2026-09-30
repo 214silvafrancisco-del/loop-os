@@ -26,9 +26,12 @@ const { data, error } = await supabase.auth.admin.inviteUserByEmail(email, {
   // que só o browser lê: /auth/callback trata disso.
   redirectTo: `${appUrl}/auth/callback?next=/reset-password/update`,
 });
+// process.exitCode em vez de process.exit(): sair à força com pedidos HTTP
+// ainda a fechar dá "Assertion failed … UV_HANDLE_CLOSING" no Node em Windows.
 if (error) {
   console.log("FALHOU:", error.message);
-  process.exit(1);
+  process.exitCode = 1;
+} else {
+  console.log(`✓ convite enviado para ${email} (${role}). id: ${data.user.id}`);
+  console.log(`  link de retorno: ${appUrl}/auth/callback`);
 }
-console.log(`✓ convite enviado para ${email} (${role}). id: ${data.user.id}`);
-console.log(`  link de retorno: ${appUrl}/auth/callback`);
