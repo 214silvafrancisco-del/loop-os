@@ -31,6 +31,7 @@ Pedido: colocar em `Brand/` o logótipo em SVG ou PNG com fundo transparente (ve
 /deals                          lista | kanban  (toggle)
 /deals/new
 /deals/[id]                     → redireciona para /deals/[id]/resumo
+/deals/[id]/processo           checklist do procedimento (Step 20)
 /deals/[id]/resumo
 /deals/[id]/analise             comparáveis
 /deals/[id]/business-plan       cenários lado a lado

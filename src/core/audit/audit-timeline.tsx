@@ -7,6 +7,8 @@ export type AuditLookups = {
   users?: Record<string, string>;
   sources?: Record<string, string>;
   contacts?: Record<string, string>;
+  /** código do item da checklist → label */
+  checklistLabels?: Record<string, string>;
 };
 
 /** Nome com artigo definido, para frases como "atualizou a nota". */
@@ -98,7 +100,38 @@ function fmt(field: string, value: unknown, lookups: AuditLookups): string {
 
 const when = new Intl.DateTimeFormat("pt-PT", { dateStyle: "medium", timeStyle: "short" });
 
-function describe(e: AuditRow, lookups: AuditLookups): { title: string; details: string[] } {
+const CHECKLIST_STATUS: Record<string, string> = { pending: "pendente", done: "concluído", not_applicable: "não aplicável" };
+
+/** Itens da checklist do processo: frases próprias, sem campos técnicos. */
+function describeChecklistItem(e: AuditRow, lookups: AuditLookups): { title: string; details: string[] } | null {
+  const nd = (e.newData ?? {}) as Record<string, unknown>;
+  const od = (e.oldData ?? {}) as Record<string, unknown>;
+  const code = String(nd.code ?? od.code ?? "");
+  const label = lookups.checklistLabels?.[code] ?? code ?? "passo";
+  if (e.action !== "update") return null;
+  const fields = e.changedFields ?? [];
+  const details: string[] = [];
+  if (fields.includes("assignee_user_id")) {
+    const who = nd.assignee_user_id ? (lookups.users?.[String(nd.assignee_user_id)] ?? "?") : "ninguém";
+    if (!fields.includes("status")) return { title: `atribuiu "${label}" a ${who}`, details: [] };
+    details.push(`responsável: ${who}`);
+  }
+  if (!fields.includes("status")) {
+    if (fields.includes("na_note")) return { title: `alterou a nota de "${label}"`, details: [] };
+    return null; // só detalhe/contadores
+  }
+  const status = String(nd.status);
+  const auto = nd.source === "auto";
+  if (status === "done") return { title: `${auto ? "concluiu automaticamente" : "concluiu"} "${label}"`, details };
+  if (status === "not_applicable") {
+    const note = nd.na_note ? [`nota: ${String(nd.na_note)}`] : [];
+    return { title: `${nd.source === "context" ? "deixou de se aplicar" : "marcou como não aplicável"}: "${label}"`, details: [...note, ...details] };
+  }
+  return { title: `${auto ? "voltou a pendente (dados alterados)" : "repôs como pendente"}: "${label}"`, details: [...details, `antes: ${CHECKLIST_STATUS[String(od.status)] ?? od.status}`] };
+}
+
+function describe(e: AuditRow, lookups: AuditLookups): { title: string; details: string[] } | null {
+  if (e.tableName === "checklist_items") return describeChecklistItem(e, lookups);
   const table = TABLE_LABEL[e.tableName] ?? e.tableName;
   const nd = (e.newData ?? {}) as Record<string, unknown>;
   const od = (e.oldData ?? {}) as Record<string, unknown>;
@@ -130,7 +163,9 @@ export function AuditTimeline({ entries, lookups = {} }: { entries: AuditRow[]; 
   return (
     <ol className="relative ml-2 border-l">
       {entries.map((e) => {
-        const { title, details } = describe(e, lookups);
+        const d = describe(e, lookups);
+        if (!d) return null;
+        const { title, details } = d;
         return (
           <li key={e.id} className="mb-5 ml-4">
             <span className="absolute -left-[5px] mt-1.5 size-2.5 rounded-full border-2 border-background bg-muted-foreground/60" />

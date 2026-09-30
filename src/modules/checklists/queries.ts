@@ -177,3 +177,16 @@ export async function getChecklistItemOwner(itemId: string) {
     .where(eq(checklistItems.id, itemId));
   return row ?? null;
 }
+
+/** código → label dos itens de todos os templates (para o Histórico). */
+export async function listChecklistLabels(organizationId: string): Promise<Record<string, string>> {
+  const rows = await db
+    .select({ code: checklistTemplateItems.code, label: checklistTemplateItems.label, version: checklistTemplates.version })
+    .from(checklistTemplateItems)
+    .innerJoin(checklistTemplates, eq(checklistTemplateItems.templateId, checklistTemplates.id))
+    .where(eq(checklistTemplates.organizationId, organizationId))
+    .orderBy(checklistTemplates.version);
+  const out: Record<string, string> = {};
+  for (const r of rows) out[r.code] = r.label; // versão mais recente ganha
+  return out;
+}

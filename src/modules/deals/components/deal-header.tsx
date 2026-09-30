@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Building2, ExternalLink, Phone } from "lucide-react";
+import { ChecklistProgress } from "@/modules/checklists/components/checklist-progress";
+import type { ChecklistView } from "@/modules/checklists/queries";
 import { CreateProjectButton } from "@/modules/projects/components/create-project-button";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDate } from "@/core/lib/format";
@@ -13,10 +15,10 @@ import { DealStatusButton } from "./deal-status-button";
 import { NextActionEditor } from "./next-action-editor";
 import { StageSelect } from "./stage-select";
 
-type Props = { deal: Deal; row: DealListRow; stages: DealStage[]; project: { id: string; name: string } | null };
+type Props = { deal: Deal; row: DealListRow; stages: DealStage[]; project: { id: string; name: string } | null; checklist?: ChecklistView | null };
 
 /** Cabeçalho comum a todas as tabs do negócio. */
-export function DealHeader({ deal, row, stages, project }: Props) {
+export function DealHeader({ deal, row, stages, project, checklist }: Props) {
   const label = `${dealRef(row)} · ${deal.name ?? row.addressLine}`;
   const facts = [
     row.typology,
@@ -80,8 +82,26 @@ export function DealHeader({ deal, row, stages, project }: Props) {
         </div>
       </div>
 
-      <div className="mt-3 max-w-md rounded-lg border bg-card">
-        <NextActionEditor dealId={deal.id} action={deal.nextAction} date={deal.nextActionDate} />
+      <div className="mt-3 grid gap-3 md:grid-cols-2">
+        <div className="rounded-lg border bg-card">
+          <NextActionEditor dealId={deal.id} action={deal.nextAction} date={deal.nextActionDate} />
+        </div>
+        {checklist ? (
+          <ChecklistProgress
+            done={checklist.doneCount}
+            total={checklist.totalCount}
+            processHref={`/deals/${deal.id}/processo`}
+            nextStep={
+              checklist.nextStep
+                ? {
+                    label: checklist.nextStep.label,
+                    isRequired: checklist.nextStep.isRequired,
+                    href: `/deals/${deal.id}/${checklist.nextStep.linkPath ?? "processo"}`,
+                  }
+                : null
+            }
+          />
+        ) : null}
       </div>
     </header>
   );

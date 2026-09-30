@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/core/auth/current-user";
+import { getChecklistView } from "@/modules/checklists/queries";
+import { syncChecklist } from "@/modules/checklists/sync";
 import { DealHeader } from "@/modules/deals/components/deal-header";
 import { DealTabs } from "@/modules/deals/components/deal-tabs";
 import { countDealNotes } from "@/modules/deals/notes-queries";
@@ -31,10 +33,16 @@ export default async function DealLayout({ children, params }: { children: React
   ]);
   if (!deal || !row) notFound();
 
+  // A checklist do processo segue os dados: sincroniza-se a cada abertura da
+  // ficha (idempotente, grava só diferenças). As ações do negócio revalidam
+  // esta rota, por isso qualquer alteração reflete-se aqui.
+  await syncChecklist(orgId, "deal", id, user.id);
+  const checklist = await getChecklistView(orgId, "deal", id);
+
   return (
     <div className="mx-auto max-w-5xl">
-      <DealHeader deal={deal} row={row} stages={stages} project={project} />
-      <DealTabs dealId={deal.id} counts={{ notas: notesCount }} />
+      <DealHeader deal={deal} row={row} stages={stages} project={project} checklist={checklist} />
+      <DealTabs dealId={deal.id} counts={{ notas: notesCount, processo: checklist ? checklist.totalCount - checklist.doneCount : undefined }} />
       {children}
     </div>
   );

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { listAuditForProperty } from "@/core/audit/queries";
 import { AuditTimeline } from "@/core/audit/audit-timeline";
 import { requireUser } from "@/core/auth/current-user";
+import { listChecklistLabels } from "@/modules/checklists/queries";
 import { listContacts } from "@/modules/contacts/queries";
 import { getDeal } from "@/modules/deals/queries";
 import { listDealStages, listSourceChannels, listUsers } from "@/modules/settings/queries";
@@ -14,12 +15,13 @@ export default async function DealHistoricoPage({ params }: { params: Promise<{ 
   const deal = await getDeal(orgId, id);
   if (!deal) notFound();
 
-  const [entries, stages, users, sources, contacts] = await Promise.all([
+  const [entries, stages, users, sources, contacts, checklistLabels] = await Promise.all([
     listAuditForProperty(orgId, deal.propertyId),
     listDealStages(orgId, false),
     listUsers(orgId),
     listSourceChannels(orgId),
     listContacts(orgId, { limit: 1000 }),
+    listChecklistLabels(orgId),
   ]);
 
   const toMap = <T extends { id: string }>(rows: T[], pick: (r: T) => string) =>
@@ -34,6 +36,7 @@ export default async function DealHistoricoPage({ params }: { params: Promise<{ 
           users: toMap(users, (u) => u.fullName),
           sources: toMap(sources, (s) => s.name),
           contacts: toMap(contacts, (c) => c.name),
+          checklistLabels,
         }}
       />
     </div>

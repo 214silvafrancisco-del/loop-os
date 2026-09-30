@@ -5,9 +5,10 @@ import { DocumentsPanel } from "@/modules/documents/components/documents-panel";
 import { listDocumentCategories, listDocumentsForProperty } from "@/modules/documents/queries";
 
 /** Documentos do negócio e do imóvel, sem duplicar: tudo o que pertence ao mesmo imóvel. */
-export default async function DealDocumentosPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function DealDocumentosPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ categoria?: string }> }) {
   const user = await requireUser();
   const { id } = await params;
+  const { categoria } = await searchParams;
   const deal = await getDeal(user.organizationId, id);
   if (!deal) notFound();
 
@@ -23,6 +24,7 @@ export default async function DealDocumentosPage({ params }: { params: Promise<{
       categories={categories}
       canDelete={user.role !== "user"}
       showOrigin
+      defaultCategoryName={categoria}
     />
   );
 }

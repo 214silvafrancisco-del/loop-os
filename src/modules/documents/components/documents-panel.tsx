@@ -24,6 +24,8 @@ type Props = {
   canDelete: boolean;
   /** Mostra a origem (imóvel / negócio / obra) ao lado de cada documento. */
   showOrigin?: boolean;
+  /** Categoria pré-escolhida (ex.: link "Carregar caderneta" da checklist). */
+  defaultCategoryName?: string;
 };
 
 const GROUP_LABEL: Record<string, string> = { imovel: "Imóvel", juridico: "Jurídico", financeiro: "Financeiro", tecnico: "Técnico", comercial: "Comercial" };
@@ -38,7 +40,7 @@ function sizeLabel(bytes: number | null) {
 const canPreview = (mime: string | null) => !!mime && (mime === "application/pdf" || mime.startsWith("image/"));
 const LAST_CATEGORY_KEY = "docs.lastCategory";
 
-export function DocumentsPanel({ context, documents, categories, canDelete, showOrigin }: Props) {
+export function DocumentsPanel({ context, documents, categories, canDelete, showOrigin, defaultCategoryName }: Props) {
   const router = useRouter();
   const fileInput = useRef<HTMLInputElement>(null);
   const versionInput = useRef<HTMLInputElement>(null);
@@ -53,6 +55,11 @@ export function DocumentsPanel({ context, documents, categories, canDelete, show
   const [, startTransition] = useTransition();
 
   const defaultCategoryId = (() => {
+    if (defaultCategoryName) {
+      const wanted = defaultCategoryName.trim().toLowerCase();
+      const byName = categories.find((c) => c.name.toLowerCase() === wanted);
+      if (byName) return byName.id;
+    }
     try {
       const last = localStorage.getItem(LAST_CATEGORY_KEY);
       if (last && categories.some((c) => c.id === last)) return last;
