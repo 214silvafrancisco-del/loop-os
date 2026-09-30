@@ -81,7 +81,7 @@ export function ChecklistPanel({ view, users, basePath }: Props) {
         ) : null}
         <p className="mt-3 text-xs text-muted-foreground">
           <Zap className="mr-1 inline size-3" />
-          Os passos automáticos concluem-se sozinhos a partir dos dados do negócio; só os manuais se marcam à mão. Qualquer passo pode ficar «não aplicável».
+          Os passos automáticos concluem-se sozinhos a partir dos dados registados; só os manuais se marcam à mão. Qualquer passo pode ficar «não aplicável».
         </p>
         {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
       </div>

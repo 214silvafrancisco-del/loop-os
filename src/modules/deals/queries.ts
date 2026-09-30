@@ -35,6 +35,11 @@ export type DealListRow = {
   ownerName: string | null;
   contactName: string | null;
   contactPhone: string | null;
+  /** Checklist do processo (null enquanto a ficha nunca foi aberta). */
+  checklistDone: number | null;
+  checklistTotal: number | null;
+  /** Itens obrigatórios ainda pendentes. */
+  requiredMissing: number;
 };
 
 export type DealListFilters = {
@@ -45,8 +50,15 @@ export type DealListFilters = {
   typology?: string;
   sourceChannelId?: string;
   ownerUserId?: string;
+  /** "required_missing": com obrigatórios em falta; "complete": processo a 100 %. */
+  process?: "required_missing" | "complete";
   limit?: number;
 };
+
+/** Subconsultas correlacionadas: evitam juntar `checklists` em todas as listas. */
+const requiredMissingSql = sql<number>`(select count(*)::int from checklist_items ci join checklists c on c.id = ci.checklist_id where c.entity_type = 'deal' and c.entity_id = ${deals.id} and ci.is_required and ci.status = 'pending')`;
+const checklistDoneSql = sql<number | null>`(select c.done_count from checklists c where c.entity_type = 'deal' and c.entity_id = ${deals.id})`;
+const checklistTotalSql = sql<number | null>`(select c.total_count from checklists c where c.entity_type = 'deal' and c.entity_id = ${deals.id})`;
 
 const listSelection = {
   id: deals.id,
@@ -75,6 +87,9 @@ const listSelection = {
   ownerName: profiles.fullName,
   contactName: contacts.name,
   contactPhone: contacts.phone,
+  checklistDone: checklistDoneSql,
+  checklistTotal: checklistTotalSql,
+  requiredMissing: requiredMissingSql,
 };
 
 function baseQuery() {
@@ -117,6 +132,10 @@ export async function listDeals(
   if (filters.typology) conditions.push(eq(properties.typology, filters.typology));
   if (filters.sourceChannelId) conditions.push(eq(deals.sourceChannelId, filters.sourceChannelId));
   if (filters.ownerUserId) conditions.push(eq(deals.ownerUserId, filters.ownerUserId));
+  if (filters.process === "required_missing") conditions.push(sql`${requiredMissingSql} > 0`);
+  if (filters.process === "complete") {
+    conditions.push(sql`exists (select 1 from checklists c where c.entity_type = 'deal' and c.entity_id = ${deals.id} and c.total_count > 0 and c.done_count = c.total_count)`);
+  }
 
   return baseQuery()
     .where(and(...conditions))

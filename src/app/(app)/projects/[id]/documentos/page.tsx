@@ -5,9 +5,10 @@ import { listDocumentCategories, listDocumentsForProperty } from "@/modules/docu
 import { getProject } from "@/modules/projects/queries";
 
 /** Documentos da obra e do imóvel (projetos, licenças, fotografias de obra). */
-export default async function ProjectDocumentosPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ProjectDocumentosPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ categoria?: string }> }) {
   const user = await requireUser();
   const { id } = await params;
+  const { categoria } = await searchParams;
   const project = await getProject(user.organizationId, id);
   if (!project) notFound();
   const [documents, categories] = await Promise.all([
@@ -21,6 +22,7 @@ export default async function ProjectDocumentosPage({ params }: { params: Promis
       categories={categories}
       canDelete={user.role !== "user"}
       showOrigin
+      defaultCategoryName={categoria}
     />
   );
 }

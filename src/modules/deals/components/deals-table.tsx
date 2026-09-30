@@ -8,6 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrency, formatDate, formatPercent } from "@/core/lib/format";
+import { ChecklistMini } from "@/modules/checklists/components/checklist-mini";
 import { PropertyRef } from "@/modules/properties/components/property-badges";
 import type { DealListRow } from "../queries";
 import { dealRef } from "../utils";
@@ -34,6 +35,7 @@ export function DealsTable({ deals }: { deals: DealListRow[] }) {
             <TableHead className="hidden md:table-cell">Tipologia</TableHead>
             <TableHead className="text-right">Preço pedido</TableHead>
             <TableHead>Fase</TableHead>
+            <TableHead className="hidden md:table-cell">Processo</TableHead>
             <TableHead className="hidden lg:table-cell">Próxima ação</TableHead>
             <TableHead className="hidden xl:table-cell">Fonte</TableHead>
             <TableHead className="hidden xl:table-cell text-right">ROE</TableHead>
@@ -66,6 +68,9 @@ export function DealsTable({ deals }: { deals: DealListRow[] }) {
               <TableCell className="text-right tabular-nums">{formatCurrency(d.askingPrice)}</TableCell>
               <TableCell>
                 <StageBadge name={d.stageName} color={d.stageColor} />
+              </TableCell>
+              <TableCell className="hidden md:table-cell">
+                <ChecklistMini done={d.checklistDone} total={d.checklistTotal} requiredMissing={d.requiredMissing} href={`/deals/${d.id}/processo`} />
               </TableCell>
               <TableCell className="hidden lg:table-cell max-w-56">
                 <NextActionEditor dealId={d.id} action={d.nextAction} date={d.nextActionDate} compact />

@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency, formatDate } from "@/core/lib/format";
+import { ChecklistMini } from "@/modules/checklists/components/checklist-mini";
+import type { ChecklistProgress } from "@/modules/checklists/queries";
 import { PropertyRef } from "@/modules/properties/components/property-badges";
 import type { ProjectRow } from "../queries";
 import { ProjectStatusBadge } from "./project-badges";
 
-export function ProjectsTable({ projects }: { projects: ProjectRow[] }) {
+export function ProjectsTable({ projects, progress }: { projects: ProjectRow[]; progress?: Map<string, ChecklistProgress> }) {
   if (projects.length === 0) {
     return (
       <div className="rounded-lg border border-dashed py-12 text-center text-sm text-muted-foreground">
@@ -21,6 +23,7 @@ export function ProjectsTable({ projects }: { projects: ProjectRow[] }) {
             <TableHead className="w-24">Ref</TableHead>
             <TableHead>Obra</TableHead>
             <TableHead>Estado</TableHead>
+            <TableHead className="hidden md:table-cell">Processo</TableHead>
             <TableHead className="hidden md:table-cell">Início</TableHead>
             <TableHead className="hidden md:table-cell">Conclusão</TableHead>
             <TableHead className="hidden lg:table-cell text-right">Compra</TableHead>
@@ -38,6 +41,9 @@ export function ProjectsTable({ projects }: { projects: ProjectRow[] }) {
                 </div>
               </TableCell>
               <TableCell><ProjectStatusBadge status={p.status} /></TableCell>
+              <TableCell className="hidden md:table-cell">
+                <ChecklistMini done={progress?.get(p.id)?.done ?? null} total={progress?.get(p.id)?.total ?? null} href={`/projects/${p.id}/processo`} />
+              </TableCell>
               <TableCell className="hidden md:table-cell text-muted-foreground">
                 {p.actualStart ? formatDate(p.actualStart) : p.plannedStart ? <span title="previsto">{formatDate(p.plannedStart)} <span className="text-xs">prev.</span></span> : "—"}
               </TableCell>

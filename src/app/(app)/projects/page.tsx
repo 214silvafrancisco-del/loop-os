@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { requireUser } from "@/core/auth/current-user";
+import { getChecklistProgressMap } from "@/modules/checklists/queries";
 import { NativeSelect } from "@/core/ui/form-field";
 import { PageHeader } from "@/core/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
     listProjects(user.organizationId, { q: sp.q, status, managerUserId: sp.manager || undefined }),
     listUsers(user.organizationId),
   ]);
+  const progress = await getChecklistProgressMap(user.organizationId, "project", projects.map((p) => p.id));
   const hasFilters = Boolean(sp.q || status || sp.manager);
 
   return (
@@ -55,7 +57,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
       </form>
 
       <p className="mb-2 text-xs text-muted-foreground">{projects.length} {projects.length === 1 ? "obra" : "obras"}</p>
-      <ProjectsTable projects={projects} />
+      <ProjectsTable projects={projects} progress={progress} />
     </>
   );
 }

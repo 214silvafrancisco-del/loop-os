@@ -43,6 +43,7 @@ Pedido: colocar em `Brand/` o logótipo em SVG ou PNG com fundo transparente (ve
 /properties/[id]                resumo | documentos | negócios & obras
 /projects
 /projects/[id]/resumo
+/projects/[id]/processo        checklist do procedimento (Step 21)
 /projects/[id]/orcamento
 /projects/[id]/autos
 /projects/[id]/faturas          faturas + pagamentos

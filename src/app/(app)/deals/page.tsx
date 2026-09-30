@@ -24,6 +24,7 @@ type Search = {
   typology?: string;
   source?: string;
   owner?: string;
+  process?: string;
   view?: string;
 };
 
@@ -48,6 +49,7 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
       typology: sp.typology || undefined,
       sourceChannelId: sp.source || undefined,
       ownerUserId: sp.owner || undefined,
+      process: sp.process === "required_missing" || sp.process === "complete" ? sp.process : undefined,
     }),
     listDealStages(user.organizationId),
     listSourceChannels(user.organizationId),
@@ -140,6 +142,11 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
           {users.map((u) => (
             <option key={u.id} value={u.id}>{u.fullName}</option>
           ))}
+        </NativeSelect>
+        <NativeSelect name="process" defaultValue={sp.process ?? ""} className="w-auto">
+          <option value="">Processo</option>
+          <option value="required_missing">Com obrigatórios em falta</option>
+          <option value="complete">Processo completo</option>
         </NativeSelect>
         <Button type="submit" variant="secondary">Filtrar</Button>
         {hasFilters ? (

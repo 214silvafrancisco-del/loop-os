@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { Building2, Handshake } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ChecklistProgress } from "@/modules/checklists/components/checklist-progress";
+import type { ChecklistView } from "@/modules/checklists/queries";
 import { formatCurrency, formatDate } from "@/core/lib/format";
 import { PropertyRef } from "@/modules/properties/components/property-badges";
 import type { ProjectRow } from "../queries";
 import { ProjectStatusSelect } from "./project-badges";
 
-export function ProjectHeader({ row }: { row: ProjectRow }) {
+export function ProjectHeader({ row, checklist }: { row: ProjectRow; checklist?: ChecklistView | null }) {
   const facts = [
     row.typology,
     row.parish ?? row.municipality,
@@ -43,6 +45,19 @@ export function ProjectHeader({ row }: { row: ProjectRow }) {
           </Button>
         </div>
       </div>
+      {checklist ? (
+        <ChecklistProgress
+          className="mt-3 md:max-w-md"
+          done={checklist.doneCount}
+          total={checklist.totalCount}
+          processHref={`/projects/${row.id}/processo`}
+          nextStep={
+            checklist.nextStep
+              ? { label: checklist.nextStep.label, isRequired: checklist.nextStep.isRequired, href: `/projects/${row.id}/${checklist.nextStep.linkPath ?? "processo"}` }
+              : null
+          }
+        />
+      ) : null}
     </header>
   );
 }

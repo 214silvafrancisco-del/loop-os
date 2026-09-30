@@ -5,6 +5,7 @@ import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/core/lib/format";
+import { ChecklistMini } from "@/modules/checklists/components/checklist-mini";
 import type { DealListRow } from "../queries";
 import { dealRef, floorLabel } from "../utils";
 import { NextActionEditor } from "./next-action-editor";
@@ -50,6 +51,9 @@ export function KanbanCardBody({ deal, dragging }: { deal: DealListRow; dragging
         <span className="font-medium tabular-nums">{formatCurrency(deal.askingPrice)}</span>
         {deal.sourceName ? <span className="text-muted-foreground">{deal.sourceName}</span> : null}
       </div>
+      {deal.checklistTotal ? (
+        <ChecklistMini done={deal.checklistDone} total={deal.checklistTotal} requiredMissing={deal.requiredMissing} />
+      ) : null}
       <NextActionEditor dealId={deal.id} action={deal.nextAction} date={deal.nextActionDate} compact />
     </div>
   );
