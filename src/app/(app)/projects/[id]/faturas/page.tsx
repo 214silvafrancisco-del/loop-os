@@ -6,7 +6,7 @@ import { formatMoney } from "@/core/lib/format";
 import { InvoicesPanel } from "@/modules/projects/components/invoices-panel";
 import { getProjectFinancials, listInvoices, listPayments } from "@/modules/projects/invoices/queries";
 import { monthLabel } from "@/modules/projects/measurements/calc";
-import { listMeasurements } from "@/modules/projects/measurements/queries";
+import { getAdvancePctBySupplier, listMeasurements } from "@/modules/projects/measurements/queries";
 import { getProject } from "@/modules/projects/queries";
 import { listProjectSuppliers } from "@/modules/projects/suppliers/queries";
 import { documentCategories } from "@/modules/settings/schema";
@@ -18,11 +18,12 @@ export default async function ProjectFaturasPage({ params }: { params: Promise<{
   const project = await getProject(orgId, id);
   if (!project) notFound();
 
-  const [invoices, fin, suppliers, measurements, [category]] = await Promise.all([
+  const [invoices, fin, suppliers, measurements, advancePct, [category]] = await Promise.all([
     listInvoices(orgId, id),
     getProjectFinancials(orgId, id),
     listProjectSuppliers(orgId, id),
     listMeasurements(orgId, id),
+    getAdvancePctBySupplier(id),
     db
       .select({ id: documentCategories.id })
       .from(documentCategories)
@@ -41,7 +42,15 @@ export default async function ProjectFaturasPage({ params }: { params: Promise<{
       suppliers={suppliers.map((s) => ({ id: s.id, name: s.name, controlMode: s.controlMode }))}
       measurements={measurements
         .filter((m) => m.status === "closed")
-        .map((m) => ({ id: m.id, number: m.number, label: `Auto n.º ${m.number} · ${monthLabel(m.periodMonth)} · ${formatMoney(m.totalPeriod)}`, total: Number(m.totalPeriod), supplierId: m.projectSupplierId }))}
+        .map((m) => ({
+          id: m.id,
+          number: m.number,
+          label: m.kind === "adiantamento" ? `Auto de adiantamento n.º ${m.number} · ${formatMoney(m.totalPeriod)}` : `Auto de trabalho n.º ${m.number} · ${monthLabel(m.periodMonth)} · ${formatMoney(m.totalPeriod)}`,
+          total: Number(m.totalPeriod),
+          supplierId: m.projectSupplierId,
+          kind: m.kind,
+          advancePct: advancePct.get(m.projectSupplierId) ?? 0,
+        }))}
       invoiceCategoryId={category?.id ?? null}
       canDelete={user.role !== "user"}
     />

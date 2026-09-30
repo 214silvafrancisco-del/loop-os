@@ -103,7 +103,10 @@ export function InvoicesPanel({ projectId, propertyId, invoices, paymentsByInvoi
                   <TableRow key={inv.id}>
                     <TableCell className="font-mono text-xs">{inv.number}</TableCell>
                     <TableCell>
-                      <div className="font-medium">{inv.supplierName}</div>
+                      <div className="flex flex-wrap items-center gap-1.5 font-medium">
+                        {inv.supplierName}
+                        {inv.measurementKind === "adiantamento" ? <span className="rounded bg-warning/20 px-1.5 text-[10px] font-semibold uppercase tracking-wide">Fatura de adiantamento</span> : null}
+                      </div>
                       {inv.description ? <div className="text-xs text-muted-foreground">{inv.description}</div> : null}
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-muted-foreground">{formatDate(inv.issueDate)}</TableCell>
@@ -112,7 +115,9 @@ export function InvoicesPanel({ projectId, propertyId, invoices, paymentsByInvoi
                     <TableCell className="hidden lg:table-cell text-right tabular-nums">{formatMoney(inv.total)}</TableCell>
                     <TableCell className="text-right tabular-nums">{unpaid > 0.005 ? formatMoney(unpaid) : <span className="text-muted-foreground">—</span>}</TableCell>
                     <TableCell><span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", st.cls)}>{st.label}</span></TableCell>
-                    <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">{inv.measurementNumber ? `n.º ${inv.measurementNumber}` : "—"}</TableCell>
+                    <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">
+                      {inv.measurementNumber === null ? "—" : inv.measurementKind === "adiantamento" ? `Adiantamento n.º ${inv.measurementNumber}` : `Trabalho n.º ${inv.measurementNumber}`}
+                    </TableCell>
                     <TableCell>
                       <span className="flex justify-end gap-0.5">
                         {inv.versionId ? (

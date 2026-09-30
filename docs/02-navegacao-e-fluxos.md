@@ -186,6 +186,11 @@ Barra superior: pesquisa global (⌘K: negócios, imóveis, contactos, documento
 2. Cada capítulo do orçamento pertence a um fornecedor; a importação do Excel pergunta para qual. O orçamento mostra uma secção por fornecedor.
 3. Autos: um por mês por fornecedor "por autos". Faturas: escolhem o fornecedor da obra; se for por autos, ligam-se ao auto dele.
 
+### F5c. Auto de adiantamento (Step 24)
+1. Obra → Autos → "Novo auto" → "Auto de adiantamento": n.º, data, valor, % (sugerida = valor ÷ adjudicado), documento, observações. Fica identificado como ADIANTAMENTO.
+2. Faturas → nova fatura ligada ao auto de adiantamento → "Fatura de adiantamento", líquido = valor.
+3. Autos de trabalho seguintes: a fatura ligada ao auto tem líquido = auto × (1 − %). Sem adiantamento, líquido = auto.
+
 ### F6. Auto de medição mensal
 1. Obra → Autos → "Novo auto" (mês corrente).
 2. Percorrer a árvore e escrever a % acumulada por artigo; total do período e acumulado atualizam.

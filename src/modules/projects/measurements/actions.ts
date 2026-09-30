@@ -1,12 +1,12 @@
 "use server";
 
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/core/auth/current-user";
 import { db } from "@/core/db/client";
-import { measurementLines, measurementReports, projectSuppliers, projects } from "../schema";
+import { invoices, measurementLines, measurementReports, projectSuppliers, projects } from "../schema";
 import { calcMeasurement, firstOfMonth, nextMonth, type LeafForMeasurement } from "./calc";
 import { getLastClosedMeasurement, getMeasurement, getMeasurementProgress, listBudgetLeaves } from "./queries";
 
@@ -47,7 +47,7 @@ export async function createMeasurement(projectId: string, projectSupplierId: st
   const [lastOfSupplier] = await db
     .select({ number: measurementReports.number, periodMonth: measurementReports.periodMonth, status: measurementReports.status })
     .from(measurementReports)
-    .where(and(eq(measurementReports.projectId, projectId), eq(measurementReports.projectSupplierId, projectSupplierId)))
+    .where(and(eq(measurementReports.projectId, projectId), eq(measurementReports.projectSupplierId, projectSupplierId), eq(measurementReports.kind, "trabalho")))
     .orderBy(desc(measurementReports.number))
     .limit(1);
   if (lastOfSupplier && lastOfSupplier.status === "draft") return { ok: false, error: `O auto n.º ${lastOfSupplier.number} de ${supplier.name} ainda está em rascunho. Fecha-o primeiro.` };
@@ -159,6 +159,95 @@ export async function deleteDraftMeasurement(reportId: string): Promise<Result> 
   const report = await getMeasurement(user.organizationId, reportId);
   if (!report) return { ok: false, error: "Auto não encontrado." };
   if (report.status === "closed") return { ok: false, error: "Autos fechados não se apagam." };
+  await db.delete(measurementReports).where(eq(measurementReports.id, reportId));
+  revalidatePath(`/projects/${report.projectId}`, "layout");
+  redirect(`/projects/${report.projectId}/autos`);
+}
+
+const advanceSchema = z.object({
+  projectSupplierId: z.uuid("Escolhe o fornecedor."),
+  number: z.number().int().min(0).nullable(),
+  reportDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida."),
+  amount: z.number().positive("Indica o valor do adiantamento."),
+  /** Percentagem 0–100 como o utilizador escreve. */
+  advancePct: z.number().min(0).max(100),
+  notes: z.string().trim().max(2000).nullable(),
+});
+export type AdvanceInput = z.input<typeof advanceSchema>;
+
+/**
+ * Auto de adiantamento: corresponde à fatura de adiantamento, não a trabalho
+ * executado. Nasce em rascunho (para se poder anexar o documento) e fecha-se
+ * com `finalizeAdvanceMeasurement`. Guarda a % que os autos de trabalho
+ * seguintes descontam na fatura.
+ */
+export async function createAdvanceMeasurement(projectId: string, raw: unknown): Promise<Result<{ id: string }>> {
+  const user = await requireUser();
+  const parsed = advanceSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  const project = await ownProject(user.organizationId, projectId);
+  if (!project) return { ok: false, error: "Obra não encontrada." };
+  const d = parsed.data;
+  const [supplier] = await db
+    .select({ id: projectSuppliers.id })
+    .from(projectSuppliers)
+    .where(and(eq(projectSuppliers.id, d.projectSupplierId), eq(projectSuppliers.projectId, projectId)));
+  if (!supplier) return { ok: false, error: "Fornecedor não encontrado nesta obra." };
+
+  let number = d.number;
+  if (number === null) {
+    const [last] = await db.select({ number: measurementReports.number }).from(measurementReports).where(eq(measurementReports.projectId, projectId)).orderBy(desc(measurementReports.number)).limit(1);
+    number = (last?.number ?? -1) + 1;
+  } else {
+    const [dup] = await db.select({ id: measurementReports.id }).from(measurementReports).where(and(eq(measurementReports.projectId, projectId), eq(measurementReports.number, number)));
+    if (dup) return { ok: false, error: `Já existe um auto n.º ${number} nesta obra.` };
+  }
+
+  const [created] = await db
+    .insert(measurementReports)
+    .values({
+      organizationId: user.organizationId,
+      projectId,
+      projectSupplierId: d.projectSupplierId,
+      number,
+      kind: "adiantamento",
+      advancePct: (d.advancePct / 100).toFixed(4),
+      periodMonth: firstOfMonth(d.reportDate),
+      reportDate: d.reportDate,
+      status: "draft",
+      notes: d.notes,
+      totalPeriod: d.amount.toFixed(2),
+      totalCumulative: "0",
+      createdBy: user.id,
+      updatedBy: user.id,
+    })
+    .returning({ id: measurementReports.id });
+  return { ok: true, id: created!.id };
+}
+
+/** Fecha o auto de adiantamento, com o documento (opcional) anexado. */
+export async function finalizeAdvanceMeasurement(reportId: string, documentId: string | null): Promise<Result> {
+  const user = await requireUser();
+  const report = await getMeasurement(user.organizationId, reportId);
+  if (!report || report.kind !== "adiantamento") return { ok: false, error: "Auto de adiantamento não encontrado." };
+  if (report.status === "closed") return { ok: true };
+  await db
+    .update(measurementReports)
+    .set({ documentId: documentId ?? report.documentId, status: "closed", closedAt: new Date(), updatedBy: user.id })
+    .where(eq(measurementReports.id, reportId));
+  revalidatePath(`/projects/${report.projectId}`, "layout");
+  revalidatePath("/projects");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+/** Apaga um auto de adiantamento sem faturas ligadas. */
+export async function deleteAdvanceMeasurement(reportId: string): Promise<Result> {
+  const user = await requireUser();
+  const report = await getMeasurement(user.organizationId, reportId);
+  if (!report || report.kind !== "adiantamento") return { ok: false, error: "Auto de adiantamento não encontrado." };
+  const [inv] = await db.select({ id: invoices.id }).from(invoices).where(and(eq(invoices.measurementReportId, reportId), isNull(invoices.deletedAt))).limit(1);
+  if (inv) return { ok: false, error: "Este adiantamento já tem fatura ligada. Elimina primeiro a fatura." };
   await db.delete(measurementReports).where(eq(measurementReports.id, reportId));
   revalidatePath(`/projects/${report.projectId}`, "layout");
   redirect(`/projects/${report.projectId}/autos`);

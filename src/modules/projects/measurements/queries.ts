@@ -3,19 +3,45 @@ import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/core/db/client";
 import { profiles } from "@/core/db/schema/core";
 import { budgetLines, measurementLines, measurementReports, projectSuppliers, type MeasurementReport } from "../schema";
+import { advancePctFrom } from "./advance";
 
-export type MeasurementRow = MeasurementReport & { authorName: string | null; supplierName: string };
+export type MeasurementRow = MeasurementReport & {
+  authorName: string | null;
+  supplierName: string;
+  /** Líquido das faturas ligadas a este auto (null se ainda não há fatura). */
+  invoicedNet: number | null;
+  invoiceCount: number;
+};
 
-/** Autos da obra, com o fornecedor de cada um. */
+/** Autos da obra (trabalho e adiantamento), com o fornecedor e a fatura ligada. */
 export async function listMeasurements(organizationId: string, projectId: string): Promise<MeasurementRow[]> {
   const rows = await db
-    .select({ report: measurementReports, authorName: profiles.fullName, supplierName: projectSuppliers.name })
+    .select({
+      report: measurementReports,
+      authorName: profiles.fullName,
+      supplierName: projectSuppliers.name,
+      invoicedNet: sql<string | null>`(select sum(i.net_amount)::text from invoices i where i.measurement_report_id = measurement_reports.id and i.deleted_at is null)`,
+      invoiceCount: sql<number>`(select count(*)::int from invoices i where i.measurement_report_id = measurement_reports.id and i.deleted_at is null)`,
+    })
     .from(measurementReports)
     .innerJoin(projectSuppliers, eq(measurementReports.projectSupplierId, projectSuppliers.id))
     .leftJoin(profiles, eq(measurementReports.createdBy, profiles.id))
     .where(and(eq(measurementReports.organizationId, organizationId), eq(measurementReports.projectId, projectId)))
     .orderBy(desc(measurementReports.number));
-  return rows.map((r) => ({ ...r.report, authorName: r.authorName, supplierName: r.supplierName }));
+  return rows.map((r) => ({ ...r.report, authorName: r.authorName, supplierName: r.supplierName, invoicedNet: r.invoicedNet === null ? null : Number(r.invoicedNet), invoiceCount: r.invoiceCount }));
+}
+
+/** % de adiantamento em vigor por fornecedor (último auto de adiantamento fechado; 0 se não houver). */
+export async function getAdvancePctBySupplier(projectId: string): Promise<Map<string, number>> {
+  const rows = await db
+    .select({ supplierId: measurementReports.projectSupplierId, kind: measurementReports.kind, status: measurementReports.status, number: measurementReports.number, advancePct: measurementReports.advancePct })
+    .from(measurementReports)
+    .where(eq(measurementReports.projectId, projectId));
+  const map = new Map<string, number>();
+  for (const supplierId of new Set(rows.map((r) => r.supplierId))) {
+    map.set(supplierId, advancePctFrom(rows.filter((r) => r.supplierId === supplierId).map((r) => ({ ...r, advancePct: r.advancePct === null ? null : Number(r.advancePct) }))));
+  }
+  return map;
 }
 
 export async function getMeasurement(organizationId: string, reportId: string): Promise<MeasurementReport | null> {
@@ -31,9 +57,9 @@ export async function getMeasurementLines(reportId: string) {
   return db.select().from(measurementLines).where(eq(measurementLines.reportId, reportId));
 }
 
-/** Último auto fechado de um fornecedor da obra (antes de `beforeNumber`, se dado). */
+/** Último auto de trabalho fechado de um fornecedor da obra (antes de `beforeNumber`, se dado). */
 export async function getLastClosedMeasurement(projectId: string, projectSupplierId: string, beforeNumber?: number): Promise<MeasurementReport | null> {
-  const conditions = [eq(measurementReports.projectId, projectId), eq(measurementReports.projectSupplierId, projectSupplierId), eq(measurementReports.status, "closed")];
+  const conditions = [eq(measurementReports.projectId, projectId), eq(measurementReports.projectSupplierId, projectSupplierId), eq(measurementReports.status, "closed"), eq(measurementReports.kind, "trabalho")];
   if (beforeNumber !== undefined) conditions.push(sql`${measurementReports.number} < ${beforeNumber}`);
   const [row] = await db
     .select()
@@ -81,12 +107,12 @@ export async function listBudgetLeaves(projectId: string, projectSupplierId: str
 
 export type SupplierExecution = { executed: number; lastNumber: number | null; lastMonth: string | null; draftCount: number };
 
-/** Executado por fornecedor = acumulado do último auto fechado de cada um. */
+/** Executado por fornecedor = acumulado do último auto de trabalho fechado de cada um (adiantamentos não contam). */
 export async function getExecutionBySupplier(projectId: string): Promise<Map<string, SupplierExecution>> {
   const rows = await db
     .select({ supplierId: measurementReports.projectSupplierId, number: measurementReports.number, month: measurementReports.periodMonth, total: measurementReports.totalCumulative, status: measurementReports.status })
     .from(measurementReports)
-    .where(eq(measurementReports.projectId, projectId))
+    .where(and(eq(measurementReports.projectId, projectId), eq(measurementReports.kind, "trabalho")))
     .orderBy(desc(measurementReports.number));
   const map = new Map<string, SupplierExecution>();
   for (const r of rows) {

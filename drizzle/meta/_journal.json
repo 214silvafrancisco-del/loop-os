@@ -127,6 +127,13 @@
       "when": 1790804074027,
       "tag": "0017_suppliers_drop_old",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790806754697,
+      "tag": "0018_advance_measurements",
+      "breakpoints": true
     }
   ]
 }

@@ -10,9 +10,22 @@ import { formatMoney } from "@/core/lib/format";
 import { FormField, NativeSelect } from "@/core/ui/form-field";
 import { attachInvoiceDocument, createInvoice, updateInvoice, type InvoiceInput } from "../invoices/actions";
 import type { InvoiceRow } from "../invoices/queries";
+import { workInvoiceNet } from "../measurements/advance";
 
 export type SupplierOption = { id: string; name: string; controlMode: "autos" | "fatura" };
-export type MeasurementOption = { id: string; number: number; label: string; total: number; supplierId: string };
+export type MeasurementOption = {
+  id: string;
+  number: number;
+  label: string;
+  /** Valor do auto: trabalho executado ou valor do adiantamento. */
+  total: number;
+  supplierId: string;
+  kind: "trabalho" | "adiantamento";
+  /** % de adiantamento em vigor para o fornecedor (fração), aplicada aos autos de trabalho. */
+  advancePct: number;
+};
+
+const pctLabel = (p: number) => `${Math.round(p * 10000) / 100} %`;
 
 type Props = {
   open: boolean;
@@ -42,6 +55,13 @@ export function InvoiceDialog({ open, onClose, projectId, propertyId, suppliers,
   const supplier = suppliers.find((s) => s.id === supplierId);
   const supplierMeasurements = measurements.filter((m) => m.supplierId === supplierId);
   const measurement = supplierMeasurements.find((m) => m.id === measurementId);
+  // Ligada a um auto, o líquido é calculado: adiantamento = valor; trabalho = valor × (1 − % adiantamento).
+  const computedNet = measurement ? (measurement.kind === "adiantamento" ? measurement.total : workInvoiceNet(measurement.total, measurement.advancePct)) : null;
+  function pickMeasurement(id: string) {
+    setMeasurementId(id);
+    const m = supplierMeasurements.find((x) => x.id === id);
+    if (m) setNet(m.kind === "adiantamento" ? m.total : workInvoiceNet(m.total, m.advancePct));
+  }
 
   // O estado inicial vem das props; o pai remonta o diálogo (key) a cada abertura.
 
@@ -123,8 +143,20 @@ export function InvoiceDialog({ open, onClose, projectId, propertyId, suppliers,
             <FormField id="inv-due" label="Vencimento">
               <Input id="inv-due" name="dueDate" type="date" defaultValue={invoice?.dueDate ?? ""} />
             </FormField>
-            <FormField id="inv-net" label="Valor sem IVA (€)">
-              <Input id="inv-net" inputMode="decimal" value={net || ""} onChange={(e) => setNet(Number(e.target.value.replace(",", ".")) || 0)} onFocus={(e) => e.target.select()} required />
+            <FormField
+              id="inv-net"
+              label="Valor sem IVA (€)"
+              hint={
+                measurement && computedNet !== null
+                  ? measurement.kind === "adiantamento"
+                    ? `Fatura de adiantamento: igual ao auto (${formatMoney(measurement.total)}).`
+                    : measurement.advancePct > 0
+                      ? `Auto ${formatMoney(measurement.total)} × (1 − ${pctLabel(measurement.advancePct)}) = ${formatMoney(computedNet)}`
+                      : `Sem adiantamento: igual ao auto (${formatMoney(measurement.total)}).`
+                  : undefined
+              }
+            >
+              <Input id="inv-net" inputMode="decimal" value={net || ""} onChange={(e) => setNet(Number(e.target.value.replace(",", ".")) || 0)} onFocus={(e) => e.target.select()} readOnly={measurement !== undefined} className={measurement ? "bg-muted/50" : undefined} required />
             </FormField>
             <FormField id="inv-vat" label="IVA">
               <div className="flex items-center gap-2">
@@ -141,10 +173,10 @@ export function InvoiceDialog({ open, onClose, projectId, propertyId, suppliers,
             {supplier?.controlMode === "autos" ? (
               <FormField
                 id="inv-measurement"
-                label="Auto de medição (opcional)"
-                hint={measurement ? `Auto: ${formatMoney(measurement.total)} s/ IVA${Math.abs(measurement.total - net) > 0.5 ? " · diferente do líquido" : " · igual"}` : supplierMeasurements.length ? "Compara a fatura com o auto do mês deste fornecedor." : "Este fornecedor ainda não tem autos fechados."}
+                label="Auto (opcional)"
+                hint={measurement ? (measurement.kind === "adiantamento" ? "Fatura de adiantamento." : "Fatura do auto de trabalho, já com o desconto do adiantamento.") : supplierMeasurements.length ? "Ligada a um auto, o valor sem IVA é calculado automaticamente." : "Este fornecedor ainda não tem autos fechados."}
               >
-                <NativeSelect id="inv-measurement" value={measurementId} onChange={(e) => setMeasurementId(e.target.value)} disabled={supplierMeasurements.length === 0}>
+                <NativeSelect id="inv-measurement" value={measurementId} onChange={(e) => pickMeasurement(e.target.value)} disabled={supplierMeasurements.length === 0}>
                   <option value="">—</option>
                   {supplierMeasurements.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
                 </NativeSelect>

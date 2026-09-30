@@ -13,6 +13,8 @@ export type InvoiceRow = Invoice & {
   paidAmount: number;
   status: InvoiceStatus;
   measurementNumber: number | null;
+  /** "adiantamento" → fatura de adiantamento; "trabalho" → fatura de auto de trabalho. */
+  measurementKind: "trabalho" | "adiantamento" | null;
   versionId: string | null;
 };
 
@@ -34,6 +36,7 @@ export async function listInvoices(organizationId: string, projectId: string): P
       supplierName: projectSuppliers.name,
       paid: paidSub,
       measurementNumber: measurementReports.number,
+      measurementKind: measurementReports.kind,
       versionId: documents.currentVersionId,
     })
     .from(invoices)
@@ -50,6 +53,7 @@ export async function listInvoices(organizationId: string, projectId: string): P
       paidAmount: paid,
       status: invoiceStatus(Number(r.invoice.total), paid, r.invoice.dueDate, today),
       measurementNumber: r.measurementNumber,
+      measurementKind: r.measurementKind,
       versionId: r.versionId,
     };
   });

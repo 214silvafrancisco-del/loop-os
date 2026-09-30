@@ -389,6 +389,8 @@ Fornecedores da obra, preenchidos em cada obra (não nos Contactos). Reutilizam-
 | Check: valores (quantity, unit_price, supplier_id) só quando depth = 2 | | |
 
 ### measurement_reports (autos de medição)
+Desde o Step 24 há dois tipos (`kind`): `trabalho` (trabalho executado no mês, % por artigo) e `adiantamento` (corresponde à fatura de adiantamento; `advance_pct` guarda a fração, ex. 0.33, `total_period` o valor). A fatura ligada a um auto tem o líquido calculado: adiantamento = valor do auto; trabalho = valor × (1 − % do último auto de adiantamento fechado do fornecedor, ou 0). Cálculo puro em `measurements/advance.ts`. O índice único fornecedor+mês só se aplica a autos de trabalho.
+
 | Coluna | Tipo | Notas |
 |---|---|---|
 | id | uuid PK | |

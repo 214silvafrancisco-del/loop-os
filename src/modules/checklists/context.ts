@@ -144,7 +144,7 @@ export async function loadProjectContext(organizationId: string, projectId: stri
   const reports = await db
     .select({ supplierId: measurementReports.projectSupplierId, status: measurementReports.status, periodMonth: measurementReports.periodMonth, totalCumulative: measurementReports.totalCumulative })
     .from(measurementReports)
-    .where(eq(measurementReports.projectId, projectId));
+    .where(and(eq(measurementReports.projectId, projectId), eq(measurementReports.kind, "trabalho")));
   const suppliers = sups.map((s) => {
     const mine = reports.filter((r) => r.supplierId === s.id);
     const closed = mine.filter((r) => r.status === "closed").sort((a, b) => (a.periodMonth < b.periodMonth ? 1 : -1));

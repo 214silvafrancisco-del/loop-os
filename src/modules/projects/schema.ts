@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { date, index, integer, numeric, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { profiles } from "@/core/db/schema/core";
 import { organizationRef, timestamps } from "@/core/db/schema/helpers";
@@ -114,6 +115,8 @@ export const budgetLines = pgTable(
 );
 
 export const measurementStatus = pgEnum("measurement_status", ["draft", "closed"]);
+/** "trabalho" = trabalho executado no período; "adiantamento" = fatura de adiantamento, define a % a descontar nos autos de trabalho seguintes. */
+export const measurementKind = pgEnum("measurement_kind", ["trabalho", "adiantamento"]);
 
 /**
  * Auto de medição mensal de um fornecedor: % acumulada por artigo desse
@@ -131,6 +134,9 @@ export const measurementReports = pgTable(
       .notNull()
       .references(() => projectSuppliers.id),
     number: integer("number").notNull(),
+    kind: measurementKind("kind").notNull().default("trabalho"),
+    /** Só nos autos de adiantamento: fração (0.33 = 33 %). */
+    advancePct: numeric("advance_pct", { precision: 7, scale: 4 }),
     periodMonth: date("period_month").notNull(),
     reportDate: date("report_date").notNull(),
     status: measurementStatus("status").notNull().default("draft"),
@@ -146,7 +152,9 @@ export const measurementReports = pgTable(
   },
   (t) => [
     uniqueIndex("measurement_reports_project_number_idx").on(t.projectId, t.number),
-    uniqueIndex("measurement_reports_supplier_month_idx").on(t.projectSupplierId, t.periodMonth),
+    uniqueIndex("measurement_reports_supplier_month_idx")
+      .on(t.projectSupplierId, t.periodMonth)
+      .where(sql`${t.kind} = 'trabalho'`),
   ],
 );
 
