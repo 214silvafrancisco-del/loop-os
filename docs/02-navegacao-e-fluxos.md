@@ -191,6 +191,11 @@ Barra superior: pesquisa global (⌘K: negócios, imóveis, contactos, documento
 2. Faturas → nova fatura ligada ao auto de adiantamento → "Fatura de adiantamento", líquido = valor.
 3. Autos de trabalho seguintes: a fatura ligada ao auto tem líquido = auto × (1 − %). Sem adiantamento, líquido = auto.
 
+### F5d. Leitura automática da fatura em PDF (Step 25)
+1. Obra → Faturas → Nova fatura → escolher o PDF primeiro. A app extrai o texto (`unpdf`) e reconhece por regras (`invoices/extract.ts`) número, data, vencimento, base, IVA, total e NIF; sugere o fornecedor pelo NIF (ignora o NIF da LOOP).
+2. Escolher o auto a que se refere: o valor sem IVA passa a ser o do auto (adiantamento ou trabalho com desconto); se o PDF indicar outro valor, a app avisa.
+3. Confirmar e guardar. Digitalizações e fotografias não têm texto: os campos preenchem-se à mão.
+
 ### F6. Auto de medição mensal
 1. Obra → Autos → "Novo auto" (mês corrente).
 2. Percorrer a árvore e escrever a % acumulada por artigo; total do período e acumulado atualizam.

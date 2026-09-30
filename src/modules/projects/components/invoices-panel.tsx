@@ -25,6 +25,8 @@ type Props = {
   measurements: MeasurementOption[];
   invoiceCategoryId: string | null;
   canDelete: boolean;
+  /** NIF da empresa, para a leitura do PDF não o confundir com o do fornecedor. */
+  ownNif?: string | null;
 };
 
 const STATUS: Record<InvoiceStatus, { label: string; cls: string }> = {
@@ -34,7 +36,7 @@ const STATUS: Record<InvoiceStatus, { label: string; cls: string }> = {
   overdue: { label: "Em atraso", cls: "bg-destructive/10 text-destructive" },
 };
 
-export function InvoicesPanel({ projectId, propertyId, invoices, paymentsByInvoice, fin, suppliers, measurements, invoiceCategoryId, canDelete }: Props) {
+export function InvoicesPanel({ projectId, propertyId, invoices, paymentsByInvoice, fin, suppliers, measurements, invoiceCategoryId, canDelete, ownNif }: Props) {
   const router = useRouter();
   const [dialog, setDialog] = useState<{ mode: "create" } | { mode: "edit"; invoice: InvoiceRow } | null>(null);
   const [dialogKey, setDialogKey] = useState(0);
@@ -160,6 +162,7 @@ export function InvoicesPanel({ projectId, propertyId, invoices, paymentsByInvoi
         measurements={measurements}
         invoice={dialog?.mode === "edit" ? dialog.invoice : null}
         invoiceCategoryId={invoiceCategoryId}
+        ownNif={ownNif ?? null}
       />
       <PaymentDialog invoice={paying} payments={paying ? (paymentsByInvoice[paying.id] ?? []) : []} onClose={() => setPaying(null)} />
     </div>

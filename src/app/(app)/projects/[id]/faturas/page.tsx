@@ -9,6 +9,7 @@ import { monthLabel } from "@/modules/projects/measurements/calc";
 import { getAdvancePctBySupplier, listMeasurements } from "@/modules/projects/measurements/queries";
 import { getProject } from "@/modules/projects/queries";
 import { listProjectSuppliers } from "@/modules/projects/suppliers/queries";
+import { organizations } from "@/core/db/schema/core";
 import { documentCategories } from "@/modules/settings/schema";
 
 export default async function ProjectFaturasPage({ params }: { params: Promise<{ id: string }> }) {
@@ -18,7 +19,7 @@ export default async function ProjectFaturasPage({ params }: { params: Promise<{
   const project = await getProject(orgId, id);
   if (!project) notFound();
 
-  const [invoices, fin, suppliers, measurements, advancePct, [category]] = await Promise.all([
+  const [invoices, fin, suppliers, measurements, advancePct, [category], [org]] = await Promise.all([
     listInvoices(orgId, id),
     getProjectFinancials(orgId, id),
     listProjectSuppliers(orgId, id),
@@ -29,6 +30,7 @@ export default async function ProjectFaturasPage({ params }: { params: Promise<{
       .from(documentCategories)
       .where(and(eq(documentCategories.organizationId, orgId), eq(documentCategories.group, "financeiro"), eq(documentCategories.name, "Fatura")))
       .limit(1),
+    db.select({ nif: organizations.nif }).from(organizations).where(eq(organizations.id, orgId)).limit(1),
   ]);
   const paymentsByInvoice = Object.fromEntries(await Promise.all(invoices.map(async (i) => [i.id, await listPayments(i.id)] as const)));
 
@@ -39,7 +41,7 @@ export default async function ProjectFaturasPage({ params }: { params: Promise<{
       invoices={invoices}
       paymentsByInvoice={paymentsByInvoice}
       fin={fin}
-      suppliers={suppliers.map((s) => ({ id: s.id, name: s.name, controlMode: s.controlMode }))}
+      suppliers={suppliers.map((s) => ({ id: s.id, name: s.name, controlMode: s.controlMode, nif: s.nif }))}
       measurements={measurements
         .filter((m) => m.status === "closed")
         .map((m) => ({
@@ -53,6 +55,7 @@ export default async function ProjectFaturasPage({ params }: { params: Promise<{
         }))}
       invoiceCategoryId={category?.id ?? null}
       canDelete={user.role !== "user"}
+      ownNif={org?.nif ?? null}
     />
   );
 }
