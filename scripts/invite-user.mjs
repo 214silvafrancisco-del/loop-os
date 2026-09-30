@@ -18,13 +18,17 @@ const supabase = createClient(
   { auth: { autoRefreshToken: false, persistSession: false } },
 );
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+// O link do email tem de apontar para produção (o .env.local não define NEXT_PUBLIC_APP_URL).
+const appUrl = process.env.INVITE_APP_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "https://app.89.58.58.97.sslip.io";
 const { data, error } = await supabase.auth.admin.inviteUserByEmail(email, {
   data: { full_name: fullName, role },
-  redirectTo: `${appUrl}/auth/confirm?next=/reset-password/update`,
+  // Convites da API de admin devolvem a sessão no fragmento (#access_token=…),
+  // que só o browser lê: /auth/callback trata disso.
+  redirectTo: `${appUrl}/auth/callback?next=/reset-password/update`,
 });
 if (error) {
   console.log("FALHOU:", error.message);
   process.exit(1);
 }
 console.log(`✓ convite enviado para ${email} (${role}). id: ${data.user.id}`);
+console.log(`  link de retorno: ${appUrl}/auth/callback`);

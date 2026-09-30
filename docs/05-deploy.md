@@ -79,19 +79,23 @@ Regra: **migrar antes de fazer push** de código que dependa de tabelas novas. T
 - **Site URL**: `https://app.loophomes.pt`
 - **Redirect URLs**: `https://app.loophomes.pt/**` e `http://localhost:3000/**`
 
-*Authentication → Email Templates*: substituir o link nos templates **Invite user** e **Reset password** para o formato que a app espera (`/auth/confirm` com `token_hash`):
+*Authentication → Email Templates*: **não é preciso mudar nada.** No plano Free, com o envio de email do Supabase, os templates não são editáveis (só com SMTP próprio). A app aceita os links por defeito:
+
+| Email | Enviado por | Link de retorno | Como a app trata |
+|---|---|---|---|
+| Convite | `pnpm user:invite email "Nome" manager` | `/auth/callback?next=/reset-password/update` | a sessão vem no fragmento `#access_token=…`; a página lê-a no browser e segue para "Definir password" |
+| Recuperar password | "Esqueci-me da password" no login | `/auth/confirm?next=/reset-password/update` | `?code=` (PKCE) trocado no servidor; tem de ser aberto no mesmo browser onde foi pedido |
+
+`/auth/confirm` sem `token_hash` nem `code` passa para `/auth/callback`, que recebe o fragmento. Se um dia houver SMTP próprio, os templates com `token_hash` continuam a funcionar:
 
 ```html
 <!-- Invite user -->
-<h2>Foste convidado para o LOOP OS</h2>
 <p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite&next=/reset-password/update">Aceitar o convite e definir password</a></p>
-
 <!-- Reset password -->
-<h2>Recuperar password</h2>
 <p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/reset-password/update">Definir nova password</a></p>
 ```
 
-Depois disto, `pnpm user:invite email "Nome" manager` envia o convite aos colegas, e "Esqueci-me da password" funciona. O Supabase Free envia poucos emails por hora; para volume maior configurar SMTP próprio (*Authentication → SMTP Settings*).
+O script de convite usa `INVITE_APP_URL`, depois `NEXT_PUBLIC_APP_URL`, e por defeito o endereço de produção. O Supabase Free envia poucos emails por hora (cerca de 2); para mais, configurar SMTP próprio (*Authentication → SMTP Settings*).
 
 ## 6. Storage R2
 
