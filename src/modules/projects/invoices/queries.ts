@@ -1,10 +1,10 @@
 import "server-only";
 import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/core/db/client";
-import { contacts } from "@/modules/contacts/schema";
 import { documents } from "@/modules/documents/schema";
 import { properties } from "@/modules/properties/schema";
-import { budgetLines, invoices, measurementReports, payments, projects, type Invoice, type Payment } from "../schema";
+import { getExecutionBySupplier } from "../measurements/queries";
+import { budgetLines, invoices, measurementReports, payments, projectSuppliers, projects, type Invoice, type Payment } from "../schema";
 
 export type InvoiceStatus = "unpaid" | "partial" | "paid" | "overdue";
 
@@ -31,13 +31,13 @@ export async function listInvoices(organizationId: string, projectId: string): P
   const rows = await db
     .select({
       invoice: invoices,
-      supplierName: contacts.name,
+      supplierName: projectSuppliers.name,
       paid: paidSub,
       measurementNumber: measurementReports.number,
       versionId: documents.currentVersionId,
     })
     .from(invoices)
-    .innerJoin(contacts, eq(invoices.supplierId, contacts.id))
+    .innerJoin(projectSuppliers, eq(invoices.projectSupplierId, projectSuppliers.id))
     .leftJoin(measurementReports, eq(invoices.measurementReportId, measurementReports.id))
     .leftJoin(documents, eq(invoices.documentId, documents.id))
     .where(and(eq(invoices.organizationId, organizationId), eq(invoices.projectId, projectId), isNull(invoices.deletedAt)))
@@ -68,6 +68,17 @@ export async function listPayments(invoiceId: string): Promise<Payment[]> {
   return db.select().from(payments).where(eq(payments.invoiceId, invoiceId)).orderBy(asc(payments.paidOn));
 }
 
+export type SupplierFinancials = {
+  supplierId: string;
+  supplierName: string;
+  controlMode: "autos" | "fatura";
+  budgeted: number;
+  executed: number;
+  invoicedNet: number;
+  paid: number;
+  lastMeasurement: { number: number; month: string } | null;
+};
+
 export type ProjectFinancials = {
   budgeted: number;
   executed: number;
@@ -76,38 +87,47 @@ export type ProjectFinancials = {
   paid: number;
   unpaid: number;
   overdueCount: number;
-  bySupplier: { supplierId: string; supplierName: string; budgeted: number; invoicedNet: number; paid: number }[];
+  bySupplier: SupplierFinancials[];
 };
 
-/** Totais da obra: orçamentado, executado, faturado, pago; e por fornecedor. */
+/** Totais da obra e por fornecedor: orçamentado, executado (último auto fechado de cada um), faturado, pago. */
 export async function getProjectFinancials(organizationId: string, projectId: string): Promise<ProjectFinancials> {
   const today = new Date().toISOString().slice(0, 10);
-  const [budget] = await db
-    .select({ total: sql<string>`coalesce(sum(${budgetLines.budgeted}), 0)::text` })
-    .from(budgetLines)
-    .where(and(eq(budgetLines.projectId, projectId), sql`not exists (select 1 from ${budgetLines} c where c.parent_id = ${budgetLines.id})`));
-  const [executed] = await db
-    .select({ total: measurementReports.totalCumulative })
-    .from(measurementReports)
-    .where(and(eq(measurementReports.projectId, projectId), eq(measurementReports.status, "closed")))
-    .orderBy(desc(measurementReports.number))
-    .limit(1);
-  const inv = await db
-    .select({ supplierId: invoices.supplierId, supplierName: contacts.name, net: invoices.netAmount, total: invoices.total, dueDate: invoices.dueDate, paid: paidSub })
-    .from(invoices)
-    .innerJoin(contacts, eq(invoices.supplierId, contacts.id))
-    .where(and(eq(invoices.organizationId, organizationId), eq(invoices.projectId, projectId), isNull(invoices.deletedAt)));
-  const budgetBySupplier = await db
-    .select({ supplierId: budgetLines.supplierId, supplierName: contacts.name, total: sql<string>`coalesce(sum(${budgetLines.budgeted}), 0)::text` })
-    .from(budgetLines)
-    .innerJoin(contacts, eq(budgetLines.supplierId, contacts.id))
-    .where(and(eq(budgetLines.projectId, projectId), sql`not exists (select 1 from ${budgetLines} c where c.parent_id = ${budgetLines.id})`))
-    .groupBy(budgetLines.supplierId, contacts.name);
+  const [suppliers, budgetBySupplier, execution, inv] = await Promise.all([
+    db
+      .select({ id: projectSuppliers.id, name: projectSuppliers.name, controlMode: projectSuppliers.controlMode })
+      .from(projectSuppliers)
+      .where(and(eq(projectSuppliers.organizationId, organizationId), eq(projectSuppliers.projectId, projectId)))
+      .orderBy(asc(projectSuppliers.sort)),
+    db
+      .select({ supplierId: budgetLines.projectSupplierId, total: sql<string>`coalesce(sum(${budgetLines.budgeted}), 0)::text` })
+      .from(budgetLines)
+      .where(and(eq(budgetLines.projectId, projectId), sql`not exists (select 1 from ${budgetLines} c where c.parent_id = ${budgetLines.id})`))
+      .groupBy(budgetLines.projectSupplierId),
+    getExecutionBySupplier(projectId),
+    db
+      .select({ supplierId: invoices.projectSupplierId, net: invoices.netAmount, total: invoices.total, dueDate: invoices.dueDate, paid: paidSub })
+      .from(invoices)
+      .where(and(eq(invoices.organizationId, organizationId), eq(invoices.projectId, projectId), isNull(invoices.deletedAt))),
+  ]);
 
-  const bySupplier = new Map<string, ProjectFinancials["bySupplier"][number]>();
-  for (const b of budgetBySupplier) {
-    bySupplier.set(b.supplierId!, { supplierId: b.supplierId!, supplierName: b.supplierName, budgeted: Number(b.total), invoicedNet: 0, paid: 0 });
-  }
+  const r2 = (n: number) => Math.round(n * 100) / 100;
+  const budgetMap = new Map(budgetBySupplier.map((b) => [b.supplierId, Number(b.total)]));
+  const bySupplier: SupplierFinancials[] = suppliers.map((s) => {
+    const ex = execution.get(s.id);
+    return {
+      supplierId: s.id,
+      supplierName: s.name,
+      controlMode: s.controlMode,
+      budgeted: budgetMap.get(s.id) ?? 0,
+      executed: ex?.executed ?? 0,
+      invoicedNet: 0,
+      paid: 0,
+      lastMeasurement: ex?.lastNumber && ex.lastMonth ? { number: ex.lastNumber, month: ex.lastMonth } : null,
+    };
+  });
+  const byId = new Map(bySupplier.map((s) => [s.supplierId, s]));
+
   let invoicedNet = 0;
   let invoicedGross = 0;
   let paid = 0;
@@ -120,21 +140,24 @@ export async function getProjectFinancials(organizationId: string, projectId: st
     invoicedGross += total;
     paid += p;
     if (invoiceStatus(total, p, i.dueDate, today) === "overdue") overdueCount++;
-    const s = bySupplier.get(i.supplierId) ?? { supplierId: i.supplierId, supplierName: i.supplierName, budgeted: 0, invoicedNet: 0, paid: 0 };
-    s.invoicedNet += net;
-    s.paid += p;
-    bySupplier.set(i.supplierId, s);
+    const s = byId.get(i.supplierId);
+    if (s) {
+      s.invoicedNet = r2(s.invoicedNet + net);
+      s.paid = r2(s.paid + p);
+    }
   }
-  const r2 = (n: number) => Math.round(n * 100) / 100;
+  // Orçamento sem fornecedor (não deveria existir): conta no total, não por fornecedor.
+  const budgeted = [...budgetMap.values()].reduce((a, b) => a + b, 0);
+  const executed = bySupplier.reduce((a, s) => a + s.executed, 0);
   return {
-    budgeted: Number(budget?.total ?? 0),
-    executed: Number(executed?.total ?? 0),
+    budgeted: r2(budgeted),
+    executed: r2(executed),
     invoicedNet: r2(invoicedNet),
     invoicedGross: r2(invoicedGross),
     paid: r2(paid),
     unpaid: r2(invoicedGross - paid),
     overdueCount,
-    bySupplier: [...bySupplier.values()].sort((a, b) => b.budgeted + b.invoicedNet - (a.budgeted + a.invoicedNet)),
+    bySupplier,
   };
 }
 
@@ -153,9 +176,9 @@ export async function listActiveProjectFinancials(organizationId: string) {
 export async function listUnpaidInvoices(organizationId: string, limit = 10) {
   const today = new Date().toISOString().slice(0, 10);
   const rows = await db
-    .select({ invoice: invoices, supplierName: contacts.name, paid: paidSub, projectId: projects.id, projectName: projects.name })
+    .select({ invoice: invoices, supplierName: projectSuppliers.name, paid: paidSub, projectId: projects.id, projectName: projects.name })
     .from(invoices)
-    .innerJoin(contacts, eq(invoices.supplierId, contacts.id))
+    .innerJoin(projectSuppliers, eq(invoices.projectSupplierId, projectSuppliers.id))
     .innerJoin(projects, eq(invoices.projectId, projects.id))
     .where(and(eq(invoices.organizationId, organizationId), isNull(invoices.deletedAt), sql`${invoices.total} > coalesce((select sum(p.amount) from ${payments} p where p.invoice_id = ${invoices.id}), 0)`))
     .orderBy(sql`${invoices.dueDate} asc nulls last`)

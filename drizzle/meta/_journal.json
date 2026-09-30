@@ -113,6 +113,20 @@
       "when": 1790797558873,
       "tag": "0015_checklists",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1790804071395,
+      "tag": "0016_suppliers",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1790804074027,
+      "tag": "0017_suppliers_drop_old",
+      "breakpoints": true
     }
   ]
 }

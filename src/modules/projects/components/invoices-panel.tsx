@@ -11,11 +11,9 @@ import { formatDate, formatMoney, formatPercent } from "@/core/lib/format";
 import { deleteInvoice } from "../invoices/actions";
 import type { InvoiceRow, InvoiceStatus, ProjectFinancials } from "../invoices/queries";
 import type { Payment } from "../schema";
-import { InvoiceDialog } from "./invoice-dialog";
+import { InvoiceDialog, type MeasurementOption, type SupplierOption } from "./invoice-dialog";
 import { PaymentDialog } from "./payment-dialog";
-
-type Option = { id: string; name: string };
-type MeasurementOption = { id: string; number: number; label: string; total: number };
+import { SupplierTotalsTable } from "./supplier-totals-table";
 
 type Props = {
   projectId: string;
@@ -23,7 +21,7 @@ type Props = {
   invoices: InvoiceRow[];
   paymentsByInvoice: Record<string, Payment[]>;
   fin: ProjectFinancials;
-  suppliers: Option[];
+  suppliers: SupplierOption[];
   measurements: MeasurementOption[];
   invoiceCategoryId: string | null;
   canDelete: boolean;
@@ -74,7 +72,7 @@ export function InvoicesPanel({ projectId, propertyId, invoices, paymentsByInvoi
         <h3 className="text-sm font-semibold">Faturas</h3>
         <span className="ml-auto flex items-center gap-2">
           {error ? <span className="text-xs text-destructive">{error}</span> : null}
-          <Button size="sm" className="gap-1" onClick={() => openDialog({ mode: "create" })}><Plus className="size-4" /> Nova fatura</Button>
+          <Button size="sm" className="gap-1" onClick={() => openDialog({ mode: "create" })} disabled={suppliers.length === 0} title={suppliers.length === 0 ? "Adiciona fornecedores na tab Orçamento" : undefined}><Plus className="size-4" /> Nova fatura</Button>
         </span>
       </div>
 
@@ -143,33 +141,7 @@ export function InvoicesPanel({ projectId, propertyId, invoices, paymentsByInvoi
       {fin.bySupplier.length ? (
         <div>
           <h3 className="mb-2 text-sm font-semibold">Por fornecedor</h3>
-          <div className="rounded-xl border bg-card">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Fornecedor</TableHead>
-                  <TableHead className="text-right">Orçamentado</TableHead>
-                  <TableHead className="text-right">Faturado s/ IVA</TableHead>
-                  <TableHead className="text-right">Desvio</TableHead>
-                  <TableHead className="text-right">Pago</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {fin.bySupplier.map((s) => {
-                  const dev = s.invoicedNet - s.budgeted;
-                  return (
-                    <TableRow key={s.supplierId}>
-                      <TableCell className="font-medium">{s.supplierName}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatMoney(s.budgeted)}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatMoney(s.invoicedNet)}</TableCell>
-                      <TableCell className={cn("text-right tabular-nums", dev > 0 && "text-destructive")}>{dev > 0 ? "+" : ""}{formatMoney(dev)}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatMoney(s.paid)}</TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
+          <SupplierTotalsTable rows={fin.bySupplier} />
         </div>
       ) : null}
 

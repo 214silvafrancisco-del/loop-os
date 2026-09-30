@@ -3,6 +3,7 @@ import { requireUser } from "@/core/auth/current-user";
 import { updateProject } from "@/modules/projects/actions";
 import { ProjectForm } from "@/modules/projects/components/project-form";
 import { ProjectSummary } from "@/modules/projects/components/project-summary";
+import { SupplierTotalsTable } from "@/modules/projects/components/supplier-totals-table";
 import { getProjectFinancials } from "@/modules/projects/invoices/queries";
 import { getExecutedTotal } from "@/modules/projects/measurements/queries";
 import { getProject } from "@/modules/projects/queries";
@@ -34,6 +35,12 @@ export default async function ProjectResumoPage({ params }: { params: Promise<{ 
           lastMeasurement: executed.lastNumber && executed.lastMonth ? { number: executed.lastNumber, month: executed.lastMonth } : null,
         }}
       />
+      {fin.bySupplier.length ? (
+        <div className="mb-6">
+          <h2 className="mb-2 text-sm font-semibold">Por fornecedor</h2>
+          <SupplierTotalsTable rows={fin.bySupplier} />
+        </div>
+      ) : null}
       <ProjectForm action={updateProject.bind(null, project.id)} project={project} users={users} cancelHref="/projects" />
     </>
   );

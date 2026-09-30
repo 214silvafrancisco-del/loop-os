@@ -353,6 +353,19 @@ Regra: os inputs são a verdade; os `out_*` são cache. Se `out_calc_version` �
 | deleted_at | timestamptz | |
 | INDEX (organization_id, status), INDEX (property_id) | | |
 
+### project_suppliers (Step 23, 2026-09-30)
+Fornecedores da obra, preenchidos em cada obra (não nos Contactos). Reutilizam-se de obras anteriores por cópia.
+
+| Coluna | Notas |
+|---|---|
+| project_id | cascade |
+| name, kind, nif, phone, email, notes | `name` único por obra; `kind` livre (Empreiteiro, Carpinteiro…) |
+| control_mode | enum `autos` (autos de medição mensais) / `fatura` (as faturas comparam-se com o orçamentado) |
+| contact_id | ligação opcional a um contacto |
+| sort | ordem |
+
+`budget_lines.project_supplier_id`: o fornecedor define-se no capítulo e copia-se para todas as linhas dele. `measurement_reports.project_supplier_id` (obrigatório, único por fornecedor e mês). `invoices.project_supplier_id` (obrigatório; número único por fornecedor). As colunas `supplier_id` → contactos foram removidas (migrações 0016/0017).
+
 ### budget_lines (árvore)
 | Coluna | Tipo | Notas |
 |---|---|---|

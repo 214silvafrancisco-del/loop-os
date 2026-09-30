@@ -47,9 +47,42 @@ export const projects = pgTable(
   ],
 );
 
+export const supplierControlMode = pgEnum("supplier_control_mode", ["autos", "fatura"]);
+
+/**
+ * Fornecedores da obra (empreiteiro, carpinteiro, caixilheiro…). Vivem na
+ * obra, não nos Contactos; `contact_id` liga opcionalmente a um contacto.
+ * `control_mode`: "autos" = autos de medição mensais; "fatura" = as faturas
+ * comparam-se diretamente com o orçamentado.
+ */
+export const projectSuppliers = pgTable(
+  "project_suppliers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: organizationRef(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    kind: text("kind"),
+    nif: text("nif"),
+    phone: text("phone"),
+    email: text("email"),
+    controlMode: supplierControlMode("control_mode").notNull().default("autos"),
+    contactId: uuid("contact_id").references(() => contacts.id),
+    sort: integer("sort").notNull().default(0),
+    notes: text("notes"),
+    createdBy: uuid("created_by"),
+    updatedBy: uuid("updated_by"),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("project_suppliers_project_name_idx").on(t.projectId, t.name), index("project_suppliers_project_sort_idx").on(t.projectId, t.sort)],
+);
+
 /**
  * Orçamento em árvore (capítulo → subcapítulo → artigo), como o mapa de
  * quantidades. Só as folhas têm quantidade × preço; os pais somam os filhos.
+ * O fornecedor define-se no capítulo e é copiado para todas as linhas dele.
  */
 export const budgetLines = pgTable(
   "budget_lines",
@@ -65,7 +98,7 @@ export const budgetLines = pgTable(
     sort: integer("sort").notNull().default(0),
     categoryId: uuid("category_id").references(() => budgetCategories.id),
     description: text("description").notNull(),
-    supplierId: uuid("supplier_id").references(() => contacts.id),
+    projectSupplierId: uuid("project_supplier_id").references(() => projectSuppliers.id),
     quantity: numeric("quantity", { precision: 12, scale: 3 }),
     unit: text("unit"),
     unitPrice: numeric("unit_price", { precision: 14, scale: 4 }),
@@ -77,14 +110,14 @@ export const budgetLines = pgTable(
     updatedBy: uuid("updated_by"),
     ...timestamps,
   },
-  (t) => [index("budget_lines_project_parent_sort_idx").on(t.projectId, t.parentId, t.sort)],
+  (t) => [index("budget_lines_project_parent_sort_idx").on(t.projectId, t.parentId, t.sort), index("budget_lines_supplier_idx").on(t.projectSupplierId)],
 );
 
 export const measurementStatus = pgEnum("measurement_status", ["draft", "closed"]);
 
 /**
- * Auto de medição mensal: % acumulada por artigo. Fechado é imutável
- * (trigger na BD); correções vão no auto seguinte.
+ * Auto de medição mensal de um fornecedor: % acumulada por artigo desse
+ * fornecedor. Fechado é imutável (trigger na BD); correções vão no auto seguinte.
  */
 export const measurementReports = pgTable(
   "measurement_reports",
@@ -94,6 +127,9 @@ export const measurementReports = pgTable(
     projectId: uuid("project_id")
       .notNull()
       .references(() => projects.id, { onDelete: "cascade" }),
+    projectSupplierId: uuid("project_supplier_id")
+      .notNull()
+      .references(() => projectSuppliers.id),
     number: integer("number").notNull(),
     periodMonth: date("period_month").notNull(),
     reportDate: date("report_date").notNull(),
@@ -110,7 +146,7 @@ export const measurementReports = pgTable(
   },
   (t) => [
     uniqueIndex("measurement_reports_project_number_idx").on(t.projectId, t.number),
-    uniqueIndex("measurement_reports_project_month_idx").on(t.projectId, t.periodMonth),
+    uniqueIndex("measurement_reports_supplier_month_idx").on(t.projectSupplierId, t.periodMonth),
   ],
 );
 
@@ -135,7 +171,7 @@ export const measurementLines = pgTable(
 
 export const paymentMethod = pgEnum("payment_method", ["transferencia", "mb", "cartao", "numerario", "outro"]);
 
-/** Fatura de fornecedor. Compara-se com o auto (opcional) e, em soma, com o orçamentado. */
+/** Fatura de um fornecedor da obra. Compara-se com o auto (opcional) e, em soma, com o orçamentado dele. */
 export const invoices = pgTable(
   "invoices",
   {
@@ -144,9 +180,9 @@ export const invoices = pgTable(
     projectId: uuid("project_id")
       .notNull()
       .references(() => projects.id, { onDelete: "cascade" }),
-    supplierId: uuid("supplier_id")
+    projectSupplierId: uuid("project_supplier_id")
       .notNull()
-      .references(() => contacts.id),
+      .references(() => projectSuppliers.id),
     number: text("number").notNull(),
     issueDate: date("issue_date").notNull(),
     dueDate: date("due_date"),
@@ -166,7 +202,7 @@ export const invoices = pgTable(
   (t) => [
     index("invoices_project_date_idx").on(t.projectId, t.issueDate),
     index("invoices_org_due_idx").on(t.organizationId, t.dueDate),
-    index("invoices_supplier_idx").on(t.supplierId),
+    index("invoices_supplier_idx").on(t.projectSupplierId),
   ],
 );
 
@@ -191,6 +227,7 @@ export const payments = pgTable(
 );
 
 export type Project = typeof projects.$inferSelect;
+export type ProjectSupplier = typeof projectSuppliers.$inferSelect;
 export type BudgetLine = typeof budgetLines.$inferSelect;
 export type Invoice = typeof invoices.$inferSelect;
 export type Payment = typeof payments.$inferSelect;

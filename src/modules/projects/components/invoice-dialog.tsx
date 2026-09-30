@@ -11,15 +11,15 @@ import { FormField, NativeSelect } from "@/core/ui/form-field";
 import { attachInvoiceDocument, createInvoice, updateInvoice, type InvoiceInput } from "../invoices/actions";
 import type { InvoiceRow } from "../invoices/queries";
 
-type Option = { id: string; name: string };
-type MeasurementOption = { id: string; number: number; label: string; total: number };
+export type SupplierOption = { id: string; name: string; controlMode: "autos" | "fatura" };
+export type MeasurementOption = { id: string; number: number; label: string; total: number; supplierId: string };
 
 type Props = {
   open: boolean;
   onClose: () => void;
   projectId: string;
   propertyId: string;
-  suppliers: Option[];
+  suppliers: SupplierOption[];
   measurements: MeasurementOption[];
   invoice?: InvoiceRow | null;
   invoiceCategoryId: string | null;
@@ -27,24 +27,28 @@ type Props = {
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
+/** Fatura de um fornecedor da obra; se for por autos, liga-se opcionalmente ao auto dele. */
 export function InvoiceDialog({ open, onClose, projectId, propertyId, suppliers, measurements, invoice, invoiceCategoryId }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [supplierId, setSupplierId] = useState(invoice?.projectSupplierId ?? suppliers[0]?.id ?? "");
   const [net, setNet] = useState(invoice ? Number(invoice.netAmount) : 0);
   const [vatRate, setVatRate] = useState(invoice ? Number(invoice.vatRate) : 0.23);
   const [measurementId, setMeasurementId] = useState(invoice?.measurementReportId ?? "");
   const [file, setFile] = useState<File | null>(null);
   const vat = r2(net * vatRate);
   const total = r2(net + vat);
-  const measurement = measurements.find((m) => m.id === measurementId);
+  const supplier = suppliers.find((s) => s.id === supplierId);
+  const supplierMeasurements = measurements.filter((m) => m.supplierId === supplierId);
+  const measurement = supplierMeasurements.find((m) => m.id === measurementId);
 
   // O estado inicial vem das props; o pai remonta o diálogo (key) a cada abertura.
 
   function submit(formData: FormData) {
     setError(null);
     const input: InvoiceInput = {
-      supplierId: String(formData.get("supplierId") ?? ""),
+      projectSupplierId: supplierId,
       number: String(formData.get("number") ?? ""),
       issueDate: String(formData.get("issueDate") ?? ""),
       dueDate: String(formData.get("dueDate") ?? "") || null,
@@ -53,7 +57,7 @@ export function InvoiceDialog({ open, onClose, projectId, propertyId, suppliers,
       vatRate,
       vatAmount: vat,
       total,
-      measurementReportId: measurementId || null,
+      measurementReportId: supplier?.controlMode === "autos" && measurementId ? measurementId : null,
       notes: String(formData.get("notes") ?? "") || null,
     };
     startTransition(async () => {
@@ -96,8 +100,16 @@ export function InvoiceDialog({ open, onClose, projectId, propertyId, suppliers,
             <DialogDescription>Valores em euros. O PDF fica arquivado nos Documentos da obra.</DialogDescription>
           </DialogHeader>
           <div className="my-4 grid gap-3 sm:grid-cols-2">
-            <FormField id="inv-supplier" label="Fornecedor">
-              <NativeSelect id="inv-supplier" name="supplierId" defaultValue={invoice?.supplierId ?? ""} required>
+            <FormField id="inv-supplier" label="Fornecedor da obra" hint={suppliers.length === 0 ? "Adiciona fornecedores na tab Orçamento." : undefined}>
+              <NativeSelect
+                id="inv-supplier"
+                value={supplierId}
+                onChange={(e) => {
+                  setSupplierId(e.target.value);
+                  setMeasurementId("");
+                }}
+                required
+              >
                 <option value="">—</option>
                 {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </NativeSelect>
@@ -126,12 +138,20 @@ export function InvoiceDialog({ open, onClose, projectId, propertyId, suppliers,
               <span className="text-xs uppercase tracking-wide text-muted-foreground">Total c/ IVA</span>
               <span className="ml-3 text-lg font-semibold tabular-nums">{formatMoney(total)}</span>
             </div>
-            <FormField id="inv-measurement" label="Auto de medição (opcional)" hint={measurement ? `Auto: ${formatMoney(measurement.total)} s/ IVA${Math.abs(measurement.total - net) > 0.5 ? " · diferente do líquido" : " · igual"}` : "Compara a fatura com o auto do mês."}>
-              <NativeSelect id="inv-measurement" value={measurementId} onChange={(e) => setMeasurementId(e.target.value)}>
-                <option value="">—</option>
-                {measurements.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
-              </NativeSelect>
-            </FormField>
+            {supplier?.controlMode === "autos" ? (
+              <FormField
+                id="inv-measurement"
+                label="Auto de medição (opcional)"
+                hint={measurement ? `Auto: ${formatMoney(measurement.total)} s/ IVA${Math.abs(measurement.total - net) > 0.5 ? " · diferente do líquido" : " · igual"}` : supplierMeasurements.length ? "Compara a fatura com o auto do mês deste fornecedor." : "Este fornecedor ainda não tem autos fechados."}
+              >
+                <NativeSelect id="inv-measurement" value={measurementId} onChange={(e) => setMeasurementId(e.target.value)} disabled={supplierMeasurements.length === 0}>
+                  <option value="">—</option>
+                  {supplierMeasurements.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
+                </NativeSelect>
+              </FormField>
+            ) : supplier ? (
+              <p className="self-end text-xs text-muted-foreground">{supplier.name} é controlado por fatura: compara-se com o orçamentado dele.</p>
+            ) : null}
             <FormField id="inv-file" label={invoice?.documentId ? "Substituir PDF (opcional)" : "PDF da fatura"}>
               <Input id="inv-file" type="file" accept="application/pdf,image/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
             </FormField>
@@ -145,7 +165,7 @@ export function InvoiceDialog({ open, onClose, projectId, propertyId, suppliers,
           {error ? <p className="mb-3 text-sm text-destructive">{error}</p> : null}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose} disabled={pending}>Cancelar</Button>
-            <Button type="submit" disabled={pending}>{pending ? "A guardar…" : "Guardar fatura"}</Button>
+            <Button type="submit" disabled={pending || !supplierId}>{pending ? "A guardar…" : "Guardar fatura"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

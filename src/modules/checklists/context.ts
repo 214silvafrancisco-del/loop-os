@@ -7,7 +7,7 @@ import { bpComparables, bpScenarios, businessPlans } from "@/modules/business-pl
 import { contacts } from "@/modules/contacts/schema";
 import { deals } from "@/modules/deals/schema";
 import { documents } from "@/modules/documents/schema";
-import { budgetLines, invoices, measurementLines, measurementReports, payments, projects } from "@/modules/projects/schema";
+import { budgetLines, invoices, measurementReports, payments, projectSuppliers, projects } from "@/modules/projects/schema";
 import { properties } from "@/modules/properties/schema";
 import { proposals } from "@/modules/proposals/schema";
 import { dealStages, documentCategories, sourceChannels } from "@/modules/settings/schema";
@@ -119,36 +119,46 @@ export async function loadProjectContext(organizationId: string, projectId: stri
     .where(and(eq(projects.id, projectId), eq(projects.organizationId, organizationId), isNull(projects.deletedAt)));
   if (!pj) return null;
 
-  // Orçamento: folhas = linhas sem filhos.
+  // Orçamento: folhas = linhas sem filhos; fornecedor definido no capítulo.
   const lines = await db
-    .select({ id: budgetLines.id, parentId: budgetLines.parentId, depth: budgetLines.depth, categoryId: budgetLines.categoryId, supplierId: budgetLines.supplierId, budgeted: budgetLines.budgeted })
+    .select({ id: budgetLines.id, parentId: budgetLines.parentId, depth: budgetLines.depth, categoryId: budgetLines.categoryId, supplierId: budgetLines.projectSupplierId, budgeted: budgetLines.budgeted })
     .from(budgetLines)
     .where(eq(budgetLines.projectId, projectId));
   const parents = new Set(lines.map((l) => l.parentId).filter(Boolean));
   const leaves = lines.filter((l) => !parents.has(l.id));
+  const chapters = lines.filter((l) => l.depth === 0);
   const budget = {
     lineCount: lines.length,
     total: leaves.reduce((s, l) => s + Number(l.budgeted), 0),
-    chaptersWithCategory: lines.filter((l) => l.depth === 0 && l.categoryId).length,
+    chaptersWithCategory: chapters.filter((l) => l.categoryId).length,
+    chapterCount: chapters.length,
+    chaptersWithSupplier: chapters.filter((l) => l.supplierId).length,
     leafCount: leaves.length,
-    leavesWithSupplier: leaves.filter((l) => l.supplierId).length,
   };
 
-  // Autos
+  // Fornecedores e os seus autos
+  const sups = await db
+    .select({ id: projectSuppliers.id, name: projectSuppliers.name, controlMode: projectSuppliers.controlMode })
+    .from(projectSuppliers)
+    .where(eq(projectSuppliers.projectId, projectId));
   const reports = await db
-    .select({ id: measurementReports.id, status: measurementReports.status, periodMonth: measurementReports.periodMonth, totalCumulative: measurementReports.totalCumulative })
+    .select({ supplierId: measurementReports.projectSupplierId, status: measurementReports.status, periodMonth: measurementReports.periodMonth, totalCumulative: measurementReports.totalCumulative })
     .from(measurementReports)
     .where(eq(measurementReports.projectId, projectId));
-  const closed = reports.filter((r) => r.status === "closed").sort((a, b) => (a.periodMonth < b.periodMonth ? 1 : -1));
-  const last = closed[0] ?? null;
-  let leavesAt100 = 0;
-  if (last) {
-    const [c] = await db
-      .select({ n: sql<number>`count(*)::int` })
-      .from(measurementLines)
-      .where(and(eq(measurementLines.reportId, last.id), sql`${measurementLines.pctCumulative} >= 0.9999`));
-    leavesAt100 = c?.n ?? 0;
-  }
+  const suppliers = sups.map((s) => {
+    const mine = reports.filter((r) => r.supplierId === s.id);
+    const closed = mine.filter((r) => r.status === "closed").sort((a, b) => (a.periodMonth < b.periodMonth ? 1 : -1));
+    return {
+      id: s.id,
+      name: s.name,
+      controlMode: s.controlMode,
+      budgeted: leaves.filter((l) => l.supplierId === s.id).reduce((a, l) => a + Number(l.budgeted), 0),
+      closedCount: closed.length,
+      draftCount: mine.length - closed.length,
+      lastClosedMonth: closed[0]?.periodMonth ?? null,
+      lastClosedCumulative: closed[0] ? Number(closed[0].totalCumulative) : 0,
+    };
+  });
 
   // Faturas e pagamentos
   const today = todayIso();
@@ -180,13 +190,7 @@ export async function loadProjectContext(organizationId: string, projectId: stri
       },
       budget,
       docCategories: await docCategoriesForProperty(pj.propertyId),
-      measurements: {
-        closedCount: closed.length,
-        draftCount: reports.length - closed.length,
-        lastClosedMonth: last?.periodMonth ?? null,
-        lastClosedCumulative: last ? Number(last.totalCumulative) : 0,
-        leavesAt100,
-      },
+      suppliers,
       invoices: {
         count: inv.length,
         total: inv.reduce((s, i) => s + Number(i.total), 0),

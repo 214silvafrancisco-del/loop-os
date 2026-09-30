@@ -93,45 +93,58 @@ describe("condições de contexto", () => {
   });
 });
 
+const supplier = (p: Partial<ProjectContext["suppliers"][number]> & { id: string; name: string }): ProjectContext["suppliers"][number] => ({
+  controlMode: "autos",
+  budgeted: 10000,
+  closedCount: 0,
+  draftCount: 0,
+  lastClosedMonth: null,
+  lastClosedCumulative: 0,
+  ...p,
+});
+
 const projectBase: ProjectContext = {
   project: { managerUserId: "u1", plannedStart: "2026-10-01", plannedEnd: "2027-02-01", actualStart: null, actualEnd: null, status: "planeamento" },
-  budget: { lineCount: 20, total: 22000, chaptersWithCategory: 5, leafCount: 15, leavesWithSupplier: 12 },
+  budget: { lineCount: 20, total: 22000, chaptersWithCategory: 5, chapterCount: 5, chaptersWithSupplier: 4, leafCount: 15 },
   docCategories: ["contrato de empreitada"],
-  measurements: { closedCount: 0, draftCount: 0, lastClosedMonth: null, lastClosedCumulative: 0, leavesAt100: 0 },
+  suppliers: [supplier({ id: "emp", name: "Empreiteiro", budgeted: 15000 }), supplier({ id: "cax", name: "Caixilheiro", budgeted: 7000, controlMode: "fatura" })],
   invoices: { count: 0, total: 0, paid: 0, overdueUnpaid: 0 },
   paymentsCount: 0,
   today: "2026-10-15",
 };
 
 describe("regras da obra", () => {
-  it("planeamento: orçamento existe, fornecedores 12 de 15, início pendente", () => {
+  it("planeamento: orçamento existe, capítulos com fornecedor 4 de 5, início pendente", () => {
     expect(evaluateRule("project.budget_exists", proj(projectBase)).status).toBe("done");
-    expect(evaluateRule("project.budget_suppliers", proj(projectBase))).toEqual({ status: "pending", detail: "12 de 15" });
+    expect(evaluateRule("project.budget_suppliers", proj(projectBase))).toEqual({ status: "pending", detail: "4 de 5" });
     expect(evaluateRule("project.started", proj(projectBase)).status).toBe("pending");
     expect(evaluateRule("doc:Contrato de empreitada", proj(projectBase)).status).toBe("done");
     expect(evaluateRule("project.invoices_paid", proj(projectBase))).toEqual({ status: "pending", detail: "sem faturas" });
   });
 
-  it("autos em dia: último auto do mês anterior ou atual", () => {
+  it("autos em dia: só fornecedores por autos, cada um com o auto do mês anterior ou atual", () => {
     const inProgress = { ...projectBase, project: { ...projectBase.project, status: "em_curso" as const } };
     expect(evaluateCondition("project_in_progress", proj(inProgress))).toBe(true);
-    expect(evaluateRule("project.measurements_current", proj(inProgress))).toEqual({ status: "pending", detail: "nenhum auto fechado" });
-    const sep = { ...inProgress, measurements: { ...inProgress.measurements, closedCount: 1, lastClosedMonth: "2026-09-01" } };
-    expect(evaluateRule("project.measurements_current", proj(sep)).status).toBe("done");
-    const jul = { ...sep, measurements: { ...sep.measurements, lastClosedMonth: "2026-07-01" } };
-    expect(evaluateRule("project.measurements_current", proj(jul))).toEqual({ status: "pending", detail: "último: 2026-07" });
+    expect(evaluateRule("project.measurements_current", proj(inProgress))).toEqual({ status: "pending", detail: "0 de 1 fornecedor em dia" });
+    const sep = { ...inProgress, suppliers: [supplier({ id: "emp", name: "Empreiteiro", closedCount: 1, lastClosedMonth: "2026-09-01" }), projectBase.suppliers[1]!] };
+    expect(evaluateRule("project.measurements_current", proj(sep))).toEqual({ status: "done", detail: "1 de 1 fornecedor em dia" });
+    const jul = { ...sep, suppliers: [supplier({ id: "emp", name: "Empreiteiro", closedCount: 1, lastClosedMonth: "2026-07-01" })] };
+    expect(evaluateRule("project.measurements_current", proj(jul)).status).toBe("pending");
+    const onlyInvoices = { ...inProgress, suppliers: [projectBase.suppliers[1]!] };
+    expect(evaluateRule("project.measurements_current", proj(onlyInvoices)).status).toBe("na");
   });
 
   it("fecho: autos a 100 %, faturas pagas, sem rascunhos", () => {
     const closing = {
       ...projectBase,
       project: { ...projectBase.project, status: "concluida" as const, actualStart: "2026-10-01", actualEnd: "2027-01-20" },
-      measurements: { closedCount: 4, draftCount: 1, lastClosedMonth: "2027-01-01", lastClosedCumulative: 22000, leavesAt100: 14 },
+      suppliers: [supplier({ id: "emp", name: "Empreiteiro", budgeted: 15000, closedCount: 4, draftCount: 1, lastClosedMonth: "2027-01-01", lastClosedCumulative: 15000 }), projectBase.suppliers[1]!],
       invoices: { count: 6, total: 22000, paid: 21000, overdueUnpaid: 1 },
       paymentsCount: 5,
     };
     expect(evaluateRule("project.no_draft_measurements", proj(closing))).toEqual({ status: "pending", detail: "1 em rascunho" });
-    expect(evaluateRule("project.measurements_complete", proj(closing)).status).toBe("done"); // por valor acumulado
+    expect(evaluateRule("project.measurements_complete", proj(closing))).toEqual({ status: "done", detail: "1 de 1 fornecedor a 100 %" });
+    expect(evaluateRule("project.first_measurement", proj(closing)).status).toBe("done");
     expect(evaluateRule("project.invoices_paid", proj(closing))).toEqual({ status: "pending", detail: "1000.00 € por pagar" });
     expect(evaluateRule("project.no_overdue", proj(closing))).toEqual({ status: "pending", detail: "1 vencida(s)" });
     expect(evaluateRule("project.completed", proj(closing)).status).toBe("done");

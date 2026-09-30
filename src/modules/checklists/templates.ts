@@ -104,7 +104,7 @@ export const NOVA_OBRA: TemplateDef = {
   code: "nova_obra",
   name: "Nova Obra",
   entityType: "project",
-  version: 1,
+  version: 2,
   items: [
     // Criação
     { code: "criacao.responsavel", section: "criacao", label: "Responsável definido", kind: "auto", ruleKey: "project.manager", required: true, gates: ["hard:project:em_curso"], linkPath: "resumo" },
@@ -113,7 +113,7 @@ export const NOVA_OBRA: TemplateDef = {
     // Orçamento
     { code: "orcamento.criado", section: "orcamento", label: "Orçamento criado", help: "Pelo menos uma linha com valor (importar Excel ou criar à mão).", kind: "auto", ruleKey: "project.budget_exists", required: true, gates: ["hard:project:em_curso"], linkPath: "orcamento" },
     { code: "orcamento.capitulos", section: "orcamento", label: "Capítulos definidos", help: "Capítulos de nível 1 com categoria.", kind: "auto", ruleKey: "project.budget_chapters", linkPath: "orcamento" },
-    { code: "orcamento.fornecedores", section: "orcamento", label: "Fornecedores atribuídos", help: "Todos os artigos com fornecedor.", kind: "auto", ruleKey: "project.budget_suppliers", linkPath: "orcamento" },
+    { code: "orcamento.fornecedores", section: "orcamento", label: "Fornecedores atribuídos", help: "Todos os capítulos com fornecedor da obra.", kind: "auto", ruleKey: "project.budget_suppliers", linkPath: "orcamento" },
     { code: "orcamento.validado", section: "orcamento", label: "Orçamento validado com o empreiteiro", kind: "manual", defaultAssignee: "manager" },
 
     // Documentação
@@ -125,7 +125,7 @@ export const NOVA_OBRA: TemplateDef = {
     // Execução
     { code: "execucao.inicio", section: "execucao", label: "Início registado", help: "Estado \"Em curso\" ou data de início real.", kind: "auto", ruleKey: "project.started", required: true, linkPath: "resumo" },
     { code: "execucao.primeiro_auto", section: "execucao", label: "Primeiro auto de medição fechado", kind: "auto", ruleKey: "project.first_measurement", linkPath: "autos" },
-    { code: "execucao.autos_em_dia", section: "execucao", label: "Autos em dia", help: "Enquanto a obra está em curso, o último auto fechado é do mês anterior ou do atual.", kind: "auto", ruleKey: "project.measurements_current", appliesWhen: "project_in_progress", linkPath: "autos" },
+    { code: "execucao.autos_em_dia", section: "execucao", label: "Autos em dia", help: "Enquanto a obra está em curso, cada fornecedor por autos tem o auto do mês anterior ou do atual fechado.", kind: "auto", ruleKey: "project.measurements_current", appliesWhen: "project_in_progress", linkPath: "autos" },
     { code: "execucao.faturas", section: "execucao", label: "Faturas registadas", kind: "auto", ruleKey: "project.invoices_exist", linkPath: "faturas" },
 
     // Controlo financeiro
@@ -135,7 +135,7 @@ export const NOVA_OBRA: TemplateDef = {
 
     // Fecho
     { code: "fecho.sem_rascunhos", section: "fecho", label: "Sem autos em rascunho", kind: "auto", ruleKey: "project.no_draft_measurements", gates: ["hard:project:concluida"], linkPath: "autos" },
-    { code: "fecho.autos_100", section: "fecho", label: "Autos a 100 %", kind: "auto", ruleKey: "project.measurements_complete", gates: ["warn:project:concluida"], linkPath: "autos" },
+    { code: "fecho.autos_100", section: "fecho", label: "Autos a 100 %", help: "Cada fornecedor por autos com o acumulado igual ao orçamentado.", kind: "auto", ruleKey: "project.measurements_complete", gates: ["warn:project:concluida"], linkPath: "autos" },
     { code: "fecho.faturas_pagas", section: "fecho", label: "Todas as faturas pagas", kind: "auto", ruleKey: "project.invoices_paid", gates: ["warn:project:concluida"], linkPath: "faturas" },
     { code: "fecho.custos_finais", section: "fecho", label: "Custos finais confirmados", kind: "manual", defaultAssignee: "manager" },
     { code: "fecho.fotografias_finais", section: "fecho", label: "Fotografias finais carregadas", kind: "auto", ruleKey: doc("Fotografias finais"), gates: ["warn:project:concluida"], linkPath: "documentos?categoria=Fotografias finais" },

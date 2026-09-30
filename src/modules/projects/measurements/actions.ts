@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/core/auth/current-user";
 import { db } from "@/core/db/client";
-import { measurementLines, measurementReports, projects } from "../schema";
+import { measurementLines, measurementReports, projectSuppliers, projects } from "../schema";
 import { calcMeasurement, firstOfMonth, nextMonth, type LeafForMeasurement } from "./calc";
 import { getLastClosedMeasurement, getMeasurement, getMeasurementProgress, listBudgetLeaves } from "./queries";
 
@@ -17,9 +17,9 @@ async function ownProject(organizationId: string, projectId: string) {
   return p ?? null;
 }
 
-/** Folhas do orçamento com o progresso do último auto fechado antes de `beforeNumber`. */
-async function leavesWithPrevious(projectId: string, beforeNumber?: number): Promise<LeafForMeasurement[]> {
-  const [leaves, previous] = await Promise.all([listBudgetLeaves(projectId), getLastClosedMeasurement(projectId, beforeNumber)]);
+/** Folhas do orçamento do fornecedor com o progresso do seu último auto fechado antes de `beforeNumber`. */
+async function leavesWithPrevious(projectId: string, projectSupplierId: string, beforeNumber?: number): Promise<LeafForMeasurement[]> {
+  const [leaves, previous] = await Promise.all([listBudgetLeaves(projectId, projectSupplierId), getLastClosedMeasurement(projectId, projectSupplierId, beforeNumber)]);
   const progress = await getMeasurementProgress(previous?.id ?? null);
   return leaves.map((l) => ({
     budgetLineId: l.id,
@@ -29,25 +29,40 @@ async function leavesWithPrevious(projectId: string, beforeNumber?: number): Pro
   }));
 }
 
-/** Novo auto em rascunho: número seguinte, mês seguinte ao último, % pré-preenchidas. */
-export async function createMeasurement(projectId: string): Promise<Result<{ id: string }>> {
+/**
+ * Novo auto em rascunho para um fornecedor: número seguinte da obra, mês
+ * seguinte ao último auto desse fornecedor, % pré-preenchidas com o anterior.
+ */
+export async function createMeasurement(projectId: string, projectSupplierId: string): Promise<Result<{ id: string }>> {
   const user = await requireUser();
   const project = await ownProject(user.organizationId, projectId);
   if (!project) return { ok: false, error: "Obra não encontrada." };
+  const [supplier] = await db
+    .select({ id: projectSuppliers.id, name: projectSuppliers.name, controlMode: projectSuppliers.controlMode })
+    .from(projectSuppliers)
+    .where(and(eq(projectSuppliers.id, projectSupplierId), eq(projectSuppliers.projectId, projectId)));
+  if (!supplier) return { ok: false, error: "Fornecedor não encontrado nesta obra." };
+  if (supplier.controlMode !== "autos") return { ok: false, error: `${supplier.name} é controlado por fatura, não por autos.` };
 
-  const [last] = await db
+  const [lastOfSupplier] = await db
     .select({ number: measurementReports.number, periodMonth: measurementReports.periodMonth, status: measurementReports.status })
+    .from(measurementReports)
+    .where(and(eq(measurementReports.projectId, projectId), eq(measurementReports.projectSupplierId, projectSupplierId)))
+    .orderBy(desc(measurementReports.number))
+    .limit(1);
+  if (lastOfSupplier && lastOfSupplier.status === "draft") return { ok: false, error: `O auto n.º ${lastOfSupplier.number} de ${supplier.name} ainda está em rascunho. Fecha-o primeiro.` };
+  const [lastOfProject] = await db
+    .select({ number: measurementReports.number })
     .from(measurementReports)
     .where(eq(measurementReports.projectId, projectId))
     .orderBy(desc(measurementReports.number))
     .limit(1);
-  if (last && last.status === "draft") return { ok: false, error: `O auto n.º ${last.number} ainda está em rascunho. Fecha-o primeiro.` };
 
-  const leaves = await leavesWithPrevious(projectId);
-  if (leaves.length === 0) return { ok: false, error: "O orçamento ainda não tem artigos." };
+  const leaves = await leavesWithPrevious(projectId, projectSupplierId);
+  if (leaves.length === 0) return { ok: false, error: `O orçamento de ${supplier.name} ainda não tem artigos.` };
 
   const today = new Date().toISOString().slice(0, 10);
-  const periodMonth = last ? nextMonth(last.periodMonth) : firstOfMonth(today);
+  const periodMonth = lastOfSupplier ? nextMonth(lastOfSupplier.periodMonth) : firstOfMonth(today);
   const calc = calcMeasurement(leaves, []);
 
   const id = await db.transaction(async (tx) => {
@@ -56,7 +71,8 @@ export async function createMeasurement(projectId: string): Promise<Result<{ id:
       .values({
         organizationId: user.organizationId,
         projectId,
-        number: (last?.number ?? 0) + 1,
+        projectSupplierId,
+        number: (lastOfProject?.number ?? 0) + 1,
         periodMonth,
         reportDate: today,
         status: "draft",
@@ -100,7 +116,7 @@ export async function saveMeasurement(reportId: string, rawLines: unknown, rawMe
   const meta = metaSchema.safeParse(rawMeta);
   if (!lines.success || !meta.success) return { ok: false, error: "Dados inválidos." };
 
-  const leaves = await leavesWithPrevious(report.projectId, report.number);
+  const leaves = await leavesWithPrevious(report.projectId, report.projectSupplierId, report.number);
   const calc = calcMeasurement(leaves, lines.data);
 
   await db.transaction(async (tx) => {

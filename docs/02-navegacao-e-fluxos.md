@@ -181,6 +181,11 @@ Barra superior: pesquisa global (⌘K: negócios, imóveis, contactos, documento
 3. Botão "Criar Obra" (ativo só com escritura) → cria `project` com nome, imóvel, responsável, datas previstas (início = escritura + X dias por defeito, duração = `works_months` do cenário ativo); copia o orçamento do BP como um único artigo "Orçamento BP" no capítulo "Geral", para ser substituído pelo mapa de quantidades real.
 4. Obra → Orçamento: importar Excel do mapa de quantidades ou construir à mão; atribuir fornecedor por linha.
 
+### F5b. Fornecedores da obra (Step 23)
+1. Obra → Orçamento → "Fornecedor": nome, tipo, NIF, controlo (autos mensais / por fatura). Ou "Reutilizar de outra obra" (copia os dados).
+2. Cada capítulo do orçamento pertence a um fornecedor; a importação do Excel pergunta para qual. O orçamento mostra uma secção por fornecedor.
+3. Autos: um por mês por fornecedor "por autos". Faturas: escolhem o fornecedor da obra; se for por autos, ligam-se ao auto dele.
+
 ### F6. Auto de medição mensal
 1. Obra → Autos → "Novo auto" (mês corrente).
 2. Percorrer a árvore e escrever a % acumulada por artigo; total do período e acumulado atualizam.

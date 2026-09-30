@@ -53,17 +53,20 @@ export type ProjectContext = {
     actualEnd: string | null;
     status: "planeamento" | "a_iniciar" | "em_curso" | "pausada" | "concluida" | "cancelada";
   };
-  budget: { lineCount: number; total: number; chaptersWithCategory: number; leafCount: number; leavesWithSupplier: number };
+  budget: { lineCount: number; total: number; chaptersWithCategory: number; chapterCount: number; chaptersWithSupplier: number; leafCount: number };
   docCategories: string[];
-  measurements: {
+  /** Fornecedores da obra com o estado dos seus autos. */
+  suppliers: {
+    id: string;
+    name: string;
+    controlMode: "autos" | "fatura";
+    budgeted: number;
     closedCount: number;
     draftCount: number;
-    /** Primeiro dia do mês do último auto fechado (YYYY-MM-DD). */
+    /** Primeiro dia do mês do último auto fechado deste fornecedor. */
     lastClosedMonth: string | null;
     lastClosedCumulative: number;
-    /** Artigos a 100 % no último auto fechado. */
-    leavesAt100: number;
-  };
+  }[];
   invoices: { count: number; total: number; paid: number; overdueUnpaid: number };
   paymentsCount: number;
   /** YYYY-MM-DD */
@@ -130,27 +133,34 @@ const PROJECT_RULES: Record<string, (c: ProjectContext) => RuleResult> = {
   "project.budget_exists": (c) => (c.budget.lineCount > 0 && c.budget.total > 0 ? done() : pending()),
   "project.budget_chapters": (c) => (c.budget.chaptersWithCategory > 0 ? done(String(c.budget.chaptersWithCategory)) : pending()),
   "project.budget_suppliers": (c) => {
-    const { leafCount, leavesWithSupplier } = c.budget;
-    if (leafCount === 0) return pending();
-    return leavesWithSupplier === leafCount ? done(countOf(leavesWithSupplier, leafCount)) : pending(countOf(leavesWithSupplier, leafCount));
+    const { chapterCount, chaptersWithSupplier } = c.budget;
+    if (chapterCount === 0) return pending();
+    return chaptersWithSupplier === chapterCount ? done(countOf(chaptersWithSupplier, chapterCount)) : pending(countOf(chaptersWithSupplier, chapterCount));
   },
   "project.started": (c) => (has(c.project.actualStart) || ["em_curso", "pausada", "concluida"].includes(c.project.status) ? done() : pending()),
-  "project.first_measurement": (c) => (c.measurements.closedCount > 0 ? done() : pending()),
+  "project.first_measurement": (c) => (c.suppliers.some((s) => s.closedCount > 0) ? done() : pending()),
   "project.measurements_current": (c) => {
-    const last = c.measurements.lastClosedMonth;
-    if (!last) return pending("nenhum auto fechado");
-    return last >= previousMonthStart(c.today) ? done(`último: ${last.slice(0, 7)}`) : pending(`último: ${last.slice(0, 7)}`);
+    // Só fornecedores controlados por autos e com orçamento.
+    const byAutos = c.suppliers.filter((s) => s.controlMode === "autos" && s.budgeted > 0);
+    if (byAutos.length === 0) return { status: "na" };
+    const limit = previousMonthStart(c.today);
+    const ok = byAutos.filter((s) => s.lastClosedMonth !== null && s.lastClosedMonth >= limit);
+    const detail = `${ok.length} de ${byAutos.length} fornecedor${byAutos.length === 1 ? "" : "es"} em dia`;
+    return ok.length === byAutos.length ? done(detail) : pending(detail);
   },
-  "project.no_draft_measurements": (c) => (c.measurements.draftCount === 0 ? done() : pending(`${c.measurements.draftCount} em rascunho`)),
+  "project.no_draft_measurements": (c) => {
+    const drafts = c.suppliers.reduce((a, s) => a + s.draftCount, 0);
+    return drafts === 0 ? done() : pending(`${drafts} em rascunho`);
+  },
   "project.invoices_exist": (c) => (c.invoices.count > 0 ? done(String(c.invoices.count)) : pending()),
   "project.payments_exist": (c) => (c.paymentsCount > 0 ? done(String(c.paymentsCount)) : pending()),
   "project.no_overdue": (c) => (c.invoices.overdueUnpaid === 0 ? done() : pending(`${c.invoices.overdueUnpaid} vencida(s)`)),
   "project.measurements_complete": (c) => {
-    const { leafCount } = c.budget;
-    const { leavesAt100, lastClosedCumulative } = c.measurements;
-    if (leafCount === 0 || c.measurements.closedCount === 0) return pending();
-    const byAmount = c.budget.total > 0 && lastClosedCumulative >= c.budget.total - 0.01;
-    return leavesAt100 === leafCount || byAmount ? done() : pending(countOf(leavesAt100, leafCount));
+    const byAutos = c.suppliers.filter((s) => s.controlMode === "autos" && s.budgeted > 0);
+    if (byAutos.length === 0) return { status: "na" };
+    const complete = byAutos.filter((s) => s.lastClosedCumulative >= s.budgeted - 0.01);
+    const detail = `${complete.length} de ${byAutos.length} fornecedor${byAutos.length === 1 ? "" : "es"} a 100 %`;
+    return complete.length === byAutos.length ? done(detail) : pending(detail);
   },
   "project.invoices_paid": (c) => {
     if (c.invoices.count === 0) return pending("sem faturas");

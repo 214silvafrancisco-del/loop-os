@@ -6,8 +6,8 @@ import { z } from "zod";
 import { requireUser } from "@/core/auth/current-user";
 import { db } from "@/core/db/client";
 import { getActiveScenarioForDeal } from "@/modules/business-plan/queries";
-import { budgetLines, projects } from "../schema";
-import { assignCodes, computeTotals, depthOf, isLeaf, type BudgetNode } from "./tree";
+import { budgetLines, projectSuppliers, projects } from "../schema";
+import { assignCodes, chaptersWithoutSupplier, computeTotals, depthOf, inheritSuppliers, isLeaf, type BudgetNode } from "./tree";
 
 type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string };
 
@@ -45,11 +45,18 @@ export async function saveBudget(projectId: string, rawNodes: unknown): Promise<
   const project = await ownProject(user.organizationId, projectId);
   if (!project) return { ok: false, error: "Obra não encontrada." };
 
-  const nodes: BudgetNode[] = parsed.data;
+  // O fornecedor define-se no capítulo e copia-se para todas as linhas dele.
+  const nodes: BudgetNode[] = inheritSuppliers(parsed.data);
   const ids = new Set(nodes.map((n) => n.id));
   for (const n of nodes) {
     if (n.parentId && !ids.has(n.parentId)) return { ok: false, error: "Linha com pai inexistente." };
   }
+  const missing = chaptersWithoutSupplier(nodes);
+  if (missing.length) return { ok: false, error: `Sem fornecedor: ${missing.map((c) => c.description || "capítulo sem nome").join(", ")}. Cada capítulo pertence a um fornecedor da obra.` };
+  const validSuppliers = new Set(
+    (await db.select({ id: projectSuppliers.id }).from(projectSuppliers).where(eq(projectSuppliers.projectId, projectId))).map((s) => s.id),
+  );
+  if (nodes.some((n) => n.supplierId && !validSuppliers.has(n.supplierId))) return { ok: false, error: "Fornecedor inválido para esta obra." };
   const codes = assignCodes(nodes);
   const totals = computeTotals(nodes);
 
@@ -67,7 +74,7 @@ export async function saveBudget(projectId: string, rawNodes: unknown): Promise<
         sort: n.sort,
         categoryId: n.categoryId,
         description: n.description,
-        supplierId: leaf ? n.supplierId : null,
+        projectSupplierId: n.supplierId,
         quantity: leaf && n.quantity !== null ? n.quantity.toFixed(3) : null,
         unit: leaf ? n.unit : null,
         unitPrice: leaf && n.unitPrice !== null ? n.unitPrice.toFixed(4) : null,
@@ -113,13 +120,22 @@ export async function seedBudgetFromBusinessPlan(projectId: string): Promise<Res
   if (!amount) return { ok: false, error: "O cenário ativo do Business Plan não tem orçamento de obra." };
 
   await db.transaction(async (tx) => {
+    // Precisa de um fornecedor: usa o primeiro da obra ou cria "Empreiteiro".
+    let [supplier] = await tx.select({ id: projectSuppliers.id }).from(projectSuppliers).where(eq(projectSuppliers.projectId, projectId)).orderBy(projectSuppliers.sort).limit(1);
+    if (!supplier) {
+      [supplier] = await tx
+        .insert(projectSuppliers)
+        .values({ organizationId: user.organizationId, projectId, name: "Empreiteiro", kind: "Empreiteiro", controlMode: "autos", sort: 1, createdBy: user.id, updatedBy: user.id })
+        .returning({ id: projectSuppliers.id });
+    }
     const [chapter] = await tx
       .insert(budgetLines)
-      .values({ organizationId: user.organizationId, projectId, depth: 0, code: "1", sort: 1, description: "Geral", budgeted: amount.toFixed(2), createdBy: user.id, updatedBy: user.id })
+      .values({ organizationId: user.organizationId, projectId, projectSupplierId: supplier!.id, depth: 0, code: "1", sort: 1, description: "Geral", budgeted: amount.toFixed(2), createdBy: user.id, updatedBy: user.id })
       .returning({ id: budgetLines.id });
     await tx.insert(budgetLines).values({
       organizationId: user.organizationId,
       projectId,
+      projectSupplierId: supplier!.id,
       parentId: chapter!.id,
       depth: 1,
       code: "1.1",

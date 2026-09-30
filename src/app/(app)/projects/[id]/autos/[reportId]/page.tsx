@@ -8,6 +8,7 @@ import { eq } from "drizzle-orm";
 import { MeasurementEditor, type MeasurementLeafView } from "@/modules/projects/components/measurement-editor";
 import { getLastClosedMeasurement, getMeasurement, getMeasurementLines, getMeasurementProgress, listBudgetLeaves } from "@/modules/projects/measurements/queries";
 import { budgetLines } from "@/modules/projects/schema";
+import { getProjectSupplier } from "@/modules/projects/suppliers/queries";
 
 export default async function MeasurementPage({ params }: { params: Promise<{ id: string; reportId: string }> }) {
   const user = await requireUser();
@@ -15,10 +16,11 @@ export default async function MeasurementPage({ params }: { params: Promise<{ id
   const report = await getMeasurement(user.organizationId, reportId);
   if (!report || report.projectId !== id) notFound();
 
-  const [leaves, lines, previous, allLines] = await Promise.all([
-    listBudgetLeaves(id),
+  const [supplier, leaves, lines, previous, allLines] = await Promise.all([
+    getProjectSupplier(user.organizationId, report.projectSupplierId),
+    listBudgetLeaves(id, report.projectSupplierId),
     getMeasurementLines(reportId),
-    getLastClosedMeasurement(id, report.number),
+    getLastClosedMeasurement(id, report.projectSupplierId, report.number),
     db.select({ id: budgetLines.id, parentId: budgetLines.parentId, description: budgetLines.description, code: budgetLines.code }).from(budgetLines).where(eq(budgetLines.projectId, id)),
   ]);
   const previousProgress = await getMeasurementProgress(previous?.id ?? null);
@@ -45,11 +47,12 @@ export default async function MeasurementPage({ params }: { params: Promise<{ id
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Button asChild variant="ghost" size="sm" className="gap-1">
           <Link href={`/projects/${id}/autos`}><ArrowLeft className="size-4" /> Autos</Link>
         </Button>
         <h2 className="text-base font-semibold">Auto de medição n.º {report.number}</h2>
+        {supplier ? <span className="rounded bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">{supplier.name}</span> : null}
       </div>
       <MeasurementEditor
         key={report.updatedAt.toISOString()}

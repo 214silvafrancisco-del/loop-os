@@ -293,6 +293,7 @@ Assistente sobre os dados da LOOP (Claude API): "que documentos faltam", "preço
 | 20 | Negócio: tab Processo, progresso + próximo passo no cabeçalho, itens manuais / N/A / responsável, Histórico | carregar uma caderneta e ver o item concluir-se sozinho |
 | 21 | Obra: tab Processo; progresso na lista e no Kanban de negócios; filtro | criar obra e ver a checklist nascer |
 | 22 | Portas (gerar proposta, fases, obra em curso/concluída), cartões no dashboard, Definições → Procedimentos (leitura) | gerar proposta sem BP → mensagem com link |
+| 23 | Fornecedores por obra: orçamento dividido por fornecedor, um auto por mês por fornecedor, controlo por autos ou por fatura, faturas por fornecedor da obra | criar 2 fornecedores, importar orçamento para um, fechar auto de um, fatura do outro |
 
 Cada step é uma sessão curta: ficheiros indicados, comandos, teste, resultado esperado.
 

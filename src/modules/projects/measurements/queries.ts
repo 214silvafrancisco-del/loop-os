@@ -2,18 +2,20 @@ import "server-only";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/core/db/client";
 import { profiles } from "@/core/db/schema/core";
-import { budgetLines, measurementLines, measurementReports, type MeasurementReport } from "../schema";
+import { budgetLines, measurementLines, measurementReports, projectSuppliers, type MeasurementReport } from "../schema";
 
-export type MeasurementRow = MeasurementReport & { authorName: string | null };
+export type MeasurementRow = MeasurementReport & { authorName: string | null; supplierName: string };
 
+/** Autos da obra, com o fornecedor de cada um. */
 export async function listMeasurements(organizationId: string, projectId: string): Promise<MeasurementRow[]> {
   const rows = await db
-    .select({ report: measurementReports, authorName: profiles.fullName })
+    .select({ report: measurementReports, authorName: profiles.fullName, supplierName: projectSuppliers.name })
     .from(measurementReports)
+    .innerJoin(projectSuppliers, eq(measurementReports.projectSupplierId, projectSuppliers.id))
     .leftJoin(profiles, eq(measurementReports.createdBy, profiles.id))
     .where(and(eq(measurementReports.organizationId, organizationId), eq(measurementReports.projectId, projectId)))
     .orderBy(desc(measurementReports.number));
-  return rows.map((r) => ({ ...r.report, authorName: r.authorName }));
+  return rows.map((r) => ({ ...r.report, authorName: r.authorName, supplierName: r.supplierName }));
 }
 
 export async function getMeasurement(organizationId: string, reportId: string): Promise<MeasurementReport | null> {
@@ -29,9 +31,9 @@ export async function getMeasurementLines(reportId: string) {
   return db.select().from(measurementLines).where(eq(measurementLines.reportId, reportId));
 }
 
-/** Último auto fechado da obra, ou null. */
-export async function getLastClosedMeasurement(projectId: string, beforeNumber?: number): Promise<MeasurementReport | null> {
-  const conditions = [eq(measurementReports.projectId, projectId), eq(measurementReports.status, "closed")];
+/** Último auto fechado de um fornecedor da obra (antes de `beforeNumber`, se dado). */
+export async function getLastClosedMeasurement(projectId: string, projectSupplierId: string, beforeNumber?: number): Promise<MeasurementReport | null> {
+  const conditions = [eq(measurementReports.projectId, projectId), eq(measurementReports.projectSupplierId, projectSupplierId), eq(measurementReports.status, "closed")];
   if (beforeNumber !== undefined) conditions.push(sql`${measurementReports.number} < ${beforeNumber}`);
   const [row] = await db
     .select()
@@ -54,8 +56,8 @@ export async function getMeasurementProgress(reportId: string | null): Promise<M
   return map;
 }
 
-/** Artigos (folhas) do orçamento, por ordem da árvore. */
-export async function listBudgetLeaves(projectId: string) {
+/** Artigos (folhas) do orçamento de um fornecedor, por ordem da árvore. */
+export async function listBudgetLeaves(projectId: string, projectSupplierId: string) {
   return db
     .select({
       id: budgetLines.id,
@@ -67,17 +69,52 @@ export async function listBudgetLeaves(projectId: string) {
       sort: budgetLines.sort,
     })
     .from(budgetLines)
-    .where(and(eq(budgetLines.projectId, projectId), sql`not exists (select 1 from ${budgetLines} c where c.parent_id = ${budgetLines.id})`))
+    .where(
+      and(
+        eq(budgetLines.projectId, projectId),
+        eq(budgetLines.projectSupplierId, projectSupplierId),
+        sql`not exists (select 1 from ${budgetLines} c where c.parent_id = ${budgetLines.id})`,
+      ),
+    )
     .orderBy(asc(budgetLines.code));
 }
 
-/** Executado da obra = acumulado do último auto fechado. */
-export async function getExecutedTotal(organizationId: string, projectId: string): Promise<{ executed: number; lastNumber: number | null; lastMonth: string | null }> {
-  const [row] = await db
-    .select({ total: measurementReports.totalCumulative, number: measurementReports.number, month: measurementReports.periodMonth })
+export type SupplierExecution = { executed: number; lastNumber: number | null; lastMonth: string | null; draftCount: number };
+
+/** Executado por fornecedor = acumulado do último auto fechado de cada um. */
+export async function getExecutionBySupplier(projectId: string): Promise<Map<string, SupplierExecution>> {
+  const rows = await db
+    .select({ supplierId: measurementReports.projectSupplierId, number: measurementReports.number, month: measurementReports.periodMonth, total: measurementReports.totalCumulative, status: measurementReports.status })
     .from(measurementReports)
-    .where(and(eq(measurementReports.organizationId, organizationId), eq(measurementReports.projectId, projectId), eq(measurementReports.status, "closed")))
-    .orderBy(desc(measurementReports.number))
-    .limit(1);
-  return { executed: Number(row?.total ?? 0), lastNumber: row?.number ?? null, lastMonth: row?.month ?? null };
+    .where(eq(measurementReports.projectId, projectId))
+    .orderBy(desc(measurementReports.number));
+  const map = new Map<string, SupplierExecution>();
+  for (const r of rows) {
+    const cur = map.get(r.supplierId) ?? { executed: 0, lastNumber: null, lastMonth: null, draftCount: 0 };
+    if (r.status === "draft") cur.draftCount++;
+    else if (cur.lastNumber === null) {
+      cur.executed = Number(r.total);
+      cur.lastNumber = r.number;
+      cur.lastMonth = r.month;
+    }
+    map.set(r.supplierId, cur);
+  }
+  return map;
+}
+
+/** Executado da obra = soma dos últimos autos fechados de cada fornecedor. */
+export async function getExecutedTotal(organizationId: string, projectId: string): Promise<{ executed: number; lastNumber: number | null; lastMonth: string | null }> {
+  const bySupplier = await getExecutionBySupplier(projectId);
+  let executed = 0;
+  let lastNumber: number | null = null;
+  let lastMonth: string | null = null;
+  for (const s of bySupplier.values()) {
+    executed += s.executed;
+    if (s.lastNumber !== null && (lastNumber === null || s.lastNumber > lastNumber)) {
+      lastNumber = s.lastNumber;
+      lastMonth = s.lastMonth;
+    }
+  }
+  void organizationId;
+  return { executed: Math.round(executed * 100) / 100, lastNumber, lastMonth };
 }

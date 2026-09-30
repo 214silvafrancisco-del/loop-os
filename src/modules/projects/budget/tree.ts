@@ -10,6 +10,7 @@ export type BudgetNode = {
   sort: number;
   description: string;
   categoryId: string | null;
+  /** Fornecedor da obra: define-se no capítulo (raiz) e herda-se para baixo. */
   supplierId: string | null;
   quantity: number | null;
   unit: string | null;
@@ -75,6 +76,23 @@ export function flatten(nodes: BudgetNode[]): { node: BudgetNode; depth: number 
   };
   walk(null, 0);
   return out;
+}
+
+/** Capítulo (raiz) de um nó. */
+export function rootOf(nodes: BudgetNode[], id: string): BudgetNode | undefined {
+  let cur = nodes.find((n) => n.id === id);
+  while (cur?.parentId) cur = nodes.find((n) => n.id === cur!.parentId);
+  return cur;
+}
+
+/** Copia o fornecedor do capítulo para todas as linhas dele. */
+export function inheritSuppliers(nodes: BudgetNode[]): BudgetNode[] {
+  return nodes.map((n) => (n.parentId ? { ...n, supplierId: rootOf(nodes, n.id)?.supplierId ?? null } : n));
+}
+
+/** Capítulos sem fornecedor (o orçamento só se guarda quando não há nenhum). */
+export function chaptersWithoutSupplier(nodes: BudgetNode[]): BudgetNode[] {
+  return childrenOf(nodes, null).filter((c) => !c.supplierId);
 }
 
 export function leafAmount(n: BudgetNode): number {
@@ -232,7 +250,7 @@ export function parseBudgetSheet(rows: ParsedRow[]): { tree: ImportedNode[]; tot
 }
 
 /** Converte a árvore importada em nós planos com ids temporários. */
-export function importedToNodes(tree: ImportedNode[], startSort = 0, vatRate = 0.23): BudgetNode[] {
+export function importedToNodes(tree: ImportedNode[], startSort = 0, vatRate = 0.23, supplierId: string | null = null): BudgetNode[] {
   const out: BudgetNode[] = [];
   let counter = 0;
   const walk = (items: ImportedNode[], parentId: string | null, base: number) => {
@@ -245,7 +263,7 @@ export function importedToNodes(tree: ImportedNode[], startSort = 0, vatRate = 0
         sort: base + i + 1,
         description: it.description,
         categoryId: null,
-        supplierId: null,
+        supplierId,
         quantity: leaf ? it.quantity : null,
         unit: leaf ? it.unit : null,
         unitPrice: leaf ? it.unitPrice : null,

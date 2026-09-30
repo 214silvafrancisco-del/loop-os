@@ -1,7 +1,6 @@
 import "server-only";
-import { and, asc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { db } from "@/core/db/client";
-import { contacts } from "@/modules/contacts/schema";
 import { budgetCategories } from "@/modules/settings/schema";
 import { budgetLines, type BudgetLine } from "../schema";
 import type { BudgetNode } from "./tree";
@@ -21,25 +20,13 @@ export function lineToNode(l: BudgetLine): BudgetNode {
     sort: l.sort,
     description: l.description,
     categoryId: l.categoryId,
-    supplierId: l.supplierId,
+    supplierId: l.projectSupplierId,
     quantity: l.quantity === null ? null : Number(l.quantity),
     unit: l.unit,
     unitPrice: l.unitPrice === null ? null : Number(l.unitPrice),
     vatRate: Number(l.vatRate),
     notes: l.notes,
   };
-}
-
-/** Fornecedores (contactos com papel fornecedor), com os restantes contactos a seguir. */
-export async function listSupplierOptions(organizationId: string): Promise<{ id: string; name: string; isSupplier: boolean }[]> {
-  const rows = await db
-    .select({ id: contacts.id, name: contacts.name, companyName: contacts.companyName, roles: contacts.roles })
-    .from(contacts)
-    .where(and(eq(contacts.organizationId, organizationId), isNull(contacts.deletedAt)))
-    .orderBy(asc(contacts.name));
-  return rows
-    .map((c) => ({ id: c.id, name: c.companyName ? `${c.name} · ${c.companyName}` : c.name, isSupplier: c.roles.includes("fornecedor") }))
-    .sort((a, b) => Number(b.isSupplier) - Number(a.isSupplier) || a.name.localeCompare(b.name));
 }
 
 export async function listBudgetCategories(organizationId: string) {

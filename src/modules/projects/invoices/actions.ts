@@ -6,7 +6,7 @@ import { z } from "zod";
 import { requireUser } from "@/core/auth/current-user";
 import { db } from "@/core/db/client";
 import { dbErrorMessage } from "@/core/db/errors";
-import { invoices, payments, projects } from "../schema";
+import { invoices, payments, projectSuppliers, projects } from "../schema";
 import { getInvoice } from "./queries";
 
 type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string };
@@ -15,7 +15,7 @@ const money = z.number().min(0).max(1e9);
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida.");
 
 const invoiceSchema = z.object({
-  supplierId: z.uuid("Escolhe o fornecedor."),
+  projectSupplierId: z.uuid("Escolhe o fornecedor da obra."),
   number: z.string().trim().min(1, "Indica o número da fatura.").max(60),
   issueDate: isoDate,
   dueDate: isoDate.nullable(),
@@ -43,6 +43,11 @@ async function ownProject(organizationId: string, projectId: string) {
   return p ?? null;
 }
 
+async function supplierBelongs(projectSupplierId: string, projectId: string) {
+  const [s] = await db.select({ id: projectSuppliers.id }).from(projectSuppliers).where(and(eq(projectSuppliers.id, projectSupplierId), eq(projectSuppliers.projectId, projectId)));
+  return Boolean(s);
+}
+
 function revalidate(projectId: string) {
   revalidatePath(`/projects/${projectId}`, "layout");
   revalidatePath("/projects");
@@ -67,13 +72,14 @@ export async function createInvoice(projectId: string, raw: unknown): Promise<Re
   const cols = moneyCols(parsed.data);
   if (!cols) return { ok: false, error: "Líquido + IVA tem de ser igual ao total." };
   const d = parsed.data;
+  if (!(await supplierBelongs(d.projectSupplierId, projectId))) return { ok: false, error: "Fornecedor inválido para esta obra." };
   try {
     const [created] = await db
       .insert(invoices)
       .values({
         organizationId: user.organizationId,
         projectId,
-        supplierId: d.supplierId,
+        projectSupplierId: d.projectSupplierId,
         number: d.number,
         issueDate: d.issueDate,
         dueDate: d.dueDate,
@@ -102,11 +108,12 @@ export async function updateInvoice(invoiceId: string, raw: unknown): Promise<Re
   const cols = moneyCols(parsed.data);
   if (!cols) return { ok: false, error: "Líquido + IVA tem de ser igual ao total." };
   const d = parsed.data;
+  if (!(await supplierBelongs(d.projectSupplierId, existing.projectId))) return { ok: false, error: "Fornecedor inválido para esta obra." };
   try {
     await db
       .update(invoices)
       .set({
-        supplierId: d.supplierId,
+        projectSupplierId: d.projectSupplierId,
         number: d.number,
         issueDate: d.issueDate,
         dueDate: d.dueDate,
