@@ -61,7 +61,7 @@ Abre `http://<IP>:8000`, cria o utilizador admin do Coolify e liga o servidor "l
 | `NODE_ENV` | `production` | |
 
 4. *Deploy*. O primeiro build demora ~3 minutos. Verifica `https://app.loophomes.pt/api/health` → `{"ok":true,"db":"up"}`.
-5. Ativa *Auto deploy* (webhook do GitHub): cada `git push` para `main` publica.
+5. Ativa *Auto deploy* (webhook do GitHub): cada `git push` para `main` publica. O webhook da GitHub App tem de apontar para o domínio HTTPS do painel: GitHub → Settings → Developer settings → GitHub Apps → `loop-os-coolify` → *Webhook URL* `https://coolify.89.58.58.97.sslip.io/webhooks/source/github/events`. Se ficar com `http://<IP>:8000/…`, deixa de chegar quando a porta 8000 é bloqueada (§7b).
 
 ## 4. Migrações da base de dados
 
