@@ -9,7 +9,8 @@ Arquitetura de produção: **VPS + Coolify** (app em Docker), **Supabase Free** 
 | Servidor | Netcup VPS Lite 1 G12.5s (2 vCPU, 4 GB, 80 GB), Ubuntu 24.04.5, IPv4 `89.58.58.97`. O registo na Hetzner falhou; os passos abaixo valem para qualquer VPS Ubuntu |
 | App | `https://app.89.58.58.97.sslip.io` (sem domínio próprio ainda; certificado Let's Encrypt automático) |
 | Acesso SSH | só por chave (`~/.ssh/id_ed25519` no PC do Francisco); login por password desligado em `/etc/ssh/sshd_config.d/99-loop-hardening.conf` |
-| Firewall | UFW (22, 80, 443) + cadeia `DOCKER-USER` para portas publicadas pelo Docker (ver §7b) |
+| Firewall | UFW só 22, 80, 443; portas do Docker 8000, 6001, 6002 e 8080 bloqueadas externamente (ver §7b) |
+| Painel Coolify | `https://coolify.89.58.58.97.sslip.io` (a porta 8000 já não está acessível de fora) |
 | Backups | diários 03:15 UTC para `r2:loop-backups/db/` e `/var/backups/loop-os`, retenção 30 dias; restauro testado em 2026-09-30 |
 
 Notas de build no Coolify: o Coolify injeta todas as variáveis marcadas "Available at Buildtime" como `ARG` (incluindo `NODE_ENV`). Só as três `NEXT_PUBLIC_*` devem estar em build; as secretas só em runtime.
