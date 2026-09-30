@@ -10,8 +10,18 @@ import { createClient } from "@/core/auth/supabase/server";
  * Sem nenhum dos dois, o token vem no fragmento (#access_token=…), invisível
  * ao servidor: passa para /auth/callback (o browser mantém o fragmento).
  */
+// request.url é o endereço interno do contentor (https://0.0.0.0:3000 em produção);
+// request.nextUrl reconstrói o endereço público a partir dos cabeçalhos do proxy.
+function to(request: NextRequest, pathWithQuery: string) {
+  const url = request.nextUrl.clone();
+  const [pathname, query = ""] = pathWithQuery.split("?");
+  url.pathname = pathname;
+  url.search = query ? `?${query}` : "";
+  return NextResponse.redirect(url);
+}
+
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
+  const { searchParams } = request.nextUrl;
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
   const code = searchParams.get("code");
@@ -19,18 +29,18 @@ export async function GET(request: NextRequest) {
   const next = nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/dashboard";
 
   if (!tokenHash && !code && !searchParams.get("error")) {
-    return NextResponse.redirect(new URL(`/auth/callback?next=${encodeURIComponent(next)}`, request.url));
+    return to(request, `/auth/callback?next=${encodeURIComponent(next)}`);
   }
 
   const supabase = await createClient();
 
   if (tokenHash && type) {
     const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
-    if (!error) return NextResponse.redirect(new URL(next, request.url));
+    if (!error) return to(request, next);
   } else if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return NextResponse.redirect(new URL(next, request.url));
+    if (!error) return to(request, next);
   }
 
-  return NextResponse.redirect(new URL("/login?error=link", request.url));
+  return to(request, "/login?error=link");
 }
