@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AlertTriangle, Building2, CalendarClock, Handshake, ListChecks } from "lucide-react";
+import { AlertTriangle, Building2, CalendarClock, Handshake, ListChecks, Tag } from "lucide-react";
 import { listDealsRequiredMissing, listProjectAlerts } from "@/modules/checklists/queries";
 import { requireUser } from "@/core/auth/current-user";
 import { formatCurrency, formatDate } from "@/core/lib/format";
@@ -19,6 +19,10 @@ import { formatMoney, formatPercent } from "@/core/lib/format";
 import { listActiveProjectFinancials, listUnpaidInvoices } from "@/modules/projects/invoices/queries";
 import { PROJECT_STATUS_LABEL } from "@/modules/projects/validation";
 import { listDealStages } from "@/modules/settings/queries";
+import { SaleStageBadge } from "@/modules/sales/components/sale-badges";
+import { daysOnMarket } from "@/modules/sales/constants";
+import { listSoldSummary } from "@/modules/sales/pnl-queries";
+import { listSales } from "@/modules/sales/queries";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -60,7 +64,7 @@ export default async function DashboardPage() {
   const weekEnd = endOfWeek(today);
   const sixMonths = addDays(today, 182);
 
-  const [stages, counts, actions, withoutAction, purchases, imtAlerts, activeProjects, unpaidInvoices, requiredMissing, projectAlerts] = await Promise.all([
+  const [stages, counts, actions, withoutAction, purchases, imtAlerts, activeProjects, unpaidInvoices, requiredMissing, projectAlerts, openSales, sold] = await Promise.all([
     listDealStages(orgId),
     countDealsByStage(orgId),
     listUpcomingActions(orgId, weekEnd),
@@ -71,7 +75,12 @@ export default async function DashboardPage() {
     listUnpaidInvoices(orgId, 8),
     listDealsRequiredMissing(orgId, 8),
     listProjectAlerts(orgId, 8),
+    listSales(orgId, { scope: "open" }),
+    listSoldSummary(orgId, Number(today.slice(0, 4))),
   ]);
+  const onMarket = openSales.filter((s) => s.stage !== "preparacao");
+  const onMarketTotal = onMarket.reduce((a, s) => a + Number(s.listingPrice ?? 0), 0);
+  const leadsOpen = openSales.reduce((a, s) => a + s.leadsOpen, 0);
   const unpaidTotal = unpaidInvoices.reduce((a, i) => a + i.unpaid, 0);
   const overdueInvoices = unpaidInvoices.filter((i) => i.overdue).length;
 
@@ -87,7 +96,7 @@ export default async function DashboardPage() {
     <>
       <PageHeader title="Dashboard" description={`Semana até ${formatDate(weekEnd)}.`} />
 
-      <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <Kpi
           label="Ações da semana"
           value={String(actions.length)}
@@ -107,6 +116,13 @@ export default async function DashboardPage() {
           hint={`${formatCurrency(purchases.total)} investidos`}
           icon={Building2}
           href={purchaseStage ? `/deals?stage=${purchaseStage.id}` : "/properties?status=owned"}
+        />
+        <Kpi
+          label="Em venda"
+          value={String(onMarket.length)}
+          hint={onMarket.length ? `${formatCurrency(onMarketTotal)} anunciados · ${leadsOpen} leads em aberto` : sold.count ? `${sold.count} vendido${sold.count > 1 ? "s" : ""} em ${today.slice(0, 4)}` : "nenhum imóvel no mercado"}
+          icon={Tag}
+          href="/sales"
         />
         <Kpi
           label="Sem próxima ação"
@@ -171,6 +187,44 @@ export default async function DashboardPage() {
         </section>
 
         <div className="flex flex-col gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <Tag className="size-4 text-primary" /> Vendas
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-2">
+              {openSales.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Sem vendas em curso.</p>
+              ) : (
+                <ul className="flex flex-col gap-2">
+                  {openSales.map((s) => {
+                    const days = daysOnMarket(s.listingDate, s.deedDate, today);
+                    return (
+                      <li key={s.id} className="flex items-center justify-between gap-2 text-sm">
+                        <div className="min-w-0">
+                          <Link href={`/sales/${s.id}`} className="font-medium hover:underline">
+                            {s.dealName ?? s.addressLine}
+                          </Link>
+                          <span className="ml-2 font-mono text-[11px] text-muted-foreground">{s.ref}</span>
+                          <p className="text-xs text-muted-foreground">
+                            {s.listingPrice ? `${formatCurrency(s.listingPrice)} · ` : ""}
+                            {days !== null ? `${days} dias · ` : ""}
+                            {s.leadsOpen} {s.leadsOpen === 1 ? "lead" : "leads"} em aberto
+                          </p>
+                        </div>
+                        <SaleStageBadge stage={s.stage} />
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              <p className="mt-1 border-t pt-2 text-xs text-muted-foreground">
+                Vendidos em {today.slice(0, 4)}: <span className="font-medium text-foreground">{sold.count}</span>
+                {sold.count ? <> · lucro líquido real <span className={`font-medium ${sold.netProfit < 0 ? "text-destructive" : "text-foreground"}`}>{formatCurrency(sold.netProfit)}</span></> : null}
+              </p>
+            </CardContent>
+          </Card>
           <Card>
             <CardHeader>
               <CardTitle className="text-sm">Pipeline por fase</CardTitle>

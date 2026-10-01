@@ -148,6 +148,13 @@
       "when": 1790852788368,
       "tag": "0020_sales",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1790853783669,
+      "tag": "0021_checklist_sale",
+      "breakpoints": true
     }
   ]
 }

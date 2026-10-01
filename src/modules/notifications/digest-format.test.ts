@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { formatDigest, type DigestData } from "./digest-format";
 
-const empty: DigestData = { actionsDue: 0, actionsOverdue: 0, firstAction: null, invoicesDue: 0, invoicesOverdue: 0, invoicesAmount: 0 };
+const empty: DigestData = { actionsDue: 0, actionsOverdue: 0, firstAction: null, invoicesDue: 0, invoicesOverdue: 0, invoicesAmount: 0, salesActionsDue: 0 };
 
 describe("formatDigest", () => {
   it("não envia nada quando não há ações nem faturas", () => {
@@ -23,6 +23,10 @@ describe("formatDigest", () => {
   it("faturas a vencer e vencidas com o total por pagar", () => {
     const p = formatDigest({ ...empty, invoicesDue: 3, invoicesOverdue: 1, invoicesAmount: 4250.4 });
     expect(p?.body).toBe("2 faturas vencem esta semana, 1 fatura vencida · 4250 € por pagar");
+  });
+
+  it("ações de vendas e leads numa linha própria", () => {
+    expect(formatDigest({ ...empty, salesActionsDue: 2 })?.body).toBe("2 ações de venda (vendas e leads) para hoje");
   });
 
   it("junta ações e faturas em linhas separadas", () => {

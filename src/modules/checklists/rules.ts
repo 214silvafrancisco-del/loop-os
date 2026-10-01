@@ -75,7 +75,28 @@ export type ProjectContext = {
   today: string;
 };
 
-export type RuleContext = { entityType: "deal"; ctx: DealContext } | { entityType: "project"; ctx: ProjectContext };
+export type SaleContext = {
+  sale: {
+    stage: "preparacao" | "a_venda" | "cpcv" | "vendido" | "cancelada";
+    ownerUserId: string | null;
+    listingPrice: number | null;
+    listingDate: string | null;
+    listingUrl: string | null;
+    cpcvDate: string | null;
+    deedDate: string | null;
+    salePrice: number | null;
+    buyerContactId: string | null;
+    actualHoldingCosts: number | null;
+  };
+  agenciesCount: number;
+  leadsCount: number;
+  /** Leads com proposta registada (estado proposta/ganho ou valor proposto). */
+  leadsWithOffer: number;
+  docCategories: string[];
+  today: string;
+};
+
+export type RuleContext = { entityType: "deal"; ctx: DealContext } | { entityType: "project"; ctx: ProjectContext } | { entityType: "sale"; ctx: SaleContext };
 
 const done = (detail?: string): RuleResult => ({ status: "done", detail });
 const pending = (detail?: string): RuleResult => ({ status: "pending", detail });
@@ -174,10 +195,31 @@ const PROJECT_RULES: Record<string, (c: ProjectContext) => RuleResult> = {
   "project.completed": (c) => (c.project.status === "concluida" ? done() : pending()),
 };
 
+const SALE_RULES: Record<string, (c: SaleContext) => RuleResult> = {
+  "sale.owner": (c) => (has(c.sale.ownerUserId) ? done() : pending()),
+  "sale.agency": (c) => (c.agenciesCount > 0 ? done(String(c.agenciesCount)) : pending("sem mediadora (ou venda direta: marca N/A)")),
+  "sale.listed": (c) => {
+    const missing = [!pos(c.sale.listingPrice) && "preço", !has(c.sale.listingDate) && "data"].filter(Boolean) as string[];
+    return missing.length === 0 ? done(c.sale.listingDate ?? undefined) : pending(`falta ${missing.join(" e ")}`);
+  },
+  "sale.listing_url": (c) => (has(c.sale.listingUrl) ? done() : pending()),
+  "sale.first_lead": (c) => (c.leadsCount > 0 ? done(String(c.leadsCount)) : pending()),
+  "sale.offer": (c) => (c.leadsWithOffer > 0 ? done(String(c.leadsWithOffer)) : pending()),
+  "sale.cpcv": (c) => (has(c.sale.cpcvDate) ? done(c.sale.cpcvDate!) : pending()),
+  "sale.deed": (c) => {
+    if (c.sale.stage !== "vendido") return pending("fase ainda não é Vendido");
+    const missing = [!pos(c.sale.salePrice) && "preço final", !has(c.sale.deedDate) && "data"].filter(Boolean) as string[];
+    return missing.length === 0 ? done(c.sale.deedDate!) : pending(`falta ${missing.join(" e ")}`);
+  },
+  "sale.buyer": (c) => (has(c.sale.buyerContactId) ? done() : pending()),
+  "sale.real_costs": (c) => (c.sale.actualHoldingCosts !== null ? done() : pending("custos de detenção reais por preencher")),
+};
+
 const CONDITIONS: Record<string, (rc: RuleContext) => boolean> = {
   needs_licenca: (rc) => rc.entityType === "deal" && (rc.ctx.property.constructionYear === null || rc.ctx.property.constructionYear >= 1951),
   has_financing: (rc) => rc.entityType === "deal" && rc.ctx.activeScenario !== null && rc.ctx.activeScenario.ltvPct > 0,
   stage_purchase: (rc) => rc.entityType === "deal" && rc.ctx.deal.stageIsPurchase,
+  sale_closed: (rc) => rc.entityType === "sale" && rc.ctx.sale.stage === "vendido",
   project_in_progress: (rc) => rc.entityType === "project" && rc.ctx.project.status === "em_curso",
 };
 
@@ -190,6 +232,10 @@ export function evaluateRule(ruleKey: string, rc: RuleContext): RuleResult {
     const fn = DEAL_RULES[ruleKey];
     return fn ? fn(rc.ctx) : pending("regra desconhecida");
   }
+  if (rc.entityType === "sale") {
+    const fn = SALE_RULES[ruleKey];
+    return fn ? fn(rc.ctx) : pending("regra desconhecida");
+  }
   const fn = PROJECT_RULES[ruleKey];
   return fn ? fn(rc.ctx) : pending("regra desconhecida");
 }
@@ -200,5 +246,5 @@ export function evaluateCondition(key: string, rc: RuleContext): boolean {
   return fn ? fn(rc) : true;
 }
 
-export const KNOWN_RULE_KEYS = [...Object.keys(DEAL_RULES), ...Object.keys(PROJECT_RULES)];
+export const KNOWN_RULE_KEYS = [...Object.keys(DEAL_RULES), ...Object.keys(PROJECT_RULES), ...Object.keys(SALE_RULES)];
 export const KNOWN_CONDITION_KEYS = Object.keys(CONDITIONS);

@@ -1,7 +1,7 @@
 import "server-only";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/core/db/client";
-import { loadDealContext, loadProjectContext } from "./context";
+import { loadDealContext, loadProjectContext, loadSaleContext } from "./context";
 import { nextItemState, sameState, summarize, type ItemState } from "./engine";
 import type { RuleContext } from "./rules";
 import { checklistItems, checklistTemplateItems, checklistTemplates, checklists, type ChecklistEntityType } from "./schema";
@@ -26,6 +26,11 @@ export async function syncChecklist(
     const loaded = await loadDealContext(organizationId, entityId);
     if (!loaded) return null;
     rc = { entityType: "deal", ctx: loaded.ctx };
+    entity = loaded.entity;
+  } else if (entityType === "sale") {
+    const loaded = await loadSaleContext(organizationId, entityId);
+    if (!loaded) return null;
+    rc = { entityType: "sale", ctx: loaded.ctx };
     entity = loaded.entity;
   } else {
     const loaded = await loadProjectContext(organizationId, entityId);

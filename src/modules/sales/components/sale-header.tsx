@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Building2, ExternalLink, Handshake, HardHat } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ChecklistProgress } from "@/modules/checklists/components/checklist-progress";
+import type { ChecklistView } from "@/modules/checklists/queries";
 import { formatCurrency, formatDate } from "@/core/lib/format";
 import { todayIso } from "@/core/lib/dates";
 import { floorLabel } from "@/modules/deals/utils";
@@ -12,10 +14,10 @@ import { DeleteSaleButton } from "./delete-sale-button";
 import { SaleNextAction } from "./sale-next-action";
 import { SaleStageSelect } from "./sale-stage-select";
 
-type Props = { sale: Sale; row: SaleListRow; canDelete: boolean };
+type Props = { sale: Sale; row: SaleListRow; canDelete: boolean; checklist?: ChecklistView | null };
 
 /** Cabeçalho comum a todas as tabs da venda. */
-export function SaleHeader({ sale, row, canDelete }: Props) {
+export function SaleHeader({ sale, row, canDelete, checklist }: Props) {
   const title = row.dealName ?? row.addressLine;
   const days = daysOnMarket(sale.listingDate, sale.deedDate, todayIso());
   const facts = [
@@ -74,8 +76,18 @@ export function SaleHeader({ sale, row, canDelete }: Props) {
           {canDelete ? <DeleteSaleButton saleId={sale.id} /> : null}
         </div>
       </div>
-      <div className="mt-3 rounded-lg border bg-card md:max-w-md">
-        <SaleNextAction saleId={sale.id} action={sale.nextAction} date={sale.nextActionDate} />
+      <div className="mt-3 grid gap-3 md:grid-cols-2">
+        <div className="rounded-lg border bg-card">
+          <SaleNextAction saleId={sale.id} action={sale.nextAction} date={sale.nextActionDate} />
+        </div>
+        {checklist ? (
+          <ChecklistProgress
+            done={checklist.doneCount}
+            total={checklist.totalCount}
+            processHref={`/sales/${sale.id}/procedimento`}
+            nextStep={checklist.nextStep ? { label: checklist.nextStep.label, isRequired: checklist.nextStep.isRequired, href: `/sales/${sale.id}/${checklist.nextStep.linkPath ?? "procedimento"}` } : null}
+          />
+        ) : null}
       </div>
     </header>
   );

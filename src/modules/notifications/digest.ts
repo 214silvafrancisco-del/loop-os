@@ -5,6 +5,8 @@ import { profiles } from "@/core/db/schema/core";
 import { dealRef, todayIso } from "@/modules/deals/utils";
 import { listUpcomingActions } from "@/modules/deals/queries";
 import { invoices } from "@/modules/projects/schema";
+import { listLeadActions } from "@/modules/sales/queries";
+import { sales } from "@/modules/sales/schema";
 import { formatDigest, type DigestData } from "./digest-format";
 import { pushSubscriptions } from "./schema";
 import { sendToUsers, type SendResult } from "./send";
@@ -21,12 +23,17 @@ const paidSub = sql<string>`coalesce((select sum(p.amount) from payments p where
 /** Números do dia para uma organização: próximas ações e faturas por pagar a vencer. */
 export async function buildDigest(organizationId: string, today = todayIso()): Promise<DigestData> {
   const weekEnd = addDays(today, 7);
-  const [actions, invoiceRows] = await Promise.all([
+  const [actions, invoiceRows, leadActions, [saleActions]] = await Promise.all([
     listUpcomingActions(organizationId, today),
     db
       .select({ total: invoices.total, dueDate: invoices.dueDate, paid: paidSub })
       .from(invoices)
       .where(and(eq(invoices.organizationId, organizationId), isNull(invoices.deletedAt), sql`${invoices.dueDate} <= ${weekEnd}`)),
+    listLeadActions(organizationId, today),
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(sales)
+      .where(and(eq(sales.organizationId, organizationId), isNull(sales.deletedAt), sql`${sales.stage} in ('preparacao', 'a_venda', 'cpcv')`, sql`${sales.nextActionDate} <= ${today}`)),
   ]);
 
   // Só ações com data (as sem data aparecem no dashboard, não no resumo).
@@ -49,6 +56,7 @@ export async function buildDigest(organizationId: string, today = todayIso()): P
     invoicesDue,
     invoicesOverdue,
     invoicesAmount,
+    salesActionsDue: leadActions.length + (saleActions?.n ?? 0),
   };
 }
 

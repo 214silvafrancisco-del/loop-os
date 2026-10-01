@@ -3,7 +3,7 @@ import { profiles } from "@/core/db/schema/core";
 import { organizationRef, timestamps } from "@/core/db/schema/helpers";
 import { properties } from "@/modules/properties/schema";
 
-export const checklistEntity = pgEnum("checklist_entity", ["deal", "project"]);
+export const checklistEntity = pgEnum("checklist_entity", ["deal", "project", "sale"]);
 export const checklistItemKind = pgEnum("checklist_item_kind", ["auto", "manual"]);
 export const checklistItemStatus = pgEnum("checklist_item_status", ["pending", "done", "not_applicable"]);
 export const checklistItemSource = pgEnum("checklist_item_source", ["auto", "manual", "context"]);

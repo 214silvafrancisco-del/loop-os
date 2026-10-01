@@ -298,7 +298,7 @@ Assistente sobre os dados da LOOP (Claude API): "que documentos faltam", "preço
 | 25 | Leitura de faturas em PDF por regras (sem IA) | carregar PDF e ver campos preenchidos |
 | M1–M6 | Mobile: PWA, câmara, cartões, filtros, 44 px, orçamento/autos/BP/Kanban em telemóvel, notificações push com resumo diário | docs/07 |
 | 26a | Vendas como CRM: pipeline Preparação → À venda → CPCV → Vendido; várias mediadoras com comissão; leads com estado e próxima ação; documentos do imóvel reutilizados; imóvel → vendido e negócio → Vendido na escritura | colocar à venda a partir de um negócio comprado, adicionar mediadora e lead, marcar Ganho e Vendido |
-| 26b | P&L por imóvel (BP vs real), cartões no dashboard, procedimento Venda, resumo diário com leads | (a seguir) |
+| 26b | Resultado por imóvel (tab Resultado: BP ativo vs real com desvio), KPI «Em venda» e cartão Vendas no dashboard, procedimento «Venda» (15 passos, quase todo automático), ações de vendas/leads no resumo diário | abrir Resultado numa venda e comparar com o cenário ativo; ver 2/12 no Procedimento |
 
 Cada step é uma sessão curta: ficheiros indicados, comandos, teste, resultado esperado.
 

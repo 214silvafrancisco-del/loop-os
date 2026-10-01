@@ -13,6 +13,8 @@ export type DigestData = {
   invoicesOverdue: number;
   /** Total por pagar dessas faturas, com IVA. */
   invoicesAmount: number;
+  /** Ações de vendas e de leads com data até hoje. */
+  salesActionsDue: number;
 };
 
 const n = (v: number, one: string, many: string) => `${v} ${v === 1 ? one : many}`;
@@ -36,6 +38,7 @@ export function formatDigest(d: DigestData): PushPayload | null {
     if (d.firstAction) line += `\nPróxima: ${d.firstAction}`;
     lines.push(line);
   }
+  if (d.salesActionsDue > 0) lines.push(`${n(d.salesActionsDue, "ação de venda", "ações de venda")} (vendas e leads) para hoje`);
   if (d.invoicesDue > 0) {
     const soon = d.invoicesDue - d.invoicesOverdue;
     const parts: string[] = [];

@@ -589,6 +589,8 @@ Enums: `sale_stage` (preparacao, a_venda, cpcv, vendido, cancelada), `lead_statu
 
 As três tabelas têm `set_updated_at` e `audit_trigger`. Fase → estado do imóvel: preparacao/cancelada ⇒ owned, a_venda/cpcv ⇒ for_sale, vendido ⇒ sold; vendido ⇒ negócio `sold`.
 
+Step 26b: `checklist_entity` ganhou o valor `sale` (migração 0021); o procedimento «Venda» (`nova_venda` v1) liga-se à venda por `checklists.entity_type = 'sale'`. O P&L não tem tabela: calcula-se em `src/modules/sales/pnl.ts` (puro, testado) a partir do cenário ativo, do negócio, das faturas das obras do imóvel e da venda.
+
 ## 11. Views
 
 | View | Conteúdo |

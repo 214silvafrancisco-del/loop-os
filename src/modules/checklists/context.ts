@@ -7,11 +7,12 @@ import { bpComparables, bpScenarios, businessPlans } from "@/modules/business-pl
 import { contacts } from "@/modules/contacts/schema";
 import { deals } from "@/modules/deals/schema";
 import { documents } from "@/modules/documents/schema";
+import { saleAgencies, saleLeads, sales } from "@/modules/sales/schema";
 import { budgetLines, invoices, measurementReports, payments, projectSuppliers, projects } from "@/modules/projects/schema";
 import { properties } from "@/modules/properties/schema";
 import { proposals } from "@/modules/proposals/schema";
 import { dealStages, documentCategories, sourceChannels } from "@/modules/settings/schema";
-import type { DealContext, ProjectContext } from "./rules";
+import type { DealContext, ProjectContext, SaleContext } from "./rules";
 
 const num = (v: string | number | null | undefined) => (v === null || v === undefined ? null : Number(v));
 
@@ -106,6 +107,47 @@ export async function loadDealContext(organizationId: string, dealId: string): P
       comparablesCount,
       activeScenario,
       proposals: { count: p?.count ?? 0, sent: p?.sent ?? 0, decided: p?.decided ?? 0 },
+      today: todayIso(),
+    },
+  };
+}
+
+export type SaleEntity = { propertyId: string; ownerUserId: string | null };
+
+export async function loadSaleContext(organizationId: string, saleId: string): Promise<{ entity: SaleEntity; ctx: SaleContext } | null> {
+  const [s] = await db
+    .select()
+    .from(sales)
+    .where(and(eq(sales.id, saleId), eq(sales.organizationId, organizationId), isNull(sales.deletedAt)));
+  if (!s) return null;
+  const [[ag], [ld], [lo]] = await Promise.all([
+    db.select({ n: sql<number>`count(*)::int` }).from(saleAgencies).where(eq(saleAgencies.saleId, saleId)),
+    db.select({ n: sql<number>`count(*)::int` }).from(saleLeads).where(eq(saleLeads.saleId, saleId)),
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(saleLeads)
+      .where(and(eq(saleLeads.saleId, saleId), sql`(${saleLeads.status} in ('proposta', 'ganho') or ${saleLeads.offerAmount} is not null)`)),
+  ]);
+  const num = (v: string | null) => (v === null ? null : Number(v));
+  return {
+    entity: { propertyId: s.propertyId, ownerUserId: s.ownerUserId },
+    ctx: {
+      sale: {
+        stage: s.stage,
+        ownerUserId: s.ownerUserId,
+        listingPrice: num(s.listingPrice),
+        listingDate: s.listingDate,
+        listingUrl: s.listingUrl,
+        cpcvDate: s.cpcvDate,
+        deedDate: s.deedDate,
+        salePrice: num(s.salePrice),
+        buyerContactId: s.buyerContactId,
+        actualHoldingCosts: num(s.actualHoldingCosts),
+      },
+      agenciesCount: ag?.n ?? 0,
+      leadsCount: ld?.n ?? 0,
+      leadsWithOffer: lo?.n ?? 0,
+      docCategories: await docCategoriesForProperty(s.propertyId),
       today: todayIso(),
     },
   };

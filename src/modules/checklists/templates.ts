@@ -46,6 +46,8 @@ export const SECTION_LABELS: Record<string, string> = {
   execucao: "Execução",
   controlo: "Controlo financeiro",
   fecho: "Fecho",
+  preparacao: "Preparação",
+  mercado: "Mercado",
 };
 
 const doc = (category: string) => `doc:${category}`;
@@ -133,10 +135,40 @@ export const NOVA_OBRA: TemplateDef = {
   ],
 };
 
-export const CHECKLIST_TEMPLATES: TemplateDef[] = [NOVO_NEGOCIO, NOVA_OBRA];
+/** Procedimento «Venda» (Step 26b): curto e quase todo automático. */
+export const NOVA_VENDA: TemplateDef = {
+  code: "nova_venda",
+  name: "Venda",
+  entityType: "sale",
+  version: 1,
+  items: [
+    // Preparação
+    { code: "preparacao.responsavel", section: "preparacao", label: "Responsável definido", kind: "auto", ruleKey: "sale.owner", linkPath: "resumo" },
+    { code: "preparacao.mediadora", section: "preparacao", label: "Mediadora definida", help: "Venda direta sem mediadora: marca «não aplicável».", kind: "auto", ruleKey: "sale.agency", linkPath: "resumo" },
+    { code: "preparacao.certificado", section: "preparacao", label: "Certificado energético", kind: "auto", ruleKey: doc("Certificado energético"), linkPath: "documentos?categoria=Certificado energético" },
+    { code: "preparacao.fotografias", section: "preparacao", label: "Fotografias finais carregadas", kind: "auto", ruleKey: doc("Fotografias finais"), linkPath: "documentos?categoria=Fotografias finais" },
+    // Mercado
+    { code: "mercado.anunciado", section: "mercado", label: "Preço e data de anúncio", kind: "auto", ruleKey: "sale.listed", required: true, linkPath: "resumo" },
+    { code: "mercado.link", section: "mercado", label: "Link do anúncio", kind: "auto", ruleKey: "sale.listing_url", linkPath: "resumo" },
+    { code: "mercado.primeiro_lead", section: "mercado", label: "Primeiro lead registado", kind: "auto", ruleKey: "sale.first_lead", linkPath: "leads" },
+    { code: "mercado.proposta", section: "mercado", label: "Proposta recebida", kind: "auto", ruleKey: "sale.offer", linkPath: "leads" },
+    // Fecho
+    { code: "fecho.cpcv", section: "fecho", label: "CPCV assinado", help: "Data do CPCV no Resumo.", kind: "auto", ruleKey: "sale.cpcv", linkPath: "resumo" },
+    { code: "fecho.cpcv_doc", section: "fecho", label: "CPCV de venda carregado", kind: "auto", ruleKey: doc("CPCV de venda"), linkPath: "documentos?categoria=CPCV de venda" },
+    { code: "fecho.comprador", section: "fecho", label: "Comprador registado", kind: "auto", ruleKey: "sale.buyer", linkPath: "resumo" },
+    { code: "fecho.escritura", section: "fecho", label: "Escritura de venda registada", help: "Fase «Vendido» com preço final e data.", kind: "auto", ruleKey: "sale.deed", required: true, linkPath: "resumo" },
+    { code: "fecho.escritura_doc", section: "fecho", label: "Escritura de venda carregada", kind: "auto", ruleKey: doc("Escritura de venda"), appliesWhen: "sale_closed", linkPath: "documentos?categoria=Escritura de venda" },
+    { code: "fecho.custos_reais", section: "fecho", label: "Custos reais confirmados", help: "Detenção e financiamento reais no Resumo; obra pelas faturas.", kind: "auto", ruleKey: "sale.real_costs", appliesWhen: "sale_closed", linkPath: "resumo" },
+    { code: "fecho.resultado", section: "fecho", label: "Resultado fechado e revisto", help: "P&L revisto na tab Resultado.", kind: "manual", appliesWhen: "sale_closed", defaultAssignee: "owner" },
+  ],
+};
+
+export const CHECKLIST_TEMPLATES: TemplateDef[] = [NOVO_NEGOCIO, NOVA_OBRA, NOVA_VENDA];
 
 /** Categorias de documento que os procedimentos usam e que não existiam no seed inicial. */
-export const CHECKLIST_DOCUMENT_CATEGORIES: { group: string; name: string; defaultEntity: "project" }[] = [
+export const CHECKLIST_DOCUMENT_CATEGORIES: { group: string; name: string; defaultEntity: "project" | "sale" }[] = [
   { group: "juridico", name: "Contrato de empreitada", defaultEntity: "project" },
   { group: "tecnico", name: "Fotografias finais", defaultEntity: "project" },
+  { group: "juridico", name: "CPCV de venda", defaultEntity: "sale" },
+  { group: "juridico", name: "Escritura de venda", defaultEntity: "sale" },
 ];

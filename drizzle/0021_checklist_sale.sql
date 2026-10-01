@@ -1,0 +1,1 @@
+ALTER TYPE "public"."checklist_entity" ADD VALUE 'sale';
