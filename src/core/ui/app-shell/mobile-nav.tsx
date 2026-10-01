@@ -10,7 +10,7 @@ export function MobileNav() {
   const pathname = usePathname();
   const items = NAV_ITEMS.filter((i) => i.mobile).slice(0, 5);
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t bg-card md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t bg-card pb-[env(safe-area-inset-bottom)] md:hidden">
       {items.map((item) => {
         const Icon = item.icon;
         const active =
@@ -20,11 +20,14 @@ export function MobileNav() {
             key={item.href}
             href={item.href}
             className={cn(
-              "flex min-h-14 flex-1 flex-col items-center justify-center gap-1 py-1.5 text-[11px] font-medium",
+              "flex min-h-16 flex-1 flex-col items-center justify-center gap-1 py-2 text-xs font-medium",
               active ? "text-primary" : "text-muted-foreground",
             )}
+            aria-current={active ? "page" : undefined}
           >
-            <Icon className="size-5" />
+            <span className={cn("flex h-8 w-14 items-center justify-center rounded-full transition-colors", active && "bg-primary/12")}>
+              <Icon className="size-6" strokeWidth={active ? 2.25 : 2} />
+            </span>
             {item.label}
           </Link>
         );

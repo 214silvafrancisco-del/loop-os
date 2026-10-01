@@ -31,8 +31,8 @@ export function TopbarSearch() {
       </form>
 
       {/* Telemóvel: ícone → campo a toda a largura */}
-      <Button type="button" variant="ghost" size="icon" className="ml-auto size-10 sm:hidden" aria-label="Pesquisar" onClick={() => setOpen(true)}>
-        <Search className="size-5" />
+      <Button type="button" variant="ghost" size="icon" className="ml-auto size-11 sm:hidden" aria-label="Pesquisar" onClick={() => setOpen(true)}>
+        <Search className="size-6" />
       </Button>
       <form
         action={submit}

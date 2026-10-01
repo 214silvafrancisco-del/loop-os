@@ -39,22 +39,22 @@ function endOfWeek(iso: string) {
   return addDays(iso, dow === 0 ? 0 : 7 - dow);
 }
 
-function Kpi({ label, value, hint, icon: Icon, href }: { label: string; value: string; hint?: string; icon: typeof Handshake; href?: string }) {
+function Kpi({ label, value, hint, icon: Icon, href, className }: { label: string; value: string; hint?: string; icon: typeof Handshake; href?: string; className?: string }) {
   const body = (
-    <Card className="h-full transition-colors hover:bg-accent/40">
-      <CardContent className="flex items-start justify-between gap-3 pt-6">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+    <Card className="h-full gap-0 py-0 transition-colors hover:bg-accent/40">
+      <CardContent className="flex items-start justify-between gap-2 px-4 py-4 sm:gap-3 sm:py-6">
+        <div className="min-w-0">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground sm:text-xs">{label}</p>
           <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
-          {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
+          {hint ? <p className="line-clamp-2 text-xs text-muted-foreground">{hint}</p> : null}
         </div>
-        <span className="rounded-lg bg-primary/10 p-2 text-primary">
-          <Icon className="size-4" />
+        <span className="shrink-0 rounded-lg bg-primary/10 p-2 text-primary">
+          <Icon className="size-5 sm:size-4" />
         </span>
       </CardContent>
     </Card>
   );
-  return href ? <Link href={href}>{body}</Link> : body;
+  return href ? <Link href={href} className={className}>{body}</Link> : <div className={className}>{body}</div>;
 }
 
 export default async function DashboardPage() {
@@ -96,7 +96,7 @@ export default async function DashboardPage() {
     <>
       <PageHeader title="Dashboard" description={`Semana até ${formatDate(weekEnd)}.`} />
 
-      <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="mb-6 grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-5">
         <Kpi
           label="Ações da semana"
           value={String(actions.length)}
@@ -130,6 +130,7 @@ export default async function DashboardPage() {
           hint="negócios ativos por planear"
           icon={AlertTriangle}
           href="/deals"
+          className="col-span-2 sm:col-span-1"
         />
       </div>
 
@@ -145,7 +146,28 @@ export default async function DashboardPage() {
             {activeProjects.length === 0 ? (
               <p className="rounded-lg border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">Sem obras ativas.</p>
             ) : (
-              <div className="overflow-x-auto rounded-lg border bg-card">
+              <>
+              {/* Telemóvel: um cartão por obra com os quatro números que interessam. */}
+              <ul className="flex flex-col gap-2 md:hidden">
+                {activeProjects.map((p) => {
+                  const dev = p.fin.invoicedNet - p.fin.budgeted;
+                  return (
+                    <li key={p.id} className="rounded-xl border bg-card p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <Link href={`/projects/${p.id}`} className="min-w-0 truncate font-medium hover:underline">{p.name}</Link>
+                        <span className="shrink-0 text-xs text-muted-foreground">{PROJECT_STATUS_LABEL[p.status]}</span>
+                      </div>
+                      <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
+                        <dt className="text-muted-foreground">Orçamentado</dt><dd className="text-right tabular-nums">{formatMoney(p.fin.budgeted)}</dd>
+                        <dt className="text-muted-foreground">Executado</dt><dd className="text-right tabular-nums">{formatMoney(p.fin.executed)}{p.fin.budgeted ? <span className="ml-1 text-xs text-muted-foreground">{formatPercent(p.fin.executed / p.fin.budgeted)}</span> : null}</dd>
+                        <dt className="text-muted-foreground">Por pagar</dt><dd className={`text-right tabular-nums ${p.fin.overdueCount ? "font-medium text-destructive" : ""}`}>{formatMoney(p.fin.unpaid)}</dd>
+                        <dt className="text-muted-foreground">Desvio</dt><dd className={`text-right tabular-nums ${dev > 0 ? "text-destructive" : "text-muted-foreground"}`}>{dev > 0 ? "+" : ""}{formatMoney(dev)}</dd>
+                      </dl>
+                    </li>
+                  );
+                })}
+              </ul>
+              <div className="hidden overflow-x-auto rounded-lg border bg-card md:block">
                 <table className="w-full min-w-[40rem] text-sm">
                   <thead className="text-xs text-muted-foreground">
                     <tr className="border-b">
@@ -182,6 +204,7 @@ export default async function DashboardPage() {
                   </tbody>
                 </table>
               </div>
+              </>
             )}
           </div>
         </section>

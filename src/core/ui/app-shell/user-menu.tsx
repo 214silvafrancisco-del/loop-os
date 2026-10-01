@@ -25,8 +25,8 @@ export function UserMenu({ user }: { user: CurrentUser }) {
         className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
         aria-label="Menu do utilizador"
       >
-        <Avatar className="size-8">
-          <AvatarFallback className="bg-primary/15 text-xs font-semibold text-primary">
+        <Avatar className="size-11 sm:size-8">
+          <AvatarFallback className="bg-primary/15 text-sm font-semibold text-primary sm:text-xs">
             {user.initials}
           </AvatarFallback>
         </Avatar>

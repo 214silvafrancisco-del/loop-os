@@ -347,7 +347,7 @@ export function BudgetEditor({ projectId, initialNodes, suppliers, categories, d
       <p className="text-xs text-muted-foreground">Valores sem IVA, como no mapa de quantidades. O fornecedor define-se no capítulo e aplica-se a todas as suas linhas; os pais somam os artigos.</p>
       {/* Telemóvel: barra fixa de guardar por cima da navegação inferior. */}
       {dirty ? (
-        <div className="fixed inset-x-0 bottom-14 z-30 flex items-center gap-2 border-t bg-background/95 px-4 py-2 backdrop-blur md:hidden">
+        <div className="fixed inset-x-0 bottom-16 z-30 flex items-center gap-2 border-t bg-background/95 px-4 py-2 backdrop-blur md:hidden">
           {error ? <span className="min-w-0 flex-1 truncate text-xs text-destructive">{error}</span> : <span className="flex-1 text-xs text-muted-foreground">Alterações por guardar</span>}
           <Button className="h-11 gap-1" onClick={save} disabled={pending}>
             <Check className="size-4" /> {pending ? "…" : "Guardar orçamento"}

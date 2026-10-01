@@ -16,9 +16,9 @@ export function Topbar({ user }: { user: CurrentUser }) {
 
       <TopbarSearch />
 
-      <Button asChild size="sm" className="h-10 gap-1 sm:h-8">
+      <Button asChild size="sm" className="h-11 w-11 gap-1 p-0 sm:h-8 sm:w-auto sm:px-3">
         <Link href="/deals/new" aria-label="Novo negócio">
-          <Plus className="size-4" />
+          <Plus className="size-6 sm:size-4" />
           <span className="hidden sm:inline">Novo negócio</span>
         </Link>
       </Button>
