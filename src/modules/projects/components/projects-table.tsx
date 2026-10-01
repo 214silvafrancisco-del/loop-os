@@ -30,7 +30,7 @@ export function ProjectsTable({ projects, progress }: { projects: ProjectRow[]; 
             <TableHead className="w-24">Ref</TableHead>
             <TableHead>Obra</TableHead>
             <TableHead>Estado</TableHead>
-            <TableHead className="hidden md:table-cell">Processo</TableHead>
+            <TableHead className="hidden md:table-cell">Procedimento</TableHead>
             <TableHead className="hidden md:table-cell">Início</TableHead>
             <TableHead className="hidden md:table-cell">Conclusão</TableHead>
             <TableHead className="hidden lg:table-cell text-right">Compra</TableHead>

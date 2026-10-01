@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 export const DEAL_TABS = [
   { slug: "resumo", label: "Resumo" },
-  { slug: "processo", label: "Processo" },
+  { slug: "processo", label: "Procedimento" },
   { slug: "analise", label: "Análise" },
   { slug: "business-plan", label: "Business Plan" },
   { slug: "documentos", label: "Documentos" },

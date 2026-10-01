@@ -31,7 +31,7 @@ type Props = {
   stages: Option[];
 };
 
-const PROCESS_LABEL: Record<string, string> = { required_missing: "Com obrigatórios em falta", complete: "Processo completo" };
+const PROCESS_LABEL: Record<string, string> = { required_missing: "Com obrigatórios em falta", complete: "Procedimento completo" };
 const STATUS_LABEL: Record<string, string> = { active: "Ativos", excluded: "Excluídos", all: "Todos" };
 
 function hrefWithout(values: DealsFilterValues, key: keyof DealsFilterValues): string {
@@ -89,10 +89,10 @@ export function DealsFilters({ values, municipalities, typologies, sources, user
         <option value="">Responsável</option>
         {users.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
       </NativeSelect>
-      <NativeSelect name="process" defaultValue={values.process} className="w-auto" aria-label="Processo">
-        <option value="">Processo</option>
+      <NativeSelect name="process" defaultValue={values.process} className="w-auto" aria-label="Procedimento">
+        <option value="">Procedimento</option>
         <option value="required_missing">Com obrigatórios em falta</option>
-        <option value="complete">Processo completo</option>
+        <option value="complete">Procedimento completo</option>
       </NativeSelect>
     </>
   );

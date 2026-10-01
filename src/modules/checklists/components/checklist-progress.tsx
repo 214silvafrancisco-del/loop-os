@@ -20,7 +20,7 @@ export function ChecklistProgress({ done, total, nextStep, processHref, classNam
       <div className="flex items-center gap-2 text-sm">
         <ListChecks className="size-4 text-muted-foreground" />
         <Link href={processHref} className="font-medium hover:underline">
-          Processo
+          Procedimento
         </Link>
         <span className="ml-auto tabular-nums text-muted-foreground">
           {done}/{total} · {pct} %

@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 export const PROJECT_TABS = [
   { slug: "resumo", label: "Resumo" },
-  { slug: "processo", label: "Processo" },
+  { slug: "processo", label: "Procedimento" },
   { slug: "orcamento", label: "Orçamento" },
   { slug: "autos", label: "Autos" },
   { slug: "faturas", label: "Faturas" },

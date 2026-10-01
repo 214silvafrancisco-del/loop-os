@@ -206,12 +206,12 @@ export default async function DashboardPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-sm">
-                <ListChecks className="size-4 text-primary" /> Processo: obrigatórios em falta
+                <ListChecks className="size-4 text-primary" /> Procedimentos: obrigatórios em falta
               </CardTitle>
             </CardHeader>
             <CardContent>
               {requiredMissing.length === 0 && projectAlerts.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Negócios em Proposta/Compra e obras em curso estão com o processo em dia.</p>
+                <p className="text-sm text-muted-foreground">Negócios em Proposta/Compra e obras em curso estão com o procedimento em dia.</p>
               ) : (
                 <ul className="flex flex-col gap-2 text-sm">
                   {requiredMissing.map((d) => (

@@ -43,7 +43,7 @@ export function DealsTable({ deals }: { deals: DealListRow[] }) {
             <TableHead className="hidden md:table-cell">Tipologia</TableHead>
             <TableHead className="text-right">Preço pedido</TableHead>
             <TableHead>Fase</TableHead>
-            <TableHead className="hidden md:table-cell">Processo</TableHead>
+            <TableHead className="hidden md:table-cell">Procedimento</TableHead>
             <TableHead className="hidden lg:table-cell">Próxima ação</TableHead>
             <TableHead className="hidden xl:table-cell">Fonte</TableHead>
             <TableHead className="hidden xl:table-cell text-right">ROE</TableHead>
