@@ -46,7 +46,7 @@ export function DealsTable({ deals }: { deals: DealListRow[] }) {
             <TableHead className="hidden md:table-cell">Procedimento</TableHead>
             <TableHead className="hidden lg:table-cell">Próxima ação</TableHead>
             <TableHead className="hidden xl:table-cell">Fonte</TableHead>
-            <TableHead className="hidden xl:table-cell text-right">ROE</TableHead>
+            <TableHead className="hidden xl:table-cell text-right">Anualizado</TableHead>
             <TableHead className="hidden lg:table-cell">Responsável</TableHead>
             <TableHead className="hidden xl:table-cell">Entrada</TableHead>
           </TableRow>
@@ -88,7 +88,7 @@ export function DealsTable({ deals }: { deals: DealListRow[] }) {
                 {d.contactName ? <div className="text-xs">{d.contactName}</div> : null}
               </TableCell>
               <TableCell className="hidden xl:table-cell text-right tabular-nums">
-                {d.bpRoe ? formatPercent(d.bpRoe) : <span className="text-muted-foreground">—</span>}
+                {d.bpAnnualized ? <span className={Number(d.bpAnnualized) >= 0.3 ? "text-success" : "text-destructive"}>{formatPercent(d.bpAnnualized)}</span> : <span className="text-muted-foreground">—</span>}
               </TableCell>
               <TableCell className="hidden lg:table-cell text-muted-foreground">{d.ownerName ?? "—"}</TableCell>
               <TableCell className="hidden xl:table-cell text-muted-foreground">{formatDate(d.enteredAt)}</TableCell>

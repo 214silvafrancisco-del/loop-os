@@ -19,6 +19,7 @@ export type DealListRow = {
   askingPrice: string | null;
   bpProfitNet: string | null;
   bpRoe: string | null;
+  bpAnnualized: string | null;
   propertyId: string;
   ref: string;
   addressLine: string;
@@ -71,6 +72,7 @@ const listSelection = {
   askingPrice: deals.askingPrice,
   bpProfitNet: deals.bpProfitNet,
   bpRoe: deals.bpRoe,
+  bpAnnualized: deals.bpAnnualized,
   propertyId: deals.propertyId,
   ref: properties.ref,
   addressLine: properties.addressLine,

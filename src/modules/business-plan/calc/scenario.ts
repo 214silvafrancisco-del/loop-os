@@ -261,26 +261,46 @@ export function calcScenario(i: ScenarioInputs, ctx: CalcContext): ScenarioOutpu
   };
 }
 
+/** Métricas que podem servir de alvo ao preço máximo. */
+export type TargetMetric = "annualized" | "roe";
+
 /**
- * Preço máximo de compra para atingir um ROE alvo (lucro bruto / capital
- * próprio). Bissecção sobre o preço; o resto dos inputs fica igual.
+ * Preço máximo de compra para atingir um alvo numa métrica (bissecção sobre
+ * o preço; o resto dos inputs fica igual). O critério da LOOP é o **retorno
+ * anualizado** (lucro bruto / investimento total × 12 / meses) ≥ 30 %.
  */
-export function maxPurchasePriceForRoe(
+export function maxPurchasePriceFor(
+  metric: TargetMetric,
   inputs: ScenarioInputs,
   ctx: CalcContext,
-  targetRoe: number,
+  target: number,
   options: { min?: number; max?: number } = {},
 ): number | null {
   let lo = options.min ?? 0;
   let hi = options.max ?? Math.max(inputs.salePrice, inputs.purchasePrice, 1);
-  const roeAt = (price: number) => calcScenario({ ...inputs, purchasePrice: price }, ctx).roe;
-  if (roeAt(lo) < targetRoe) return null; // nem a custo zero se atinge
+  const at = (price: number) => calcScenario({ ...inputs, purchasePrice: price }, ctx)[metric];
+  if (at(lo) < target) return null; // nem a custo zero se atinge
   for (let k = 0; k < 60; k++) {
     const mid = (lo + hi) / 2;
-    if (roeAt(mid) >= targetRoe) lo = mid;
+    if (at(mid) >= target) lo = mid;
     else hi = mid;
   }
   return Math.floor(lo);
+}
+
+/** Preço máximo para um retorno anualizado alvo (critério de validação do negócio). */
+export function maxPurchasePriceForAnnualized(inputs: ScenarioInputs, ctx: CalcContext, target: number, options?: { min?: number; max?: number }) {
+  return maxPurchasePriceFor("annualized", inputs, ctx, target, options);
+}
+
+/** Preço máximo para um ROE alvo (mantido para comparação). */
+export function maxPurchasePriceForRoe(inputs: ScenarioInputs, ctx: CalcContext, targetRoe: number, options?: { min?: number; max?: number }) {
+  return maxPurchasePriceFor("roe", inputs, ctx, targetRoe, options);
+}
+
+/** O negócio é válido quando o retorno anualizado do cenário atinge o alvo. */
+export function meetsTarget(o: Pick<ScenarioOutputs, "annualized">, target: number): boolean {
+  return o.annualized >= target - 1e-9;
 }
 
 /** Valores por defeito de um cenário (os do Excel da LOOP). */

@@ -14,7 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import { formatCurrency, formatPercent } from "@/core/lib/format";
 import { applyMaxPriceToDeal, deleteScenario, renameScenario, saveScenario, setActiveScenario } from "../actions";
-import { calcScenario, maxPurchasePriceForRoe, type CalcContext, type ScenarioInputs } from "../calc";
+import { calcScenario, maxPurchasePriceForAnnualized, type CalcContext, type ScenarioInputs } from "../calc";
 import { SCENARIO_KIND_LABEL } from "../validation";
 import { ComputedRow, NumberField } from "./number-field";
 import { ResultsPanel } from "./results-panel";
@@ -27,7 +27,7 @@ type Props = {
   isActive: boolean;
   initialInputs: ScenarioInputs;
   ctx: CalcContext;
-  targetRoe: number;
+  targetReturn: number;
   canDelete: boolean;
   /** Telemóvel: ocupa toda a largura em vez da coluna de 26 rem. */
   fullWidth?: boolean;
@@ -62,7 +62,7 @@ function Select<T extends string>({ label, value, onChange, options }: { label: 
   );
 }
 
-export function ScenarioColumn({ scenarioId, dealId, name, kind, isActive, initialInputs, ctx, targetRoe, canDelete, fullWidth }: Props) {
+export function ScenarioColumn({ scenarioId, dealId, name, kind, isActive, initialInputs, ctx, targetReturn, canDelete, fullWidth }: Props) {
   const router = useRouter();
   const [inputs, setInputs] = useState<ScenarioInputs>(initialInputs);
   const [saved, setSaved] = useState<ScenarioInputs>(initialInputs);
@@ -108,7 +108,7 @@ export function ScenarioColumn({ scenarioId, dealId, name, kind, isActive, initi
     });
   }
   function computeMax() {
-    setMaxPrice(maxPurchasePriceForRoe(inputs, ctx, targetRoe));
+    setMaxPrice(maxPurchasePriceForAnnualized(inputs, ctx, targetReturn));
   }
   function applyMax() {
     if (!maxPrice) return;
@@ -149,21 +149,21 @@ export function ScenarioColumn({ scenarioId, dealId, name, kind, isActive, initi
       </div>
 
       <div className="sticky top-14 z-10">
-        <ResultsPanel o={o} targetRoe={targetRoe} />
+        <ResultsPanel o={o} targetReturn={targetReturn} />
         <div className="mt-2 flex items-center gap-2">
           <Button size="sm" onClick={save} disabled={!dirty || pending} className="h-10 gap-1 md:h-8">
             <Check className="size-4" />
             {pending ? "…" : dirty ? "Guardar" : "Guardado"}
           </Button>
-          <Button size="sm" variant="outline" onClick={computeMax} className="h-10 gap-1 md:h-8" title={`Preço de compra para ROE ${formatPercent(targetRoe)}`}>
+          <Button size="sm" variant="outline" onClick={computeMax} className="h-10 gap-1 md:h-8" title={`Preço de compra para retorno anualizado de ${formatPercent(targetReturn)}`}>
             <Target className="size-4" />
-            Preço máx. p/ ROE {formatPercent(targetRoe)}
+            Preço máx. p/ {formatPercent(targetReturn)} anualizado
           </Button>
         </div>
         {maxPrice !== undefined ? (
           <div className="mt-2 flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-sm">
             {maxPrice === null ? (
-              <span className="text-muted-foreground">Não é possível atingir o ROE alvo com estes custos.</span>
+              <span className="text-muted-foreground">Não é possível atingir {formatPercent(targetReturn)} anualizado com estes custos.</span>
             ) : (
               <>
                 <span>

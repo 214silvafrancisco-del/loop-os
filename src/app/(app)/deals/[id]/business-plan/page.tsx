@@ -22,7 +22,8 @@ export default async function DealBusinessPlanPage({ params }: { params: Promise
     db.select({ settings: organizations.settings }).from(organizations).where(eq(organizations.id, orgId)),
   ]);
   const property = propertyContextOf(dealCtx);
-  const targetRoe = org?.settings.targetRoePct ?? 0.3;
+  // Critério de validação: retorno anualizado ≥ alvo (30 % por defeito).
+  const targetReturn = org?.settings.targetAnnualizedPct ?? org?.settings.targetRoePct ?? 0.3;
 
   return (
     <ScenarioBoard
@@ -36,7 +37,7 @@ export default async function DealBusinessPlanPage({ params }: { params: Promise
         inputs: scenarioRowToInputs(s, property),
       }))}
       ctx={ctx}
-      targetRoe={targetRoe}
+      targetReturn={targetReturn}
       imtYear={year}
     />
   );

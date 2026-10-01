@@ -171,8 +171,8 @@ Barra superior: pesquisa global (⌘K: negócios, imóveis, contactos, documento
 1. Negócio → Análise: adicionar 3–4 comparáveis, ajustar homogeneização, ver €/m² médio.
 2. "Usar no cenário Remodelação" → abre Business Plan com valor de venda preenchido.
 3. Preencher aquisição (IMT isento por defeito, VPT), obra (método €/m² ou orçamento), detenção, venda. Resultados ao vivo.
-4. Definir cenário ativo. A lista e o dashboard passam a mostrar esse lucro/ROE.
-5. "Preço máximo para ROE 30 %" → mostra o valor; pode copiar para `max_price` do negócio.
+4. Definir cenário ativo. A lista passa a mostrar esse lucro e o retorno anualizado (verde se ≥ 30 %).
+5. **Critério de validação (2026-10-01)**: o negócio é válido quando o **retorno anualizado** (lucro bruto / investimento total × 12 / meses) do cenário é ≥ 30 % (alvo em `organizations.settings.targetAnnualizedPct`). O painel de resultados diz «Negócio válido» ou «Abaixo do alvo». "Preço máx. p/ 30 % anualizado" resolve o preço de compra por bissecção; pode copiar para `max_price` do negócio. O ROE (cash-on-cash) continua visível, só informativo.
 
 ### F4. Proposta
 1. Negócio → Proposta → "Nova proposta": valor pré-sugerido, prazo, validade, condições.

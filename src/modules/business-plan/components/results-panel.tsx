@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { formatCurrency, formatPercent } from "@/core/lib/format";
-import type { ScenarioOutputs } from "../calc";
+import { meetsTarget, type ScenarioOutputs } from "../calc";
 
 function Stat({ label, value, tone }: { label: string; value: string; tone?: "good" | "bad" | "muted" }) {
   return (
@@ -23,20 +23,28 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "go
 }
 
 /** Painel fixo no topo de cada cenário com os resultados ao vivo. */
-export function ResultsPanel({ o, targetRoe }: { o: ScenarioOutputs; targetRoe: number }) {
+export function ResultsPanel({ o, targetReturn }: { o: ScenarioOutputs; targetReturn: number }) {
   const profitTone = o.netProfit > 0 ? "good" : o.netProfit < 0 ? "bad" : "muted";
-  const roeTone = o.roe >= targetRoe ? "good" : o.roe > 0 ? undefined : "bad";
+  const valid = meetsTarget(o, targetReturn);
   return (
-    <div className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-xl border bg-card p-4 sm:grid-cols-3">
+    <div className="rounded-xl border bg-card p-4">
+      <div className={cn("mb-3 flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm font-medium", valid ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive")}>
+        <span>{valid ? "Negócio válido" : "Abaixo do alvo"}</span>
+        <span className="tabular-nums">
+          anualizado {formatPercent(o.annualized)} · alvo {formatPercent(targetReturn)}
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
       <Stat label="Lucro líquido" value={formatCurrency(o.netProfit)} tone={profitTone} />
-      <Stat label="ROE (cash-on-cash)" value={formatPercent(o.roe)} tone={roeTone} />
-      <Stat label="Anualizado" value={formatPercent(o.annualized)} />
+      <Stat label="Retorno anualizado" value={formatPercent(o.annualized)} tone={valid ? "good" : "bad"} />
+      <Stat label="ROE (cash-on-cash)" value={formatPercent(o.roe)} />
       <Stat label="Lucro bruto" value={formatCurrency(o.grossProfit)} />
       <Stat label="ROI" value={formatPercent(o.roi)} />
       <Stat label="Margem" value={formatPercent(o.margin)} />
       <Stat label="Capital próprio" value={formatCurrency(o.equity)} />
       <Stat label="Investimento total" value={formatCurrency(o.totalInvestment)} />
       <Stat label="Break-even" value={formatCurrency(o.breakEvenPrice)} />
+      </div>
     </div>
   );
 }

@@ -9,7 +9,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { calcImt, cumipmt, pmt, type ImtBracket } from "./finance";
-import { calcScenario, DEFAULT_INPUTS, maxPurchasePriceForRoe, type CalcContext, type ScenarioInputs } from "./scenario";
+import { calcScenario, DEFAULT_INPUTS, maxPurchasePriceForAnnualized, maxPurchasePriceForRoe, meetsTarget, type CalcContext, type ScenarioInputs } from "./scenario";
 
 const HPP_2026: ImtBracket[] = [
   { lower: 0, upper: 106346, rate: 0, deduction: 0 },
@@ -197,6 +197,17 @@ describe("resultados derivados", () => {
     const at = calcScenario({ ...base, purchasePrice: max! }, ctx);
     expect(at.roe).toBeGreaterThanOrEqual(0.2);
     expect(calcScenario({ ...base, purchasePrice: max! + 1000 }, ctx).roe).toBeLessThan(0.2);
+  });
+
+  it("preço máximo para retorno anualizado alvo (critério LOOP, 30 %)", () => {
+    const max = maxPurchasePriceForAnnualized(base, ctx, 0.3);
+    expect(max).not.toBeNull();
+    const at = calcScenario({ ...base, purchasePrice: max! }, ctx);
+    expect(at.annualized).toBeGreaterThanOrEqual(0.3);
+    expect(calcScenario({ ...base, purchasePrice: max! + 1000 }, ctx).annualized).toBeLessThan(0.3);
+    expect(meetsTarget(at, 0.3)).toBe(true);
+    expect(meetsTarget({ annualized: 0.2999 }, 0.3)).toBe(false);
+    expect(maxPurchasePriceForAnnualized({ ...base, salePrice: 1 }, ctx, 0.3)).toBeNull();
   });
 
   it("prejuízo não paga imposto", () => {

@@ -22,11 +22,11 @@ type Props = {
   dealId: string;
   scenarios: ScenarioView[];
   ctx: CalcContext;
-  targetRoe: number;
+  targetReturn: number;
   imtYear: number | null;
 };
 
-export function ScenarioBoard({ businessPlanId, dealId, scenarios, ctx, targetRoe, imtYear }: Props) {
+export function ScenarioBoard({ businessPlanId, dealId, scenarios, ctx, targetReturn, imtYear }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -86,7 +86,7 @@ export function ScenarioBoard({ businessPlanId, dealId, scenarios, ctx, targetRo
             isActive={selected.isActive}
             initialInputs={selected.inputs}
             ctx={ctx}
-            targetRoe={targetRoe}
+            targetReturn={targetReturn}
             canDelete={scenarios.length > 1}
             fullWidth
           />
@@ -104,7 +104,7 @@ export function ScenarioBoard({ businessPlanId, dealId, scenarios, ctx, targetRo
             isActive={s.isActive}
             initialInputs={s.inputs}
             ctx={ctx}
-            targetRoe={targetRoe}
+            targetReturn={targetReturn}
             canDelete={scenarios.length > 1}
           />
         ))}

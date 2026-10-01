@@ -157,6 +157,7 @@ async function main() {
           defaultVatPct: 0.23,
           comparableAreaAdjPctPerM2: 0.0025,
           targetRoePct: 0.3,
+          targetAnnualizedPct: 0.3,
         },
       })
       .returning();

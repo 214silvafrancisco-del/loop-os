@@ -24,7 +24,10 @@ export type OrganizationSettings = {
   proposalDefaultConditions?: string;
   defaultVatPct?: number;
   comparableAreaAdjPctPerM2?: number;
+  /** Antigo alvo de ROE (mantido para compatibilidade). */
   targetRoePct?: number;
+  /** Retorno anualizado mínimo para validar um negócio e calcular o preço máximo (LOOP: 30 %). */
+  targetAnnualizedPct?: number;
 };
 
 export const organizations = pgTable("organizations", {
