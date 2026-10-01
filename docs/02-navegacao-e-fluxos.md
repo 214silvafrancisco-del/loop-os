@@ -64,8 +64,10 @@ Barra superior: pesquisa global (⌘K: negócios, imóveis, contactos, documento
 - Objetivo: entrar com email + password; recuperar password; aceitar convite e definir password.
 - Componentes: formulário simples com logótipo; mensagens de erro claras; sem registo público (só por convite de admin).
 
-### 3.2 Dashboard
-- Objetivo: em 10 segundos saber o que precisa de ação hoje.
+### 3.2 Dashboard (reformulado 2026-10-01)
+- Objetivo: em 10 segundos saber como correu a semana, o que está em aberto e o que precisa de ação.
+- **Esta semana** (segunda a domingo): Leads novas (negócios entrados), Propostas feitas (geradas), Compras feitas (negócios que passaram a Compra, pela auditoria, ou com escritura na semana). **Em aberto**: um cartão por fase (Leads, Visita, Proposta com n.º e preço pedido; Compra com n.º e investido). Depois: Próximas ações, Obras em curso, Vendas, Faturas por pagar. Saíram: Pipeline por fase (substituído pelos cartões), Procedimentos em falta (vive nas listas) e Isenção de IMT.
+- Histórico do desenho inicial (MVP):
 - Informação: (a) **Ações desta semana**: negócios com `next_action_date` até domingo, ordenados por data, atrasados a vermelho; (b) **Pipeline**: contagem e soma do preço pedido por fase (Lead Fria, Lead Morna, Visita, Proposta, Compra); (c) **Obras em curso**: por obra, Orçamentado / Executado / Faturado / Pago e desvio; (d) **Faturas por pagar** e **em atraso** (total e lista curta); (e) **Alertas**: IMT revenda a expirar (escritura + 3 anos < 6 meses), propostas geradas sem estado atualizado há 14 dias.
 - Ações: clicar em qualquer item abre a ficha; marcar próxima ação como feita diretamente da lista.
 - Componentes: cartões KPI, lista de ações, mini-tabela de obras, gráfico de barras do pipeline (simples).
