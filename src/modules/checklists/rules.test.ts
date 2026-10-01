@@ -14,6 +14,7 @@ const freshLead: DealContext = {
   comparablesCount: 1,
   activeScenario: null,
   proposals: { count: 0, sent: 0, decided: 0 },
+  today: "2026-10-01",
 };
 
 const readyDeal: DealContext = {
@@ -26,6 +27,7 @@ const readyDeal: DealContext = {
   comparablesCount: 4,
   activeScenario: { ltvPct: 0.6 },
   proposals: { count: 1, sent: 1, decided: 0 },
+  today: "2026-10-01",
 };
 
 const deal = (ctx: DealContext): RuleContext => ({ entityType: "deal", ctx });
@@ -44,7 +46,7 @@ describe("regras do negócio", () => {
   });
 
   it("negócio analisado: tudo concluído, documentos por nome normalizado", () => {
-    for (const key of ["deal.address_complete", "deal.contact", "deal.property_data", "deal.comparables", "deal.business_plan", "deal.max_price", "deal.proposal_generated", "deal.proposal_sent", "deal.broker_commission"]) {
+    for (const key of ["deal.address_complete", "deal.contact", "deal.property_data", "deal.comparables", "deal.business_plan", "deal.max_price", "deal.proposal_generated", "deal.proposal_sent"]) {
       expect(evaluateRule(key, deal(readyDeal)).status, key).toBe("done");
     }
     expect(evaluateRule("doc:Certidão permanente", deal(readyDeal)).status).toBe("done");
@@ -68,6 +70,12 @@ describe("regras do negócio", () => {
     expect(evaluateRule("deal.purchase_terms", deal(bought)).status).toBe("done");
   });
 
+  it("escritura registada: só com data já passada", () => {
+    expect(evaluateRule("deal.deed_done", deal(readyDeal))).toEqual({ status: "pending", detail: "sem data de escritura" });
+    expect(evaluateRule("deal.deed_done", deal({ ...readyDeal, deal: { ...readyDeal.deal, deedDate: "2026-11-01" } }))).toEqual({ status: "pending", detail: "escritura marcada para 2026-11-01" });
+    expect(evaluateRule("deal.deed_done", deal({ ...readyDeal, deal: { ...readyDeal.deal, deedDate: "2026-09-15" } }))).toEqual({ status: "done", detail: "2026-09-15" });
+  });
+
   it("regra desconhecida não rebenta", () => {
     expect(evaluateRule("deal.nao_existe", deal(readyDeal))).toEqual({ status: "pending", detail: "regra desconhecida" });
   });
@@ -84,9 +92,9 @@ describe("condições de contexto", () => {
     expect(evaluateCondition("has_financing", deal({ ...readyDeal, activeScenario: { ltvPct: 0 } }))).toBe(false);
     expect(evaluateCondition("has_financing", deal(freshLead))).toBe(false);
   });
-  it("comissão só com consultor ou percentagem registada", () => {
-    expect(evaluateCondition("has_broker", deal(readyDeal))).toBe(true);
-    expect(evaluateCondition("has_broker", deal(freshLead))).toBe(false);
+  it("compra: itens só a partir da fase Compra", () => {
+    expect(evaluateCondition("stage_purchase", deal(readyDeal))).toBe(false);
+    expect(evaluateCondition("stage_purchase", deal({ ...readyDeal, deal: { ...readyDeal.deal, stageIsPurchase: true } }))).toBe(true);
   });
   it("condição desconhecida aplica-se", () => {
     expect(evaluateCondition("xpto", deal(freshLead))).toBe(true);

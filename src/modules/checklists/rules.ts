@@ -42,6 +42,8 @@ export type DealContext = {
   comparablesCount: number;
   activeScenario: { ltvPct: number } | null;
   proposals: { count: number; sent: number; decided: number };
+  /** YYYY-MM-DD */
+  today: string;
 };
 
 export type ProjectContext = {
@@ -124,7 +126,10 @@ const DEAL_RULES: Record<string, (c: DealContext) => RuleResult> = {
     const missing = [!pos(c.deal.finalPrice) && "valor final", !has(c.deal.deedDate) && "escritura"].filter(Boolean) as string[];
     return missing.length === 0 ? done() : pending(`falta ${missing.join(" e ")}`);
   },
-  "deal.broker_commission": (c) => (c.deal.sourceCommissionPct !== null ? done() : pending()),
+  "deal.deed_done": (c) => {
+    if (!has(c.deal.deedDate)) return pending("sem data de escritura");
+    return c.deal.deedDate! <= c.today ? done(c.deal.deedDate!) : pending(`escritura marcada para ${c.deal.deedDate}`);
+  },
 };
 
 const PROJECT_RULES: Record<string, (c: ProjectContext) => RuleResult> = {
@@ -172,8 +177,6 @@ const PROJECT_RULES: Record<string, (c: ProjectContext) => RuleResult> = {
 const CONDITIONS: Record<string, (rc: RuleContext) => boolean> = {
   needs_licenca: (rc) => rc.entityType === "deal" && (rc.ctx.property.constructionYear === null || rc.ctx.property.constructionYear >= 1951),
   has_financing: (rc) => rc.entityType === "deal" && rc.ctx.activeScenario !== null && rc.ctx.activeScenario.ltvPct > 0,
-  has_broker: (rc) =>
-    rc.entityType === "deal" && (normalizeText(rc.ctx.deal.sourceChannelName) === "consultor" || rc.ctx.deal.sourceCommissionPct !== null),
   stage_purchase: (rc) => rc.entityType === "deal" && rc.ctx.deal.stageIsPurchase,
   project_in_progress: (rc) => rc.entityType === "project" && rc.ctx.project.status === "em_curso",
 };

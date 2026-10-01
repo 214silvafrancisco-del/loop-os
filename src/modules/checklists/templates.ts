@@ -54,7 +54,7 @@ export const NOVO_NEGOCIO: TemplateDef = {
   code: "novo_negocio",
   name: "Novo Negócio",
   entityType: "deal",
-  version: 2,
+  version: 3,
   items: [
     // Registo
     { code: "registo.identificacao", section: "registo", label: "Identificação", help: "Nome do negócio ou tipologia e freguesia do imóvel.", kind: "auto", ruleKey: "deal.identified", linkPath: "resumo" },
@@ -64,12 +64,6 @@ export const NOVO_NEGOCIO: TemplateDef = {
     { code: "registo.contacto", section: "registo", label: "Contacto registado", help: "Angariador ou proprietário, com telefone.", kind: "auto", ruleKey: "deal.contact", required: true, gates: ["warn:deal:stage:proposta"], linkPath: "resumo" },
     { code: "registo.responsavel", section: "registo", label: "Responsável definido", kind: "auto", ruleKey: "deal.owner", linkPath: "resumo" },
     { code: "registo.proxima_acao", section: "registo", label: "Próxima ação definida", help: "Texto e data no cabeçalho. Volta a pendente quando se conclui a ação.", kind: "auto", ruleKey: "deal.next_action", linkPath: "resumo" },
-
-    // Qualificação (manual)
-    { code: "qualificacao.contacto_feito", section: "qualificacao", label: "Contactei o angariador / proprietário", kind: "manual", defaultAssignee: "owner" },
-    { code: "qualificacao.visita", section: "qualificacao", label: "Visita realizada", kind: "manual", defaultAssignee: "owner" },
-    { code: "qualificacao.validacao_vendedor", section: "qualificacao", label: "Validei a informação com o vendedor", help: "Áreas, ónus, condomínio, arrendamento.", kind: "manual", defaultAssignee: "owner" },
-    { code: "qualificacao.envolvente", section: "qualificacao", label: "Analisei a envolvente", help: "Rua, estacionamento, ruído, comércio.", kind: "manual", defaultAssignee: "owner" },
 
     // Documentação (auto por categoria de documento)
     { code: "documentacao.caderneta", section: "documentacao", label: "Caderneta predial", kind: "auto", ruleKey: doc("Caderneta predial"), required: true, gates: ["warn:deal:stage:proposta"], linkPath: "documentos?categoria=Caderneta predial" },
@@ -87,7 +81,6 @@ export const NOVO_NEGOCIO: TemplateDef = {
     { code: "analise.preco_maximo", section: "analise", label: "Preço máximo definido", help: "Calculado no Business Plan e aplicado ao negócio.", kind: "auto", ruleKey: "deal.max_price", gates: ["warn:proposal:generate", "warn:deal:stage:proposta"], linkPath: "business-plan" },
 
     // Decisão
-    { code: "decisao.condicoes", section: "decisao", label: "Confirmei as condições da negociação", help: "Prazo de escritura, sinal, inquilinos, contingências.", kind: "manual", defaultAssignee: "owner" },
     { code: "decisao.proposta_gerada", section: "decisao", label: "Proposta gerada", kind: "auto", ruleKey: "deal.proposal_generated", dependsOn: "analise.preco_maximo", linkPath: "proposta" },
     { code: "decisao.proposta_enviada", section: "decisao", label: "Proposta enviada", help: "Marca o estado \"enviada\" na proposta depois de a enviares por WhatsApp ou email.", kind: "auto", ruleKey: "deal.proposal_sent", dependsOn: "decisao.proposta_gerada", linkPath: "proposta" },
     { code: "decisao.resultado", section: "decisao", label: "Resultado registado", help: "Proposta aceite ou recusada, ou negócio excluído.", kind: "auto", ruleKey: "deal.outcome", gates: ["warn:deal:stage:compra"], linkPath: "proposta" },
@@ -96,7 +89,7 @@ export const NOVO_NEGOCIO: TemplateDef = {
     { code: "compra.condicoes", section: "compra", label: "Condições de compra registadas", help: "Valor final e data de escritura (CPCV opcional).", kind: "auto", ruleKey: "deal.purchase_terms", required: true, appliesWhen: "stage_purchase", linkPath: "resumo" },
     { code: "compra.cpcv", section: "compra", label: "CPCV carregado", kind: "auto", ruleKey: doc("CPCV"), gates: ["warn:deal:stage:compra"], linkPath: "documentos?categoria=CPCV" },
     { code: "compra.financiamento", section: "compra", label: "Financiamento tratado", help: "Só aplicável quando o cenário ativo tem financiamento.", kind: "manual", appliesWhen: "has_financing", defaultAssignee: "owner" },
-    { code: "compra.comissao", section: "compra", label: "Comissão de mediação registada", help: "Só aplicável com consultor.", kind: "auto", ruleKey: "deal.broker_commission", appliesWhen: "has_broker", linkPath: "resumo" },
+    { code: "compra.escritura", section: "compra", label: "Escritura registada", help: "Data da escritura preenchida no negócio e já passada.", kind: "auto", ruleKey: "deal.deed_done", appliesWhen: "stage_purchase", linkPath: "resumo" },
   ],
 };
 

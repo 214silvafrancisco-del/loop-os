@@ -102,7 +102,6 @@ Itens "vivos" podem voltar a pendente. Isto é desejável: "Autos em dia" é um 
 | Visita realizada | ao marcar, a app pode propor mudar a fase para "Visita" se ainda estiver atrás |
 | Validei a informação com o vendedor (áreas, ónus, condomínio, arrendamento) | |
 | Analisei a envolvente (rua, estacionamento, ruído, comércio) | |
-| Confirmei as condições da negociação (prazo, sinal, permanência de inquilinos) | |
 | Documentação verificada (li os documentos, não só carreguei) | diferente de "carregada" |
 | **Obra** | |
 | Orçamento validado com o empreiteiro | até haver um estado "orçamento fechado" (Phase 2) |
@@ -117,7 +116,7 @@ Regra: itens manuais marcam-se com um clique e ficam com quem/quando. Itens auto
 
 Obrigatório = conta para os bloqueios (secção 9) e aparece assinalado. Progresso conta todos os itens aplicáveis.
 
-**Negócio** (v2, 2026-10-01): preço pedido; origem; contacto; morada completa; caderneta predial; certidão permanente; comparáveis (≥ 3); Business Plan com cenário ativo; condições de compra (a partir de Compra). O preço máximo deixou de ser obrigatório e a porta "gerar proposta" passou a aviso para ele.
+**Negócio** (v3, 2026-10-01): preço pedido; origem; contacto; morada completa; caderneta predial; certidão permanente; comparáveis (≥ 3); Business Plan com cenário ativo; condições de compra (a partir de Compra). O preço máximo deixou de ser obrigatório e a porta "gerar proposta" passou a aviso para ele. Simplificação v3: saiu a secção Qualificação inteira e «Confirmei as condições da negociação»; na Compra, «Comissão de mediação registada» deu lugar a «Escritura registada» (auto: data da escritura preenchida e já passada).
 
 **Obra** (v4, 2026-10-01): responsável; orçamento criado; início registado; autos a 100 % e faturas pagas (para fechar). Simplificação v4: saíram «Capítulos definidos» e, na Documentação, ficou só «Projeto carregado» (saíram Orçamento (ficheiro), Contrato de empreitada e Licenciamento).
 
@@ -140,7 +139,6 @@ Por checklist: `done / total / %` calculado sobre os itens aplicáveis (exclui N
 
 Contexto (secção 11): condições que tornam itens N/A automaticamente:
 - **Sem financiamento** (cenário ativo com LTV = 0): itens de financiamento N/A.
-- **Sem comissão de mediação** (fonte ≠ Consultor e `source_commission_pct` vazio): item de comissão N/A.
 - **Licença de utilização**: N/A se ano de construção anterior a 1951 (prédios anteriores a 7/8/1951 estão dispensados).
 - **Prédio/terreno**: itens de fração (certificado energético por fração, condomínio) ajustam-se.
 
@@ -204,7 +202,7 @@ Outras alterações pequenas:
 ## 11. Alterações à UX
 
 **Ficha do negócio**
-- Nova tab **Processo** (logo a seguir a Resumo): secções (Registo, Qualificação, Documentação, Análise, Decisão, Compra), cada item com estado, badge "auto"/"manual", responsável (avatar), e "concluído por X em DD/MM" ao expandir. Cada item tem um link para onde se resolve (carregar caderneta → Documentos com a categoria pré-escolhida; BP → tab Business Plan).
+- Nova tab **Processo** (logo a seguir a Resumo): secções (Registo, Documentação, Análise, Decisão, Compra), cada item com estado, badge "auto"/"manual", responsável (avatar), e "concluído por X em DD/MM" ao expandir. Cada item tem um link para onde se resolve (carregar caderneta → Documentos com a categoria pré-escolhida; BP → tab Business Plan).
 - **Cabeçalho** (visível em todas as tabs): barra de progresso `14/20 · 70 %` e **"Próximo passo: Definir preço máximo"** (primeiro item obrigatório pendente e não bloqueado). Clicar leva ao item.
 - Manual: checkbox. Auto: checkbox desativado com tooltip "Conclui-se automaticamente quando…". Menu por item: "Não aplicável" (pede nota curta), "Atribuir a…".
 - Na mudança de fase: diálogo "Faltam 3 itens obrigatórios: … Continuar mesmo assim?" (aviso) ou "Não é possível gerar a proposta sem …" com botões que levam ao sítio (bloqueio).
@@ -241,10 +239,6 @@ Princípio visual: a checklist não é um formulário a mais. É a "página de e
 | Registo | Contacto | auto | ✓ | com telefone |
 | Registo | Responsável | auto | | |
 | Registo | Próxima ação definida | auto (vivo) | | |
-| Qualificação | Contactei o angariador/proprietário | manual | | |
-| Qualificação | Visita realizada | manual | | propõe fase Visita |
-| Qualificação | Validei a informação com o vendedor | manual | | |
-| Qualificação | Analisei a envolvente | manual | | |
 | Documentação | Caderneta predial | auto | ✓ | |
 | Documentação | Certidão permanente | auto | ✓ | |
 | Documentação | Licença de utilização | auto | | N/A se < 1951 |
@@ -256,14 +250,13 @@ Princípio visual: a checklist não é um formulário a mais. É a "página de e
 | Análise | Comparáveis (≥ 3) | auto | ✓ | |
 | Análise | Business Plan com cenário ativo | auto | ✓ | |
 | Análise | Preço máximo definido | auto | | avisa ao gerar proposta |
-| Decisão | Confirmei as condições da negociação | manual | | |
 | Decisão | Proposta gerada | auto | | bloqueada até BP + preço máximo |
 | Decisão | Proposta enviada | auto | | estado marcado pelo utilizador |
 | Decisão | Resultado registado | auto | | aceite / recusada / excluído |
 | Compra | Condições de compra registadas | auto | ✓ (em Compra) | valor final + escritura |
 | Compra | CPCV carregado | auto | | categoria CPCV |
 | Compra | Financiamento tratado | manual | | N/A se LTV = 0 |
-| Compra | Comissão de mediação registada | auto | | N/A sem consultor |
+| Compra | Escritura registada | auto | | data da escritura já passada |
 
 ## Checklist "Nova Obra" (proposta concreta)
 
@@ -309,7 +302,7 @@ Cada step é uma sessão incremental, como até aqui: ficheiros exatos, comandos
 2. Só três bloqueios duros (gerar proposta; obra em curso; obra concluída). O resto avisos.
 3. Itens automáticos não se marcam à mão; só "não aplicável" com nota.
 4. As duas listas de itens acima: acrescentar, tirar, renomear, mudar obrigatórios.
-5. Regras de contexto: licença N/A antes de 1951; financiamento N/A com LTV 0; comissão N/A sem consultor.
+5. Regras de contexto: licença N/A antes de 1951; financiamento N/A com LTV 0.
 6. Responsável por defeito = responsável do negócio / da obra; alterável por item.
 7. Backfill: criar checklists para os 22 negócios ativos agora (ficam com progresso baixo e honesto; marcam-se N/A os passos antigos). Os excluídos ficam sem checklist.
 8. Categorias novas: "Contrato de empreitada" e "Fotografias finais".

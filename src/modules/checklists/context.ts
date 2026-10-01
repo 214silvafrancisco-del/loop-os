@@ -106,6 +106,7 @@ export async function loadDealContext(organizationId: string, dealId: string): P
       comparablesCount,
       activeScenario,
       proposals: { count: p?.count ?? 0, sent: p?.sent ?? 0, decided: p?.decided ?? 0 },
+      today: todayIso(),
     },
   };
 }
