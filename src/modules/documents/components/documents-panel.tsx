@@ -231,11 +231,11 @@ export function DocumentsPanel({ context, documents, categories, canDelete, show
                         </div>
                       </div>
                       {canPreview(d.mimeType) ? (
-                        <Button variant="ghost" size="icon" className="size-8" title="Pré-visualizar" onClick={() => setPreview(d)}>
+                        <Button variant="ghost" size="icon" className="size-11 md:size-8" title="Pré-visualizar" onClick={() => setPreview(d)}>
                           <Eye className="size-4" />
                         </Button>
                       ) : null}
-                      <Button asChild variant="ghost" size="icon" className="size-8" title="Descarregar">
+                      <Button asChild variant="ghost" size="icon" className="size-11 md:size-8" title="Descarregar">
                         <a href={`/api/documents/${d.versionId}/download`}>
                           <Download className="size-4" />
                         </a>

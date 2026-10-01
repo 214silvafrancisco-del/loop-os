@@ -1,4 +1,5 @@
-import { LogOut } from "lucide-react";
+import { ListChecks, LogOut, Settings } from "lucide-react";
+import Link from "next/link";
 import { signOut } from "@/core/auth/actions";
 import type { CurrentUser } from "@/core/auth/current-user";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -37,9 +38,22 @@ export function UserMenu({ user }: { user: CurrentUser }) {
           <span className="text-xs font-normal text-muted-foreground">{ROLE_LABEL[user.role]}</span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/settings" className="min-h-10">
+            <Settings className="size-4" />
+            Definições
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/settings/procedimentos" className="min-h-10">
+            <ListChecks className="size-4" />
+            Procedimentos
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
         <form action={signOut}>
           <DropdownMenuItem asChild>
-            <button type="submit" className="w-full">
+            <button type="submit" className="min-h-10 w-full">
               <LogOut className="size-4" />
               Terminar sessão
             </button>

@@ -148,7 +148,7 @@ function ChecklistItemRow({ item, users, basePath, pending, onToggle, onReset, o
   const control = (() => {
     if (na) return <Minus className="size-4 text-muted-foreground/60" aria-label="Não aplicável" />;
     if (item.kind === "manual") {
-      return <Checkbox checked={done} disabled={pending || blocked} onCheckedChange={(v) => onToggle(v === true)} aria-label={item.label} />;
+      return <Checkbox checked={done} disabled={pending || blocked} onCheckedChange={(v) => onToggle(v === true)} aria-label={item.label} className="size-6 md:size-4 [&_svg]:size-4 md:[&_svg]:size-3.5" />;
     }
     if (done) return <CheckCircle2 className="size-4 text-success" aria-label="Concluído automaticamente" />;
     if (blocked) return <Lock className="size-4 text-muted-foreground" aria-label="Bloqueado" />;
@@ -162,8 +162,8 @@ function ChecklistItemRow({ item, users, basePath, pending, onToggle, onReset, o
   if (!done && !na && item.help) meta.push(item.help);
 
   return (
-    <li className={cn("flex items-start gap-3 px-4 py-2.5", na && "opacity-60")}>
-      <div className="mt-0.5 flex size-5 items-center justify-center" title={item.kind === "auto" ? "Conclui-se automaticamente a partir dos dados" : "Marca-se à mão"}>
+    <li className={cn("flex items-start gap-2 px-3 py-2 md:gap-3 md:px-4 md:py-2.5", na && "opacity-60")}>
+      <div className="flex size-11 shrink-0 items-center justify-center md:mt-0.5 md:size-5" title={item.kind === "auto" ? "Conclui-se automaticamente a partir dos dados" : "Marca-se à mão"}>
         {control}
       </div>
       <div className="min-w-0 flex-1">
@@ -186,7 +186,7 @@ function ChecklistItemRow({ item, users, basePath, pending, onToggle, onReset, o
       </div>
       <div className="flex shrink-0 items-center gap-0.5">
         {href && !done && !na && !blocked ? (
-          <Button asChild variant="ghost" size="sm" className="h-7 gap-0.5 px-2 text-xs">
+          <Button asChild variant="ghost" size="sm" className="h-11 gap-0.5 px-2 text-xs md:h-7">
             <Link href={href}>
               resolver <ArrowUpRight className="size-3.5" />
             </Link>
@@ -194,7 +194,7 @@ function ChecklistItemRow({ item, users, basePath, pending, onToggle, onReset, o
         ) : null}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="size-7" aria-label="Mais opções" disabled={pending}>
+            <Button variant="ghost" size="icon" className="size-11 md:size-7" aria-label="Mais opções" disabled={pending}>
               <MoreHorizontal className="size-4" />
             </Button>
           </DropdownMenuTrigger>

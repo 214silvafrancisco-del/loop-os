@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 export const PROJECT_TABS = [
@@ -15,8 +16,16 @@ export const PROJECT_TABS = [
 
 export function ProjectTabs({ projectId, counts }: { projectId: string; counts?: Partial<Record<string, number>> }) {
   const pathname = usePathname();
+  const nav = useRef<HTMLElement>(null);
+  // No telemóvel as tabs fazem scroll lateral: garante que a ativa fica à vista.
+  useEffect(() => {
+    nav.current?.querySelector<HTMLElement>('[aria-current="page"]')?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [pathname]);
   return (
-    <nav className="-mx-4 mb-6 overflow-x-auto border-b px-4 md:mx-0 md:px-0">
+    <nav
+      ref={nav}
+      className="relative -mx-4 mb-6 overflow-x-auto border-b px-4 md:mx-0 md:px-0 [scrollbar-width:none] after:pointer-events-none after:sticky after:right-0 after:top-0 after:-mt-10 after:block after:h-10 after:w-10 after:bg-gradient-to-l after:from-background after:to-transparent md:after:hidden"
+    >
       <ul className="flex gap-1">
         {PROJECT_TABS.map((t) => {
           const href = `/projects/${projectId}/${t.slug}`;
@@ -27,7 +36,7 @@ export function ProjectTabs({ projectId, counts }: { projectId: string; counts?:
               <Link
                 href={href}
                 className={cn(
-                  "-mb-px flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2 text-sm transition-colors",
+                  "-mb-px flex min-h-11 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2 text-sm transition-colors md:min-h-0",
                   active ? "border-primary font-medium text-foreground" : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
                 )}
                 aria-current={active ? "page" : undefined}
