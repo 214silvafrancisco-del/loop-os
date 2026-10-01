@@ -29,6 +29,8 @@ type Props = {
   ctx: CalcContext;
   targetRoe: number;
   canDelete: boolean;
+  /** Telemóvel: ocupa toda a largura em vez da coluna de 26 rem. */
+  fullWidth?: boolean;
 };
 
 function Section({ title, total, children, defaultOpen = true }: { title: string; total?: string; children: React.ReactNode; defaultOpen?: boolean }) {
@@ -50,7 +52,7 @@ function Select<T extends string>({ label, value, onChange, options }: { label: 
       <select
         value={value}
         onChange={(e) => onChange(e.target.value as T)}
-        className="h-7 w-32 rounded-md border bg-background px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="h-10 w-36 rounded-md border bg-background px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring md:h-7 md:w-32"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>{o.label}</option>
@@ -60,7 +62,7 @@ function Select<T extends string>({ label, value, onChange, options }: { label: 
   );
 }
 
-export function ScenarioColumn({ scenarioId, dealId, name, kind, isActive, initialInputs, ctx, targetRoe, canDelete }: Props) {
+export function ScenarioColumn({ scenarioId, dealId, name, kind, isActive, initialInputs, ctx, targetRoe, canDelete, fullWidth }: Props) {
   const router = useRouter();
   const [inputs, setInputs] = useState<ScenarioInputs>(initialInputs);
   const [saved, setSaved] = useState<ScenarioInputs>(initialInputs);
@@ -118,7 +120,7 @@ export function ScenarioColumn({ scenarioId, dealId, name, kind, isActive, initi
   }
 
   return (
-    <div className={cn("flex w-[26rem] shrink-0 flex-col gap-3", isActive && "rounded-xl ring-2 ring-primary/40 ring-offset-2 ring-offset-background")}>
+    <div className={cn("flex shrink-0 flex-col gap-3", fullWidth ? "w-full" : "w-[26rem]", isActive && "rounded-xl ring-2 ring-primary/40 ring-offset-2 ring-offset-background")}>
       <div className="flex items-center gap-2 px-1">
         <button
           type="button"
@@ -133,7 +135,7 @@ export function ScenarioColumn({ scenarioId, dealId, name, kind, isActive, initi
         <h3 className="min-w-0 flex-1 truncate text-base font-semibold">{name}</h3>
         <span className="text-[11px] text-muted-foreground">{SCENARIO_KIND_LABEL[kind]}</span>
         <DropdownMenu>
-          <DropdownMenuTrigger className="rounded-md p-1 hover:bg-accent" aria-label="Opções do cenário">
+          <DropdownMenuTrigger className="flex size-11 items-center justify-center rounded-md hover:bg-accent md:size-7" aria-label="Opções do cenário">
             <MoreHorizontal className="size-4" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -149,11 +151,11 @@ export function ScenarioColumn({ scenarioId, dealId, name, kind, isActive, initi
       <div className="sticky top-14 z-10">
         <ResultsPanel o={o} targetRoe={targetRoe} />
         <div className="mt-2 flex items-center gap-2">
-          <Button size="sm" onClick={save} disabled={!dirty || pending} className="gap-1">
+          <Button size="sm" onClick={save} disabled={!dirty || pending} className="h-10 gap-1 md:h-8">
             <Check className="size-4" />
             {pending ? "…" : dirty ? "Guardar" : "Guardado"}
           </Button>
-          <Button size="sm" variant="outline" onClick={computeMax} className="gap-1" title={`Preço de compra para ROE ${formatPercent(targetRoe)}`}>
+          <Button size="sm" variant="outline" onClick={computeMax} className="h-10 gap-1 md:h-8" title={`Preço de compra para ROE ${formatPercent(targetRoe)}`}>
             <Target className="size-4" />
             Preço máx. p/ ROE {formatPercent(targetRoe)}
           </Button>

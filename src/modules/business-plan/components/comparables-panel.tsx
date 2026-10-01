@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { formatArea, formatCurrency } from "@/core/lib/format";
 import { calcValuation, defaultAreaAdjustment } from "../calc";
 import { applyValuationToScenario, saveComparables, type ComparableDraft } from "../comparables-actions";
+import { ComparablesMobile } from "./comparables-mobile";
 
 type ScenarioOption = { id: string; name: string; isActive: boolean; salePrice: number };
 type References = { referenceM2Idealista: number | null; referenceM2Maxwork: number | null; referenceM2Consultant: number | null };
@@ -118,7 +119,12 @@ export function ComparablesPanel({ businessPlanId, propertyId, base, areaAdjPctP
         {base.area <= 0 ? <span className="w-full text-xs text-destructive">Sem área bruta no imóvel: a avaliação não pode ser calculada.</span> : null}
       </div>
 
-      <div className="overflow-x-auto rounded-xl border bg-card">
+      {/* Telemóvel: um cartão por comparável */}
+      <div className="md:hidden">
+        <ComparablesMobile rows={rows} result={result} adjRows={ADJ_ROWS} conditions={CONDITIONS} onUpdate={update} onSetArea={setArea} onAdd={add} onRemove={remove} />
+      </div>
+
+      <div className="hidden overflow-x-auto rounded-xl border bg-card md:block">
         <table className="w-full min-w-[40rem] text-sm">
           <thead>
             <tr className="border-b">
@@ -214,7 +220,7 @@ export function ComparablesPanel({ businessPlanId, propertyId, base, areaAdjPctP
 
       <div className="flex items-center justify-end gap-3">
         {error ? <span className="text-xs text-destructive">{error}</span> : null}
-        <Button onClick={save} disabled={!dirty || pending} className="gap-1">
+        <Button onClick={save} disabled={!dirty || pending} className="h-11 gap-1 md:h-8">
           <Check className="size-4" />
           {pending ? "…" : dirty ? "Guardar comparáveis" : "Guardado"}
         </Button>

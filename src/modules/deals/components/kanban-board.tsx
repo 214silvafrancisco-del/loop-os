@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/core/lib/format";
+import { NativeSelect } from "@/core/ui/form-field";
 import type { DealStage } from "@/modules/settings/queries";
 import { confirmMissing } from "@/modules/checklists/components/gate-confirm";
 import { changeDealStage, type PurchaseInput } from "../actions";
@@ -117,8 +118,47 @@ export function KanbanBoard({ stages, deals: initialDeals }: Props) {
 
   return (
     <>
+      {/* Telemóvel: lista por fase; mover com um seletor em vez de arrastar. */}
+      <div className="flex flex-col gap-4 md:hidden">
+        {stages.map((s) => {
+          const list = deals.filter((d) => d.stageId === s.id);
+          const total = list.reduce((acc, d) => acc + Number(d.askingPrice ?? 0), 0);
+          return (
+            <section key={s.id}>
+              <header className="mb-2 flex items-center gap-2">
+                <span className="size-2 rounded-full" style={{ backgroundColor: s.color ?? "currentColor" }} />
+                <span className="text-sm font-semibold">{s.name}</span>
+                <span className="rounded-full bg-muted px-1.5 text-xs tabular-nums text-muted-foreground">{list.length}</span>
+                <span className="ml-auto text-xs tabular-nums text-muted-foreground">{total ? formatCurrency(total) : ""}</span>
+              </header>
+              {list.length === 0 ? (
+                <p className="rounded-lg border border-dashed px-3 py-3 text-xs text-muted-foreground">Sem negócios nesta fase.</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {list.map((d) => (
+                    <div key={d.id} className="flex flex-col gap-1.5">
+                      <KanbanCardBody deal={d} />
+                      <NativeSelect
+                        aria-label={`Mover ${d.name ?? d.addressLine} para outra fase`}
+                        value={d.stageId}
+                        onChange={(e) => commit(d, e.target.value)}
+                        className="h-10 text-sm"
+                      >
+                        {stages.map((st) => (
+                          <option key={st.id} value={st.id}>{st.id === d.stageId ? `Fase: ${st.name}` : `Mover para ${st.name}`}</option>
+                        ))}
+                      </NativeSelect>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          );
+        })}
+      </div>
+
       <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}>
-        <div className="flex gap-3 overflow-x-auto pb-3">
+        <div className="hidden gap-3 overflow-x-auto pb-3 md:flex">
           {stages.map((s) => (
             <Column key={s.id} stage={s} deals={deals.filter((d) => d.stageId === s.id)} active={activeId !== null} />
           ))}

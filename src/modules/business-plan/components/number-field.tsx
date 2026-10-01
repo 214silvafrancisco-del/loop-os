@@ -38,9 +38,9 @@ export function NumberField({ label, value, onChange, kind = "eur", suffix, hint
           }}
           onFocus={(e) => e.target.select()}
           className={cn(
-            "h-7 w-28 rounded-md border bg-background px-2 text-right text-sm tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50",
-            kind === "pct" && "w-20",
-            kind === "int" && "w-16",
+            "h-10 w-32 rounded-md border bg-background px-2 text-right text-base tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 md:h-7 md:w-28 md:text-sm",
+            kind === "pct" && "w-24 md:w-20",
+            kind === "int" && "w-20 md:w-16",
           )}
         />
         <span className="w-4 text-xs text-muted-foreground">{unit}</span>
