@@ -8,7 +8,28 @@ import type { SupplierFinancials } from "../invoices/queries";
 export function SupplierTotalsTable({ rows }: { rows: SupplierFinancials[] }) {
   if (rows.length === 0) return null;
   return (
-    <div className="rounded-xl border bg-card">
+    <>
+    <ul className="flex flex-col gap-2 md:hidden">
+      {rows.map((s) => {
+        const dev = s.invoicedNet - s.budgeted;
+        return (
+          <li key={s.supplierId} className="rounded-xl border bg-card p-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-medium">{s.supplierName}</span>
+              <span className="text-[11px] text-muted-foreground">{s.controlMode === "autos" ? "autos mensais" : "por fatura"}</span>
+            </div>
+            <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
+              <dt className="text-muted-foreground">Orçamentado</dt><dd className="text-right tabular-nums">{formatMoney(s.budgeted)}</dd>
+              {s.controlMode === "autos" ? (<><dt className="text-muted-foreground">Executado</dt><dd className="text-right tabular-nums">{formatMoney(s.executed)}{s.budgeted ? <span className="ml-1 text-xs text-muted-foreground">{formatPercent(s.executed / s.budgeted)}</span> : null}</dd></>) : null}
+              <dt className="text-muted-foreground">Faturado s/ IVA</dt><dd className="text-right tabular-nums">{formatMoney(s.invoicedNet)}</dd>
+              <dt className="text-muted-foreground">Desvio</dt><dd className={cn("text-right tabular-nums", dev > 0 && "text-destructive")}>{dev > 0 ? "+" : ""}{formatMoney(dev)}</dd>
+              <dt className="text-muted-foreground">Pago</dt><dd className="text-right tabular-nums">{formatMoney(s.paid)}</dd>
+            </dl>
+          </li>
+        );
+      })}
+    </ul>
+    <div className="hidden rounded-xl border bg-card md:block">
       <Table>
         <TableHeader>
           <TableRow>
@@ -50,5 +71,6 @@ export function SupplierTotalsTable({ rows }: { rows: SupplierFinancials[] }) {
         </TableBody>
       </Table>
     </div>
+    </>
   );
 }

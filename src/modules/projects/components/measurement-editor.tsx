@@ -93,7 +93,69 @@ export function MeasurementEditor({ reportId, number, periodMonth, reportDate, n
         ) : null}
       </div>
 
-      <div className="overflow-x-auto rounded-xl border bg-card">
+      {/* Telemóvel: um artigo por cartão, com percentagem grande e atalhos. */}
+      <div className="flex flex-col gap-3 md:hidden">
+        {chapters.map((ch) => {
+          const rows = leaves.filter((l) => l.chapter === ch);
+          const sumB = rows.reduce((a, r) => a + r.budgeted, 0);
+          const sumC = rows.reduce((a, r) => a + (byLine.get(r.budgetLineId)?.amountCumulative ?? 0), 0);
+          return (
+            <section key={ch} className="rounded-xl border bg-card">
+              <header className="flex items-center justify-between gap-2 border-b px-3 py-2 text-sm">
+                <span className="min-w-0 truncate font-medium">{ch}</span>
+                <span className="shrink-0 tabular-nums text-muted-foreground">{formatMoney(sumC)} / {formatMoney(sumB)}</span>
+              </header>
+              <ul className="divide-y">
+                {rows.map((r) => {
+                  const c = byLine.get(r.budgetLineId);
+                  const pct = pcts[r.budgetLineId] ?? 0;
+                  const shown = Math.round(pct * 1000) / 10;
+                  return (
+                    <li key={r.budgetLineId} className="px-3 py-2.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-sm"><span className="mr-1 font-mono text-[11px] text-muted-foreground">{r.code}</span>{r.description}</p>
+                          <p className="text-xs text-muted-foreground">orçamentado {formatMoney(r.budgeted)} · antes {Math.round(r.previousPct * 100)} %</p>
+                        </div>
+                        <div className="shrink-0 text-right text-xs">
+                          <p className="tabular-nums">{formatMoney(c?.amountCumulative ?? 0)}</p>
+                          <p className={cn("tabular-nums text-muted-foreground", (c?.amountPeriod ?? 0) < 0 && "text-destructive")}>neste auto {formatMoney(c?.amountPeriod ?? 0)}</p>
+                        </div>
+                      </div>
+                      <div className="mt-2 flex items-center gap-1.5">
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          step={5}
+                          value={shown}
+                          disabled={closed}
+                          onChange={(e) => setPct(r.budgetLineId, Number(e.target.value || 0) / 100)}
+                          onFocus={(e) => e.target.select()}
+                          className={cn("h-11 w-20 rounded-lg border bg-background px-2 text-right text-base tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60", pct < r.previousPct && "border-warning")}
+                          aria-label={`Percentagem acumulada de ${r.description}`}
+                        />
+                        <span className="text-sm text-muted-foreground">%</span>
+                        {!closed ? (
+                          <div className="ml-auto flex gap-1">
+                            {[25, 50, 75, 100].map((q) => (
+                              <button key={q} type="button" onClick={() => setPct(r.budgetLineId, q / 100)} className={cn("h-11 min-w-11 rounded-lg border px-2 text-xs tabular-nums", shown === q ? "border-primary bg-primary/10 text-primary" : "bg-card")}>
+                                {q}
+                              </button>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          );
+        })}
+      </div>
+
+      <div className="hidden overflow-x-auto rounded-xl border bg-card md:block">
         <table className="w-full min-w-[48rem] text-sm">
           <thead className="bg-muted/40 text-xs text-muted-foreground">
             <tr>

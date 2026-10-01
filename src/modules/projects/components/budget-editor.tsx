@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { formatMoney } from "@/core/lib/format";
 import { saveBudget, seedBudgetFromBusinessPlan } from "../budget/actions";
 import { assignCodes, chaptersWithoutSupplier, childrenOf, computeTotals, flatten, importedToNodes, inheritSuppliers, isLeaf, type BudgetNode, type ImportedNode } from "../budget/tree";
+import { BudgetMobile } from "./budget-mobile";
 
 type Option = { id: string; name: string };
 type SupplierOption = Option & { controlMode: "autos" | "fatura" };
@@ -55,13 +56,14 @@ export function BudgetEditor({ projectId, initialNodes, suppliers, categories, d
   function update(id: string, patch: Partial<BudgetNode>) {
     setNodes((prev) => prev.map((n) => (n.id === id ? { ...n, ...patch } : n)));
   }
-  function add(parentId: string | null, supplierId: string | null = null) {
+  function add(parentId: string | null, supplierId: string | null = null): string {
+    const id = tmpId();
     setNodes((prev) => {
       const siblings = childrenOf(prev, parentId);
       return [
         ...prev,
         {
-          id: tmpId(),
+          id,
           parentId,
           sort: (siblings.at(-1)?.sort ?? 0) + 1,
           description: "",
@@ -76,13 +78,22 @@ export function BudgetEditor({ projectId, initialNodes, suppliers, categories, d
       ];
     });
     if (parentId) setCollapsed((c) => { const n = new Set(c); n.delete(parentId); return n; });
+    return id;
   }
   function remove(id: string) {
     const descendants = new Set<string>();
     const collect = (pid: string) => { for (const c of childrenOf(nodes, pid)) { descendants.add(c.id); collect(c.id); } };
     collect(id);
     if (descendants.size && !confirm("Apagar esta linha e as suas sublinhas?")) return;
-    setNodes((prev) => prev.filter((n) => n.id !== id && !descendants.has(n.id)));
+    removeSilently(id, descendants);
+  }
+  function removeSilently(id: string, descendants?: Set<string>) {
+    const drop = descendants ?? new Set<string>();
+    if (!descendants) {
+      const collect = (pid: string) => { for (const c of childrenOf(nodes, pid)) { drop.add(c.id); collect(c.id); } };
+      collect(id);
+    }
+    setNodes((prev) => prev.filter((n) => n.id !== id && !drop.has(n.id)));
   }
   function move(id: string, dir: -1 | 1) {
     setNodes((prev) => {
@@ -228,7 +239,12 @@ export function BudgetEditor({ projectId, initialNodes, suppliers, categories, d
           Adiciona primeiro os fornecedores da obra (acima). Depois importa o mapa de quantidades de cada um ou cria os capítulos à mão.
         </p>
       ) : (
-        <div className="flex flex-col gap-4">
+        <>
+        {/* Telemóvel: leitura por fornecedor e capítulo, edição em diálogo. */}
+        <div className="md:hidden">
+          <BudgetMobile nodes={nodes} totals={totals} codes={codes} suppliers={suppliers} categories={categories} onUpdate={update} onAdd={add} onRemove={(id) => removeSilently(id)} />
+        </div>
+        <div className="hidden flex-col gap-4 md:flex">
           {sections.map(({ supplier, chapters: secChapters }) => {
             const net = secChapters.reduce((a, c) => a + (totals.byNode[c.id] ?? 0), 0);
             return (
@@ -326,8 +342,18 @@ export function BudgetEditor({ projectId, initialNodes, suppliers, categories, d
           })}
           <datalist id="unit-options">{UNITS.map((u) => <option key={u} value={u} />)}</datalist>
         </div>
+        </>
       )}
       <p className="text-xs text-muted-foreground">Valores sem IVA, como no mapa de quantidades. O fornecedor define-se no capítulo e aplica-se a todas as suas linhas; os pais somam os artigos.</p>
+      {/* Telemóvel: barra fixa de guardar por cima da navegação inferior. */}
+      {dirty ? (
+        <div className="fixed inset-x-0 bottom-14 z-30 flex items-center gap-2 border-t bg-background/95 px-4 py-2 backdrop-blur md:hidden">
+          {error ? <span className="min-w-0 flex-1 truncate text-xs text-destructive">{error}</span> : <span className="flex-1 text-xs text-muted-foreground">Alterações por guardar</span>}
+          <Button className="h-11 gap-1" onClick={save} disabled={pending}>
+            <Check className="size-4" /> {pending ? "…" : "Guardar orçamento"}
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }
