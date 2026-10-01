@@ -170,7 +170,7 @@ export function InvoicesPanel({ projectId, propertyId, invoices, paymentsByInvoi
                         ) : null}
                         <Button variant="ghost" size="icon" className="size-8" title="Pagamentos" onClick={() => setPaying(inv)}><CreditCard className="size-4" /></Button>
                         <DropdownMenu>
-                          <DropdownMenuTrigger className="rounded-md p-1.5 hover:bg-accent" aria-label="Mais"><MoreHorizontal className="size-4" /></DropdownMenuTrigger>
+                          <DropdownMenuTrigger className="flex size-11 items-center justify-center rounded-md hover:bg-accent md:size-8" aria-label="Mais"><MoreHorizontal className="size-4" /></DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => openDialog({ mode: "edit", invoice: inv })}><Pencil className="size-4" /> Editar</DropdownMenuItem>
                             {canDelete ? (<><DropdownMenuSeparator /><DropdownMenuItem className="text-destructive" onClick={() => remove(inv)}><Trash2 className="size-4" /> Eliminar</DropdownMenuItem></>) : null}

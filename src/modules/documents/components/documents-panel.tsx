@@ -241,7 +241,7 @@ export function DocumentsPanel({ context, documents, categories, canDelete, show
                         </a>
                       </Button>
                       <DropdownMenu>
-                        <DropdownMenuTrigger className="rounded-md p-1.5 hover:bg-accent" aria-label="Mais opções">
+                        <DropdownMenuTrigger className="flex size-11 items-center justify-center rounded-md hover:bg-accent md:size-8" aria-label="Mais opções">
                           <MoreHorizontal className="size-4" />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
