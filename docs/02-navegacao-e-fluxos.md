@@ -217,7 +217,7 @@ Barra superior: pesquisa global (⌘K: negócios, imóveis, contactos, documento
 3. Nova versão: arrastar sobre um documento existente ou botão "Nova versão"; a anterior fica acessível.
 
 ### F8b. Venda (Step 26a)
-- Entrada **Vendas** no menu (lista + Kanban; no telemóvel lista por fase com «mover para…»). Uma venda por imóvel detido; nasce no negócio em Compra («Colocar à venda», só depois da escritura de compra) ou em Vendas → «Nova venda» (imóveis detidos sem venda ativa). Fica ligada ao negócio e à obra, se existir.
+- Entrada **Vendas** no menu (lista + Kanban; no telemóvel lista por fase com «mover para…»). Uma venda por imóvel detido; nasce no negócio em Compra («Colocar à venda», a partir do CPCV ou da escritura de compra; a obra continua a exigir escritura) ou em Vendas → «Nova venda» (imóveis detidos sem venda ativa). Fica ligada ao negócio e à obra, se existir.
 - Fases: Preparação → À venda → CPCV → Vendido (ou Cancelada). Entrar em «À venda» sem data de anúncio assume hoje. «Vendido» pede preço final e data da escritura; o imóvel passa a `sold` e o negócio de origem a `sold` (sai do Kanban; filtro «Vendidos» na lista). Cancelada ou apagar devolve o imóvel a `owned`.
 - Ficha: Resumo (mediadoras + anúncio, fecho, comprador, custos reais em totais), Leads, Documentos (os do imóvel, reutilizados; o que se carrega aqui fica ligado à venda).
 - **Mediadoras**: várias em simultâneo, cada uma com comissão (% ou valor fixo, com IVA), exclusivo sim/não; comissão estimada sobre o preço de venda ou, enquanto não há, sobre o anunciado.

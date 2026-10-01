@@ -31,6 +31,8 @@ export function DealHeader({ deal, row, stages, project, sale = null, checklist 
     `entrada ${formatDate(deal.enteredAt)}`,
   ].filter(Boolean);
   const canCreateProject = row.stageIsPurchase && Boolean(deal.deedDate);
+  // A venda pode começar logo depois do CPCV (há imóveis anunciados antes da escritura).
+  const canCreateSale = row.stageIsPurchase && Boolean(deal.cpcvDate || deal.deedDate);
 
   return (
     <header className="mb-4">
@@ -80,7 +82,7 @@ export function DealHeader({ deal, row, stages, project, sale = null, checklist 
             </Button>
           ) : null}
           <CreateProjectButton dealId={deal.id} existing={project} canCreate={canCreateProject && deal.status === "active"} />
-          <CreateSaleButton dealId={deal.id} existing={sale} canCreate={canCreateProject && deal.status === "active"} />
+          <CreateSaleButton dealId={deal.id} existing={sale} canCreate={canCreateSale && deal.status === "active"} />
           <DealStatusButton id={deal.id} status={deal.status} />
         </div>
       </div>

@@ -63,12 +63,13 @@ export async function createSale(input: { dealId?: string; propertyId?: string }
 
   if (dealId) {
     const [row] = await db
-      .select({ propertyId: deals.propertyId, deedDate: deals.deedDate, status: deals.status, estimatedSalePrice: deals.estimatedSalePrice, stageId: deals.stageId })
+      .select({ propertyId: deals.propertyId, deedDate: deals.deedDate, cpcvDate: deals.cpcvDate, status: deals.status, estimatedSalePrice: deals.estimatedSalePrice, stageId: deals.stageId })
       .from(deals)
       .where(and(eq(deals.id, dealId), eq(deals.organizationId, orgId), isNull(deals.deletedAt)));
     if (!row) return { ok: false, error: "Negócio não encontrado." };
     const stage = await dealStageSettings(row.stageId);
-    if (!stage?.isPurchase || !row.deedDate) return { ok: false, error: "A venda só pode começar depois da escritura de compra." };
+    // Basta o CPCV: há imóveis colocados à venda antes da escritura de compra.
+    if (!stage?.isPurchase || !(row.cpcvDate || row.deedDate)) return { ok: false, error: "A venda só pode começar depois do CPCV ou da escritura de compra." };
     propertyId = row.propertyId;
     listingPrice = row.estimatedSalePrice;
   }
