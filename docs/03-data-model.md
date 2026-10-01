@@ -541,8 +541,53 @@ Triggers: `set_updated_at`, `checklist_items_audit` (o `audit_trigger()` resolve
 ### document_requirements (Phase 2, criada já vazia)
 `organization_id`, `category_id`, `applies_to` (deal/project), `from_stage_id`, `is_required`.
 
-## 10. Vendas (Phase 2, definida, não criada no MVP)
-`sales`: property_id, deal_id, buyer_contact_id, listing_date, cpcv_date, deed_date, listing_price, sale_price, commission, other_costs, status. Alimenta `v_property_pnl`.
+## 10. Vendas (Step 26a, 2026-10-01)
+
+Enums: `sale_stage` (preparacao, a_venda, cpcv, vendido, cancelada), `lead_status` (novo, visita_marcada, visitou, proposta, ganho, perdido), `lead_source` (mediadora, portal, direto, outro). `deal_status` ganhou o valor `sold`.
+
+### sales
+| Coluna | Tipo | Notas |
+|---|---|---|
+| id | uuid PK | |
+| organization_id | uuid FK | |
+| property_id | uuid FK not null | uma venda ativa (não cancelada) por imóvel, garantido na action |
+| deal_id, project_id | uuid FK | negócio e obra de origem (opcionais) |
+| stage | sale_stage | default preparacao |
+| owner_user_id | uuid FK profiles | |
+| listing_price, listing_date, listing_url | | anúncio |
+| cpcv_date, cpcv_deposit | | |
+| deed_date, sale_price, buyer_contact_id | | fecho |
+| other_sale_costs | numeric default 0 | |
+| actual_holding_costs, actual_financing_costs | numeric | totais manuais para o P&L |
+| next_action, next_action_date, notes | | |
+| created_by, updated_by, deleted_at, timestamps | | |
+| INDEX (organization_id, stage), (organization_id, next_action_date), (property_id), (deal_id) | | |
+
+### sale_agencies (mediadoras)
+| Coluna | Tipo | Notas |
+|---|---|---|
+| id, organization_id, sale_id (cascade), property_id | | property_id denormalizado para auditoria |
+| contact_id | uuid FK contacts not null | UNIQUE (sale_id, contact_id) |
+| commission_pct | numeric(7,4) | fração |
+| commission_fixed | numeric(14,2) | se preenchido, ignora a % |
+| commission_vat_pct | numeric(7,4) default 0.23 | |
+| exclusive | bool | |
+| start_date, end_date, notes | | |
+
+### sale_leads
+| Coluna | Tipo | Notas |
+|---|---|---|
+| id, organization_id, sale_id (cascade), property_id | | |
+| contact_id | uuid FK | opcional; passa a comprador se ganhar |
+| name, phone, email | | |
+| source | lead_source | default portal |
+| agency_id | uuid FK sale_agencies | set null |
+| status | lead_status | default novo |
+| visit_date, offer_amount | | |
+| next_action, next_action_date, notes | | |
+| INDEX (sale_id, status), (organization_id, next_action_date) | | |
+
+As três tabelas têm `set_updated_at` e `audit_trigger`. Fase → estado do imóvel: preparacao/cancelada ⇒ owned, a_venda/cpcv ⇒ for_sale, vendido ⇒ sold; vendido ⇒ negócio `sold`.
 
 ## 11. Views
 
@@ -578,7 +623,7 @@ Triggers: `set_updated_at`, `checklist_items_audit` (o `audit_trigger()` resolve
 
 Extensão `pg_trgm` com índices GIN em `properties.address_line`, `properties.parish`, `contacts.name`, `documents.name`, `deals.name`. A pesquisa global (⌘K) usa `ILIKE` com trigram; suficiente para dezenas de milhares de registos.
 
-## 10. Notificações (M6, 2026-10-01)
+## 15. Notificações (M6, 2026-10-01)
 
 ### push_subscriptions
 | Coluna | Tipo | Notas |

@@ -45,7 +45,7 @@ export type DealListRow = {
 export type DealListFilters = {
   q?: string;
   stageId?: string;
-  status?: "active" | "excluded" | "all";
+  status?: "active" | "excluded" | "sold" | "all";
   municipality?: string;
   typology?: string;
   sourceChannelId?: string;

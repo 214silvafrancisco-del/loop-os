@@ -10,7 +10,7 @@ import {
 } from "@/core/lib/form-schemas";
 import { PROPERTY_TYPES } from "@/modules/properties/validation";
 
-export const DEAL_STATUS_LABEL = { active: "Ativo", excluded: "Excluído" } as const;
+export const DEAL_STATUS_LABEL = { active: "Ativo", excluded: "Excluído", sold: "Vendido" } as const;
 
 /** Campos do negócio (comuns a criação e edição). */
 const dealFields = {

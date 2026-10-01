@@ -294,6 +294,11 @@ Assistente sobre os dados da LOOP (Claude API): "que documentos faltam", "preço
 | 21 | Obra: tab Processo; progresso na lista e no Kanban de negócios; filtro | criar obra e ver a checklist nascer |
 | 22 | Portas (gerar proposta, fases, obra em curso/concluída), cartões no dashboard, Definições → Procedimentos (leitura) | gerar proposta sem BP → mensagem com link |
 | 23 | Fornecedores por obra: orçamento dividido por fornecedor, um auto por mês por fornecedor, controlo por autos ou por fatura, faturas por fornecedor da obra | criar 2 fornecedores, importar orçamento para um, fechar auto de um, fatura do outro |
+| 24 | Auto de adiantamento (Fatura = Auto × (1 − %)) | cenário 100k/33k/33 % |
+| 25 | Leitura de faturas em PDF por regras (sem IA) | carregar PDF e ver campos preenchidos |
+| M1–M6 | Mobile: PWA, câmara, cartões, filtros, 44 px, orçamento/autos/BP/Kanban em telemóvel, notificações push com resumo diário | docs/07 |
+| 26a | Vendas como CRM: pipeline Preparação → À venda → CPCV → Vendido; várias mediadoras com comissão; leads com estado e próxima ação; documentos do imóvel reutilizados; imóvel → vendido e negócio → Vendido na escritura | colocar à venda a partir de um negócio comprado, adicionar mediadora e lead, marcar Ganho e Vendido |
+| 26b | P&L por imóvel (BP vs real), cartões no dashboard, procedimento Venda, resumo diário com leads | (a seguir) |
 
 Cada step é uma sessão curta: ficheiros indicados, comandos, teste, resultado esperado.
 

@@ -37,7 +37,7 @@ export default async function DealsPage({ searchParams }: { searchParams: Promis
       : cookieStore.get("deals_view")?.value === "kanban"
         ? "kanban"
         : "list";
-  const status = sp.status === "excluded" || sp.status === "all" ? sp.status : "active";
+  const status = sp.status === "excluded" || sp.status === "sold" || sp.status === "all" ? sp.status : "active";
 
   const [deals, stages, sources, users, options, counts] = await Promise.all([
     listDeals(user.organizationId, {

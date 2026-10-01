@@ -81,7 +81,7 @@ export default async function PropertyPage({ params }: { params: Params }) {
                   {d.name ?? d.addressLine}
                 </Link>
                 <StageBadge name={d.stageName} color={d.stageColor} />
-                {d.status === "excluded" ? <span className="text-xs text-muted-foreground">excluído</span> : null}
+                {d.status === "excluded" ? <span className="text-xs text-muted-foreground">excluído</span> : d.status === "sold" ? <span className="text-xs text-green-700">vendido</span> : null}
                 <span className="ml-auto text-muted-foreground">
                   {formatCurrency(d.askingPrice)} · {formatDate(d.enteredAt)}
                 </span>

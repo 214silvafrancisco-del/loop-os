@@ -18,7 +18,7 @@ import { contacts } from "@/modules/contacts/schema";
 import { properties } from "@/modules/properties/schema";
 import { dealStages, sourceChannels, tags } from "@/modules/settings/schema";
 
-export const dealStatus = pgEnum("deal_status", ["active", "excluded"]);
+export const dealStatus = pgEnum("deal_status", ["active", "excluded", "sold"]);
 
 /**
  * Oportunidade de aquisição sobre um imóvel. A referência é a do imóvel;

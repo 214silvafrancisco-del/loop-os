@@ -16,8 +16,15 @@ export function StageBadge({ name, color, className }: { name: string; color?: s
   );
 }
 
-export function DealStatusBadge({ status }: { status: "active" | "excluded" }) {
+export function DealStatusBadge({ status }: { status: "active" | "excluded" | "sold" }) {
   if (status === "active") return null;
+  if (status === "sold") {
+    return (
+      <Badge variant="secondary" className="bg-green-500/15 text-green-800">
+        Vendido
+      </Badge>
+    );
+  }
   return (
     <Badge variant="secondary" className="bg-muted text-muted-foreground">
       Excluído

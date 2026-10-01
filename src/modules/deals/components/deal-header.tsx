@@ -3,6 +3,8 @@ import { Building2, ExternalLink, Phone } from "lucide-react";
 import { ChecklistProgress } from "@/modules/checklists/components/checklist-progress";
 import type { ChecklistView } from "@/modules/checklists/queries";
 import { CreateProjectButton } from "@/modules/projects/components/create-project-button";
+import { CreateSaleButton } from "@/modules/sales/components/create-sale-button";
+import type { SaleStage } from "@/modules/sales/schema";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDate } from "@/core/lib/format";
 import { PropertyRef } from "@/modules/properties/components/property-badges";
@@ -15,10 +17,10 @@ import { DealStatusButton } from "./deal-status-button";
 import { NextActionEditor } from "./next-action-editor";
 import { StageSelect } from "./stage-select";
 
-type Props = { deal: Deal; row: DealListRow; stages: DealStage[]; project: { id: string; name: string } | null; checklist?: ChecklistView | null };
+type Props = { deal: Deal; row: DealListRow; stages: DealStage[]; project: { id: string; name: string } | null; sale?: { id: string; stage: SaleStage } | null; checklist?: ChecklistView | null };
 
 /** Cabeçalho comum a todas as tabs do negócio. */
-export function DealHeader({ deal, row, stages, project, checklist }: Props) {
+export function DealHeader({ deal, row, stages, project, sale = null, checklist }: Props) {
   const label = `${dealRef(row)} · ${deal.name ?? row.addressLine}`;
   const facts = [
     row.typology,
@@ -40,7 +42,7 @@ export function DealHeader({ deal, row, stages, project, checklist }: Props) {
           stageId={deal.stageId}
           stages={stages}
           askingPrice={deal.askingPrice}
-          disabled={deal.status === "excluded"}
+          disabled={deal.status !== "active"}
         />
         <DealStatusBadge status={deal.status} />
       </div>
@@ -78,6 +80,7 @@ export function DealHeader({ deal, row, stages, project, checklist }: Props) {
             </Button>
           ) : null}
           <CreateProjectButton dealId={deal.id} existing={project} canCreate={canCreateProject && deal.status === "active"} />
+          <CreateSaleButton dealId={deal.id} existing={sale} canCreate={canCreateProject && deal.status === "active"} />
           <DealStatusButton id={deal.id} status={deal.status} />
         </div>
       </div>

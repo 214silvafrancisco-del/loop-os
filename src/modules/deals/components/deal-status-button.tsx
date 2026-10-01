@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { setDealStatus } from "../actions";
 
 /** Excluir tira o negócio do pipeline; reativar repõe-no na mesma fase. */
-export function DealStatusButton({ id, status }: { id: string; status: "active" | "excluded" }) {
+export function DealStatusButton({ id, status }: { id: string; status: "active" | "excluded" | "sold" }) {
   const [pending, startTransition] = useTransition();
   const excluded = status === "excluded";
+  // Vendido é controlado pela venda, não aqui.
+  if (status === "sold") return null;
   return (
     <Button
       variant="outline"

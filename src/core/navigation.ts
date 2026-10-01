@@ -4,6 +4,7 @@ import {
   HardHat,
   LayoutDashboard,
   Settings,
+  Tag,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -25,8 +26,10 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, mobile: true },
   { href: "/deals", label: "Negócios", icon: Handshake, mobile: true },
   { href: "/projects", label: "Obras", icon: HardHat, mobile: true },
+  { href: "/sales", label: "Vendas", icon: Tag, mobile: true },
   { href: "/properties", label: "Imóveis", icon: Building2, mobile: true },
-  { href: "/contacts", label: "Contactos", icon: Users, mobile: true },
+  // No telemóvel a barra tem 5 lugares: Contactos fica no menu do utilizador.
+  { href: "/contacts", label: "Contactos", icon: Users },
 ];
 
 export const SECONDARY_NAV_ITEMS: NavItem[] = [

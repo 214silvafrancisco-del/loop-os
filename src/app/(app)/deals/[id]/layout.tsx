@@ -9,6 +9,7 @@ import { countDealNotes } from "@/modules/deals/notes-queries";
 import { getDeal, getDealRow } from "@/modules/deals/queries";
 import { dealRef } from "@/modules/deals/utils";
 import { getProjectForDeal } from "@/modules/projects/queries";
+import { getSaleForDeal } from "@/modules/sales/queries";
 import { listDealStages } from "@/modules/settings/queries";
 
 type Params = Promise<{ id: string }>;
@@ -24,12 +25,13 @@ export default async function DealLayout({ children, params }: { children: React
   const user = await requireUser();
   const { id } = await params;
   const orgId = user.organizationId;
-  const [deal, row, stages, notesCount, project] = await Promise.all([
+  const [deal, row, stages, notesCount, project, sale] = await Promise.all([
     getDeal(orgId, id),
     getDealRow(orgId, id),
     listDealStages(orgId, false),
     countDealNotes(orgId, id),
     getProjectForDeal(orgId, id),
+    getSaleForDeal(orgId, id),
   ]);
   if (!deal || !row) notFound();
 
@@ -41,7 +43,7 @@ export default async function DealLayout({ children, params }: { children: React
 
   return (
     <div className="mx-auto max-w-5xl">
-      <DealHeader deal={deal} row={row} stages={stages.filter((s) => s.isActive || s.id === deal.stageId)} project={project} checklist={checklist} />
+      <DealHeader deal={deal} row={row} stages={stages.filter((s) => s.isActive || s.id === deal.stageId)} project={project} sale={sale} checklist={checklist} />
       <DealTabs dealId={deal.id} counts={{ notas: notesCount, processo: checklist ? checklist.totalCount - checklist.doneCount : undefined }} />
       {children}
     </div>

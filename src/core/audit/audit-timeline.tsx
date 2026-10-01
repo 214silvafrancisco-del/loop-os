@@ -149,7 +149,7 @@ function describe(e: AuditRow, lookups: AuditLookups): { title: string; details:
     return { title: `mudou a fase: ${fmt("stage_id", od.stage_id, lookups)} → ${fmt("stage_id", nd.stage_id, lookups)}`, details: [] };
   }
   if (fields.includes("status") && e.tableName === "deals") {
-    return { title: nd.status === "excluded" ? "excluiu o negócio" : "reativou o negócio", details: [] };
+    return { title: nd.status === "excluded" ? "excluiu o negócio" : nd.status === "sold" ? "fechou o negócio: imóvel vendido" : "reativou o negócio", details: [] };
   }
   if (fields.length === 0) return { title: `atualizou ${table}`, details: [] };
   const details = fields.map((f) => `${FIELD_LABEL[f] ?? f}: ${fmt(f, od[f], lookups)} → ${fmt(f, nd[f], lookups)}`);

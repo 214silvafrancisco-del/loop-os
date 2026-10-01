@@ -32,7 +32,7 @@ type Props = {
 };
 
 const PROCESS_LABEL: Record<string, string> = { required_missing: "Com obrigatórios em falta", complete: "Procedimento completo" };
-const STATUS_LABEL: Record<string, string> = { active: "Ativos", excluded: "Excluídos", all: "Todos" };
+const STATUS_LABEL: Record<string, string> = { active: "Ativos", excluded: "Excluídos", sold: "Vendidos", all: "Todos" };
 
 function hrefWithout(values: DealsFilterValues, key: keyof DealsFilterValues): string {
   const p = new URLSearchParams();
@@ -70,6 +70,7 @@ export function DealsFilters({ values, municipalities, typologies, sources, user
         <NativeSelect name="status" defaultValue={values.status || "active"} className="w-auto" aria-label="Estado">
           <option value="active">Ativos</option>
           <option value="excluded">Excluídos</option>
+          <option value="sold">Vendidos</option>
           <option value="all">Todos</option>
         </NativeSelect>
       ) : null}

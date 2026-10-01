@@ -23,7 +23,7 @@ export type DealContext = {
     finalPrice: number | null;
     deedDate: string | null;
     cpcvDate: string | null;
-    status: "active" | "excluded";
+    status: "active" | "excluded" | "sold";
     sourceCommissionPct: number | null;
     stageIsPurchase: boolean;
   };
