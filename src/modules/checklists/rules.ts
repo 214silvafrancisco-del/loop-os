@@ -131,7 +131,6 @@ const PROJECT_RULES: Record<string, (c: ProjectContext) => RuleResult> = {
   "project.manager": (c) => (has(c.project.managerUserId) ? done() : pending()),
   "project.planned_dates": (c) => (has(c.project.plannedStart) && has(c.project.plannedEnd) ? done() : pending()),
   "project.budget_exists": (c) => (c.budget.lineCount > 0 && c.budget.total > 0 ? done() : pending()),
-  "project.budget_chapters": (c) => (c.budget.chaptersWithCategory > 0 ? done(String(c.budget.chaptersWithCategory)) : pending()),
   "project.budget_suppliers": (c) => {
     const { chapterCount, chaptersWithSupplier } = c.budget;
     if (chapterCount === 0) return pending();

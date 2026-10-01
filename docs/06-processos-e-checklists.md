@@ -80,9 +80,8 @@ Cada item automático tem uma **regra** que lê os dados. A regra devolve *concl
 | **Obra** | |
 | Responsável / Datas previstas | `manager_user_id`; `planned_start` + `planned_end` |
 | Orçamento criado | ≥ 1 linha e total > 0 |
-| Capítulos definidos | ≥ 1 linha de nível 0 com categoria |
 | Fornecedores atribuídos | todas as folhas com fornecedor (mostra "12 de 15") |
-| Projeto / Contrato de empreitada / Orçamento (ficheiro) carregados | documento da categoria ligado à obra |
+| Projeto carregado | documento da categoria ligado à obra |
 | Início registado | `actual_start` ou estado "Em curso" |
 | Primeiro auto fechado | ≥ 1 auto fechado |
 | Autos em dia | vivo: enquanto "Em curso", o último auto fechado é do mês anterior ou do atual |
@@ -108,7 +107,6 @@ Itens "vivos" podem voltar a pendente. Isto é desejável: "Autos em dia" é um 
 | **Obra** | |
 | Orçamento validado com o empreiteiro | até haver um estado "orçamento fechado" (Phase 2) |
 | Fornecedores contratados (contratos assinados) | pode passar a automático se o contrato for documento obrigatório |
-| Licenciamento / comunicação prévia tratado | N/A quando não é preciso |
 | Desvio verificado este mês | vivo mensal, Phase 2 |
 | Custos finais confirmados | |
 | Documentação arquivada | |
@@ -121,7 +119,7 @@ Obrigatório = conta para os bloqueios (secção 9) e aparece assinalado. Progre
 
 **Negócio** (v2, 2026-10-01): preço pedido; origem; contacto; morada completa; caderneta predial; certidão permanente; comparáveis (≥ 3); Business Plan com cenário ativo; condições de compra (a partir de Compra). O preço máximo deixou de ser obrigatório e a porta "gerar proposta" passou a aviso para ele.
 
-**Obra** (v3, 2026-10-01): responsável; orçamento criado; início registado; autos a 100 % e faturas pagas (para fechar). O contrato de empreitada deixou de ser obrigatório.
+**Obra** (v4, 2026-10-01): responsável; orçamento criado; início registado; autos a 100 % e faturas pagas (para fechar). Simplificação v4: saíram «Capítulos definidos» e, na Documentação, ficou só «Projeto carregado» (saíram Orçamento (ficheiro), Contrato de empreitada e Licenciamento).
 
 ## 7. Itens opcionais
 
@@ -274,13 +272,9 @@ Princípio visual: a checklist não é um formulário a mais. É a "página de e
 | Criação | Responsável definido | auto | ✓ | |
 | Criação | Datas previstas | auto | | início + fim |
 | Orçamento | Orçamento criado | auto | ✓ | ≥ 1 linha, total > 0 |
-| Orçamento | Capítulos definidos | auto | | |
 | Orçamento | Fornecedores atribuídos | auto | | "12 de 15" |
 | Orçamento | Orçamento validado com o empreiteiro | manual | | |
 | Documentação | Projeto carregado | auto | | |
-| Documentação | Orçamento (ficheiro) carregado | auto | | |
-| Documentação | Contrato de empreitada carregado | auto | | categoria nova |
-| Documentação | Licenciamento tratado | manual | | N/A se não aplicável |
 | Execução | Início registado | auto | ✓ | |
 | Execução | Primeiro auto fechado | auto | | |
 | Execução | Autos em dia | auto (vivo) | | alerta |

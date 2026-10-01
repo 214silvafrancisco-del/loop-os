@@ -104,7 +104,7 @@ export const NOVA_OBRA: TemplateDef = {
   code: "nova_obra",
   name: "Nova Obra",
   entityType: "project",
-  version: 3,
+  version: 4,
   items: [
     // Criação
     { code: "criacao.responsavel", section: "criacao", label: "Responsável definido", kind: "auto", ruleKey: "project.manager", required: true, gates: ["hard:project:em_curso"], linkPath: "resumo" },
@@ -112,15 +112,11 @@ export const NOVA_OBRA: TemplateDef = {
 
     // Orçamento
     { code: "orcamento.criado", section: "orcamento", label: "Orçamento criado", help: "Pelo menos uma linha com valor (importar Excel ou criar à mão).", kind: "auto", ruleKey: "project.budget_exists", required: true, gates: ["hard:project:em_curso"], linkPath: "orcamento" },
-    { code: "orcamento.capitulos", section: "orcamento", label: "Capítulos definidos", help: "Capítulos de nível 1 com categoria.", kind: "auto", ruleKey: "project.budget_chapters", linkPath: "orcamento" },
     { code: "orcamento.fornecedores", section: "orcamento", label: "Fornecedores atribuídos", help: "Todos os capítulos com fornecedor da obra.", kind: "auto", ruleKey: "project.budget_suppliers", linkPath: "orcamento" },
     { code: "orcamento.validado", section: "orcamento", label: "Orçamento validado com o empreiteiro", kind: "manual", defaultAssignee: "manager" },
 
     // Documentação
     { code: "documentacao.projeto", section: "documentacao", label: "Projeto carregado", kind: "auto", ruleKey: doc("Projeto"), linkPath: "documentos?categoria=Projeto" },
-    { code: "documentacao.orcamento", section: "documentacao", label: "Orçamento (ficheiro) carregado", kind: "auto", ruleKey: doc("Orçamento"), linkPath: "documentos?categoria=Orçamento" },
-    { code: "documentacao.contrato", section: "documentacao", label: "Contrato de empreitada carregado", kind: "auto", ruleKey: doc("Contrato de empreitada"), gates: ["warn:project:em_curso"], linkPath: "documentos?categoria=Contrato de empreitada" },
-    { code: "documentacao.licenciamento", section: "documentacao", label: "Licenciamento / comunicação prévia tratado", help: "Marca \"não aplicável\" quando a obra não precisa.", kind: "manual", gates: ["warn:project:em_curso"], defaultAssignee: "manager" },
 
     // Execução
     { code: "execucao.inicio", section: "execucao", label: "Início registado", help: "Estado \"Em curso\" ou data de início real.", kind: "auto", ruleKey: "project.started", required: true, linkPath: "resumo" },
