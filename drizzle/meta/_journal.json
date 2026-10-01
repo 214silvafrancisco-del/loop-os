@@ -134,6 +134,13 @@
       "when": 1790806754697,
       "tag": "0018_advance_measurements",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1790844419079,
+      "tag": "0019_push_subscriptions",
+      "breakpoints": true
     }
   ]
 }

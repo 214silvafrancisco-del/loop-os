@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
   // Build autónomo para o Docker: .next/standalone com só o necessário.
   output: "standalone",
   // O gerador de PDF corre só no servidor e não deve ser empacotado pelo bundler.
-  serverExternalPackages: ["@react-pdf/renderer", "unpdf"],
+  serverExternalPackages: ["@react-pdf/renderer", "unpdf", "web-push"],
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },

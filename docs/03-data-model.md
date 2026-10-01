@@ -577,3 +577,18 @@ Triggers: `set_updated_at`, `checklist_items_audit` (o `audit_trigger()` resolve
 ## 14. Índices de pesquisa
 
 Extensão `pg_trgm` com índices GIN em `properties.address_line`, `properties.parish`, `contacts.name`, `documents.name`, `deals.name`. A pesquisa global (⌘K) usa `ILIKE` com trigram; suficiente para dezenas de milhares de registos.
+
+## 10. Notificações (M6, 2026-10-01)
+
+### push_subscriptions
+| Coluna | Tipo | Notas |
+|---|---|---|
+| id | uuid PK | |
+| organization_id | uuid FK | |
+| user_id | uuid FK profiles | on delete cascade |
+| endpoint | text not null | UNIQUE; URL do serviço de push do browser |
+| p256dh, auth | text not null | chaves da subscrição (Web Push) |
+| user_agent | text | |
+| created_at, last_seen_at | timestamptz | |
+
+Um registo por dispositivo. Sem trigger de auditoria (dados técnicos). Quando o serviço de push responde 404/410 a linha é apagada no envio seguinte. O resumo diário (`sendDailyDigest`) agrupa por organização e envia a todos os utilizadores ativos com subscrição.

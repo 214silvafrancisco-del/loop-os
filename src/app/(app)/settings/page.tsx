@@ -3,13 +3,18 @@ import Link from "next/link";
 import { ArrowRight, ListChecks } from "lucide-react";
 import { PageHeader } from "@/core/ui/page-header";
 import { ComingSoon } from "@/core/ui/coming-soon";
+import { requireUser } from "@/core/auth/current-user";
+import { PushSettings } from "@/modules/notifications/components/push-settings";
+import { getPushStatus } from "@/modules/notifications/queries";
 
 export const metadata: Metadata = { title: "Definições" };
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const user = await requireUser();
+  const push = await getPushStatus(user.id);
   return (
     <>
-      <PageHeader title="Definições" description="Procedimentos, utilizadores, fases, fontes, categorias e tabelas de IMT." />
+      <PageHeader title="Definições" description="Procedimentos, notificações, utilizadores, fases, fontes, categorias e tabelas de IMT." />
       <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <Link href="/settings/procedimentos" className="flex items-start gap-3 rounded-xl border bg-card p-4 transition-colors hover:bg-accent/40">
           <span className="rounded-lg bg-primary/10 p-2 text-primary">
@@ -22,6 +27,9 @@ export default function SettingsPage() {
             <span className="block text-xs text-muted-foreground">Checklists de Novo Negócio e Nova Obra: passos, regras e portas.</span>
           </span>
         </Link>
+      </div>
+      <div className="mb-6">
+        <PushSettings status={push} />
       </div>
       <ComingSoon step="Phase 2" what="Utilizadores, fases, fontes, categorias e IMT editáveis aqui" />
     </>

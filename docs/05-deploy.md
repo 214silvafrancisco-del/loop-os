@@ -59,9 +59,24 @@ Abre `http://<IP>:8000`, cria o utilizador admin do Coolify e liga o servidor "l
 | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | do token R2 | |
 | `R2_BUCKET` | `loop-documents` | |
 | `NODE_ENV` | `production` | |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | chaves das notificações push (M6); gerar uma vez e nunca mudar, senão todos os dispositivos têm de reativar | |
+| `VAPID_SUBJECT` | `https://app.loophomes.pt` (ou `mailto:…`) | |
+| `CRON_SECRET` | texto aleatório longo; o agendamento do resumo diário envia-o | |
 
 4. *Deploy*. O primeiro build demora ~3 minutos. Verifica `https://app.loophomes.pt/api/health` → `{"ok":true,"db":"up"}`.
 5. Ativa *Auto deploy* (webhook do GitHub): cada `git push` para `main` publica. O webhook da GitHub App tem de apontar para o domínio HTTPS do painel: GitHub → Settings → Developer settings → GitHub Apps → `loop-os-coolify` → *Webhook URL* `https://coolify.89.58.58.97.sslip.io/webhooks/source/github/events`. Se ficar com `http://<IP>:8000/…`, deixa de chegar quando a porta 8000 é bloqueada (§7b).
+
+### 3b. Notificações push e resumo diário (M6, 2026-10-01)
+
+1. **Chaves**: as mesmas de `.env.local` do PC (geradas com `node -e "console.log(require('web-push').generateVAPIDKeys())"`). Copiar para o Coolify as quatro variáveis da tabela acima (runtime, não build) e fazer *Redeploy*. Sem elas o cartão «Notificações» nas Definições diz que faltam as chaves.
+2. **Ativar num dispositivo**: Definições → Notificações → «Ativar neste dispositivo» → aceitar no browser. «Enviar teste» confirma. No iPhone: primeiro «Adicionar ao ecrã principal» no Safari e abrir a app a partir daí (iOS 16.4+).
+3. **Agendamento**: Coolify → aplicação → *Scheduled Tasks* → *Add*: nome `resumo-diario`, frequência `0 8 * * 1-5` (hora do servidor; confirmar o fuso em *Settings → Instance timezone*), container o da app, comando:
+
+```bash
+wget -qO- --header="Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3000/api/cron/daily-digest
+```
+
+   A resposta é JSON (`sent`, `skipped`, `removed`). Sem ações para hoje nem faturas a vencer, não é enviada notificação nenhuma. Para pré-visualizar o texto sem enviar: `pnpm digest:preview` no PC.
 
 ## 4. Migrações da base de dados
 

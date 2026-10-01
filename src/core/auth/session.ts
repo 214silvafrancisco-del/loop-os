@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 /** Rotas acessíveis sem sessão. */
-const PUBLIC_PREFIXES = ["/login", "/reset-password", "/auth", "/api/health", "/manifest.webmanifest"];
+const PUBLIC_PREFIXES = ["/login", "/reset-password", "/auth", "/api/health", "/api/cron", "/manifest.webmanifest", "/sw.js"];
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PREFIXES.some(
