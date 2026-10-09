@@ -37,6 +37,8 @@ export type RealInputs = {
   purchaseDate: string | null;
   saleDate: string | null;
   today: string;
+  /** Duração introduzida à mão (meses); tem prioridade sobre as datas. */
+  monthsOverride: number | null;
 };
 
 export type PnlRowKey = keyof Omit<PnlSide, "months">;
@@ -83,7 +85,7 @@ export function realSide(i: RealInputs): { side: PnlSide; final: boolean } {
   const grossProfit = revenue - totalInvestment;
   const tax = Math.max(0, grossProfit) * i.taxRate;
   const netProfit = grossProfit - tax;
-  const months = monthsBetween(i.purchaseDate, i.saleDate ?? i.today);
+  const months = i.monthsOverride !== null && i.monthsOverride > 0 ? i.monthsOverride : monthsBetween(i.purchaseDate, i.saleDate ?? i.today);
   return {
     final,
     side: {
@@ -117,7 +119,7 @@ export const PNL_ROWS: { key: PnlRow["key"]; label: string; kind: PnlRow["kind"]
   { key: "netProfit", label: "Lucro líquido", kind: "money" },
   { key: "margin", label: "Margem (líquido / receita)", kind: "pct" },
   { key: "annualized", label: "Retorno anualizado (bruto)", kind: "pct", source: "Lucro bruto / investimento × 12 / meses" },
-  { key: "months", label: "Duração", kind: "months" },
+  { key: "months", label: "Duração", kind: "months", source: "Introduzida aqui; sem ela, entre a escritura de compra e a de venda (ou hoje)" },
 ];
 
 export function buildPnl(bp: ScenarioOutputs | null, real: RealInputs): { bp: PnlSide | null; real: PnlSide; final: boolean; rows: PnlRow[] } {

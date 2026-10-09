@@ -34,6 +34,7 @@ export const realCostsSchema = z.object({
   holdingCosts: optionalDecimal,
   financingCosts: optionalDecimal,
   otherSaleCosts: optionalDecimal,
+  durationMonths: optionalDecimal,
 });
 export type RealCostsInput = z.input<typeof realCostsSchema>;
 export type SaleInput = z.input<typeof saleSchema>;

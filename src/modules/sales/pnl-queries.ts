@@ -93,6 +93,7 @@ export async function getSalePnl(organizationId: string, sale: Sale): Promise<Sa
     purchaseDate: deal?.deedDate ?? null,
     saleDate: sale.stage === "vendido" ? sale.deedDate : null,
     today,
+    monthsOverride: sale.actualMonths ? Number(sale.actualMonths) : null,
   };
   return { ...buildPnl(bp, real), scenarioName, notes, inputs: real, hasDeal: Boolean(deal) };
 }

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/core/auth/current-user";
 import { PnlTable } from "@/modules/sales/components/pnl-table";
 import { RealCostsForm } from "@/modules/sales/components/real-costs-form";
+import { monthsBetween } from "@/modules/sales/pnl";
 import { getSalePnl } from "@/modules/sales/pnl-queries";
 import { getSale } from "@/modules/sales/queries";
 
@@ -18,7 +19,8 @@ export default async function SaleResultadoPage({ params }: { params: Promise<{ 
       <RealCostsForm
         saleId={sale.id}
         hasDeal={pnl.hasDeal}
-        values={{ acquisitionCosts: pnl.inputs.acquisitionCosts, holdingCosts: pnl.inputs.holdingCosts, financingCosts: pnl.inputs.financingCosts, otherSaleCosts: pnl.inputs.otherSaleCosts }}
+        values={{ acquisitionCosts: pnl.inputs.acquisitionCosts, holdingCosts: pnl.inputs.holdingCosts, financingCosts: pnl.inputs.financingCosts, otherSaleCosts: pnl.inputs.otherSaleCosts, durationMonths: pnl.inputs.monthsOverride }}
+        computedMonths={monthsBetween(pnl.inputs.purchaseDate, pnl.inputs.saleDate ?? pnl.inputs.today)}
       />
     </div>
   );

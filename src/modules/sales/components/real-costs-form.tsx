@@ -11,13 +11,14 @@ import { updateSaleRealCosts } from "../actions";
 type Props = {
   saleId: string;
   hasDeal: boolean;
-  values: { acquisitionCosts: number | null; holdingCosts: number | null; financingCosts: number | null; otherSaleCosts: number };
+  values: { acquisitionCosts: number | null; holdingCosts: number | null; financingCosts: number | null; otherSaleCosts: number; durationMonths: number | null };
+  computedMonths: number | null;
 };
 
 const str = (v: number | null) => (v === null ? "" : String(v));
 
 /** Valores reais que não vêm de outro módulo: introduzem-se aqui, na tab Resultado. */
-export function RealCostsForm({ saleId, hasDeal, values }: Props) {
+export function RealCostsForm({ saleId, hasDeal, values, computedMonths }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
@@ -30,6 +31,7 @@ export function RealCostsForm({ saleId, hasDeal, values }: Props) {
         holdingCosts: String(fd.get("holdingCosts") ?? ""),
         financingCosts: String(fd.get("financingCosts") ?? ""),
         otherSaleCosts: String(fd.get("otherSaleCosts") ?? ""),
+        durationMonths: String(fd.get("durationMonths") ?? ""),
       });
       setMsg(r.ok ? "Guardado. O resultado foi recalculado." : r.error);
       if (r.ok) router.refresh();
@@ -52,6 +54,9 @@ export function RealCostsForm({ saleId, hasDeal, values }: Props) {
         </FormField>
         <FormField id="rc-other" label="Outros custos de venda (€)" hint="Certificado energético, fotografias, CPCV, distrate. As comissões das mediadoras somam-se sozinhas.">
           <Input id="rc-other" name="otherSaleCosts" inputMode="decimal" defaultValue={str(values.otherSaleCosts)} />
+        </FormField>
+        <FormField id="rc-months" label="Duração (meses)" hint={computedMonths !== null ? `Para o retorno anualizado. Vazio = calculada pelas escrituras (${computedMonths} meses).` : "Para o retorno anualizado. Sem escritura de compra registada, é preciso indicar aqui."}>
+          <Input id="rc-months" name="durationMonths" inputMode="decimal" placeholder={computedMonths !== null ? String(computedMonths) : "ex.: 6"} defaultValue={str(values.durationMonths)} />
         </FormField>
       </div>
       <div className="mt-4 flex items-center justify-end gap-3">

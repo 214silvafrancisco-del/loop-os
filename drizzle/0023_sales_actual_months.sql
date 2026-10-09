@@ -1,0 +1,1 @@
+ALTER TABLE "sales" ADD COLUMN "actual_months" numeric(6, 1);

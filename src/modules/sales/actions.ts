@@ -151,7 +151,7 @@ export async function updateSaleRealCosts(id: string, input: RealCostsInput): Pr
     await db.transaction(async (tx) => {
       await tx
         .update(sales)
-        .set({ actualHoldingCosts: d.holdingCosts ?? null, actualFinancingCosts: d.financingCosts ?? null, otherSaleCosts: d.otherSaleCosts ?? "0", updatedBy: user.id })
+        .set({ actualHoldingCosts: d.holdingCosts ?? null, actualFinancingCosts: d.financingCosts ?? null, otherSaleCosts: d.otherSaleCosts ?? "0", actualMonths: d.durationMonths ?? null, updatedBy: user.id })
         .where(eq(sales.id, id));
       if (sale.dealId) {
         await tx.update(deals).set({ actualAcquisitionCosts: d.acquisitionCosts ?? null, updatedBy: user.id }).where(and(eq(deals.id, sale.dealId), eq(deals.organizationId, user.organizationId)));

@@ -558,7 +558,8 @@ Enums: `sale_stage` (preparacao, a_venda, cpcv, vendido, cancelada), `lead_statu
 | cpcv_date, cpcv_deposit | | |
 | deed_date, sale_price, buyer_contact_id | | fecho |
 | other_sale_costs | numeric default 0 | |
-| actual_holding_costs, actual_financing_costs | numeric | totais manuais para o P&L |
+| actual_holding_costs, actual_financing_costs | numeric | totais manuais para o P&L (tab Resultado) |
+| actual_months | numeric(6,1) | duração real em meses, manual (migração 0023); sem ela conta-se entre escrituras |
 | next_action, next_action_date, notes | | |
 | created_by, updated_by, deleted_at, timestamps | | |
 | INDEX (organization_id, stage), (organization_id, next_action_date), (property_id), (deal_id) | | |

@@ -50,6 +50,8 @@ export const sales = pgTable(
     otherSaleCosts: numeric("other_sale_costs", { precision: 14, scale: 2 }).notNull().default("0"),
     actualHoldingCosts: numeric("actual_holding_costs", { precision: 14, scale: 2 }),
     actualFinancingCosts: numeric("actual_financing_costs", { precision: 14, scale: 2 }),
+    /** Duração real em meses, introduzida à mão; sem ela conta-se entre escrituras. */
+    actualMonths: numeric("actual_months", { precision: 6, scale: 1 }),
 
     // Follow-up
     nextAction: text("next_action"),

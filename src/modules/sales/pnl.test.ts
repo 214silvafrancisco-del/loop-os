@@ -15,6 +15,7 @@ const base: RealInputs = {
   purchaseDate: "2026-01-15",
   saleDate: "2026-09-15",
   today: "2026-10-01",
+  monthsOverride: null,
 };
 
 describe("P&L real", () => {
@@ -35,6 +36,12 @@ describe("P&L real", () => {
     expect(final).toBe(false);
     expect(side.revenue).toBe(340000);
     expect(side.months).toBe(8.5);
+  });
+
+  it("duração introduzida à mão tem prioridade e muda o anualizado", () => {
+    const { side } = realSide({ ...base, monthsOverride: 4 });
+    expect(side.months).toBe(4);
+    expect(side.annualized).toBeCloseTo((53000 / 277000) * 3, 6);
   });
 
   it("prejuízo não paga imposto", () => {
