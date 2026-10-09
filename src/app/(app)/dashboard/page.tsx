@@ -72,7 +72,7 @@ export default async function DashboardPage() {
   const purchaseStage = stages.find((s) => s.isPurchase) ?? null;
 
   const [funnel, forecast, counts, actions, purchases, activeProjects, unpaidInvoices, openSales, sold] = await Promise.all([
-    listRecentFunnelWeeks(orgId, today, 5),
+    listRecentFunnelWeeks(orgId, today, 2),
     getFunnelForecast(orgId, today),
     countDealsByStage(orgId),
     listUpcomingActions(orgId, weekEnd),
