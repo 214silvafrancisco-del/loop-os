@@ -12,9 +12,6 @@ export const SALE_FIELDS = [
   "deedDate",
   "salePrice",
   "buyerContactId",
-  "otherSaleCosts",
-  "actualHoldingCosts",
-  "actualFinancingCosts",
   "notes",
 ] as const;
 
@@ -28,11 +25,17 @@ export const saleSchema = z.object({
   deedDate: optionalDate,
   salePrice: optionalDecimal,
   buyerContactId: optionalUuid,
-  otherSaleCosts: optionalDecimal,
-  actualHoldingCosts: optionalDecimal,
-  actualFinancingCosts: optionalDecimal,
   notes: optionalText,
 });
+
+/** Custos reais introduzidos na tab Resultado. */
+export const realCostsSchema = z.object({
+  acquisitionCosts: optionalDecimal,
+  holdingCosts: optionalDecimal,
+  financingCosts: optionalDecimal,
+  otherSaleCosts: optionalDecimal,
+});
+export type RealCostsInput = z.input<typeof realCostsSchema>;
 export type SaleInput = z.input<typeof saleSchema>;
 export const saleInputFromForm = (fd: FormData) => stringsFromForm(fd, SALE_FIELDS);
 

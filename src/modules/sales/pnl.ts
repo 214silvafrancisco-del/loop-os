@@ -39,7 +39,7 @@ export type RealInputs = {
 };
 
 export type PnlRowKey = keyof Omit<PnlSide, "months">;
-export type PnlRow = { key: PnlRowKey | "months"; label: string; bp: number | null; real: number | null; kind: "money" | "pct" | "months"; /** Custos: desvio positivo é mau. */ cost?: boolean };
+export type PnlRow = { key: PnlRowKey | "months"; label: string; bp: number | null; real: number | null; kind: "money" | "pct" | "months"; /** Custos: desvio positivo é mau. */ cost?: boolean; /** De onde vem o valor real. */ source?: string };
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -102,14 +102,14 @@ export function realSide(i: RealInputs): { side: PnlSide; final: boolean } {
   };
 }
 
-export const PNL_ROWS: { key: PnlRow["key"]; label: string; kind: PnlRow["kind"]; cost?: boolean }[] = [
-  { key: "acquisition", label: "Aquisição (preço + custos)", kind: "money", cost: true },
-  { key: "works", label: "Obra (c/ IVA)", kind: "money", cost: true },
-  { key: "holding", label: "Detenção", kind: "money", cost: true },
-  { key: "financing", label: "Financiamento e juros", kind: "money", cost: true },
-  { key: "saleCosts", label: "Custos de venda (comissões, outros)", kind: "money", cost: true },
+export const PNL_ROWS: { key: PnlRow["key"]; label: string; kind: PnlRow["kind"]; cost?: boolean; source?: string }[] = [
+  { key: "acquisition", label: "Aquisição (preço + custos)", kind: "money", cost: true, source: "Negócio: valor final + custos de aquisição introduzidos aqui" },
+  { key: "works", label: "Obra (c/ IVA)", kind: "money", cost: true, source: "Obras: faturas registadas (0 sem obra)" },
+  { key: "holding", label: "Detenção", kind: "money", cost: true, source: "Introduzido aqui" },
+  { key: "financing", label: "Financiamento e juros", kind: "money", cost: true, source: "Introduzido aqui" },
+  { key: "saleCosts", label: "Custos de venda (comissões, outros)", kind: "money", cost: true, source: "Venda: comissões das mediadoras + outros custos introduzidos aqui" },
   { key: "totalInvestment", label: "Investimento total", kind: "money", cost: true },
-  { key: "revenue", label: "Receita (venda)", kind: "money" },
+  { key: "revenue", label: "Receita (venda)", kind: "money", source: "Venda: preço final (ou anunciado, provisório)" },
   { key: "grossProfit", label: "Lucro bruto", kind: "money" },
   { key: "tax", label: "Imposto estimado", kind: "money", cost: true },
   { key: "netProfit", label: "Lucro líquido", kind: "money" },

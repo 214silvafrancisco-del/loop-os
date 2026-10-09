@@ -76,16 +76,7 @@ export function SaleForm({ action, sale, users, contacts, cancelHref }: Props) {
         </FormField>
       </FormSection>
 
-      <FormSection title="Custos reais" description="Totais para o P&L. A comissão das mediadoras calcula-se a partir da aba Resumo.">
-        <FormField id="otherSaleCosts" label="Outros custos de venda (€)" error={errors.otherSaleCosts} hint="Certificado energético, fotografias, CPCV, distrate.">
-          <Input id="otherSaleCosts" name="otherSaleCosts" inputMode="decimal" defaultValue={g("otherSaleCosts", sale.otherSaleCosts)} />
-        </FormField>
-        <FormField id="actualHoldingCosts" label="Custos de detenção reais (€)" error={errors.actualHoldingCosts} hint="Condomínio, IMI, seguros, água, luz, até à venda.">
-          <Input id="actualHoldingCosts" name="actualHoldingCosts" inputMode="decimal" defaultValue={g("actualHoldingCosts", sale.actualHoldingCosts)} />
-        </FormField>
-        <FormField id="actualFinancingCosts" label="Custos de financiamento reais (€)" error={errors.actualFinancingCosts} hint="Juros, comissões bancárias, penalização de reembolso.">
-          <Input id="actualFinancingCosts" name="actualFinancingCosts" inputMode="decimal" defaultValue={g("actualFinancingCosts", sale.actualFinancingCosts)} />
-        </FormField>
+      <FormSection title="Notas" description="Os custos reais (aquisição, detenção, financiamento, outros) introduzem-se na tab Resultado.">
         <FormField id="notes" label="Notas" error={errors.notes} className="md:col-span-2">
           <Textarea id="notes" name="notes" rows={3} defaultValue={g("notes", sale.notes)} />
         </FormField>

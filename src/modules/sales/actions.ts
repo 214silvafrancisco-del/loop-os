@@ -22,8 +22,10 @@ import {
   nextActionSchema,
   saleInputFromForm,
   saleSchema,
+  realCostsSchema,
   type AgencyInput,
   type LeadInput,
+  type RealCostsInput,
   type SaleInput,
 } from "./validation";
 
@@ -124,13 +126,42 @@ export async function updateSale(id: string, _prev: SaleFormState, formData: For
   try {
     await db
       .update(sales)
-      .set({ ...d, otherSaleCosts: d.otherSaleCosts ?? "0", updatedBy: user.id })
+      .set({ ...d, updatedBy: user.id })
       .where(eq(sales.id, id));
   } catch (e) {
     return { error: dbErrorMessage(e) };
   }
   revalidateSale(id, sale.propertyId, sale.dealId);
   redirect(`/sales/${id}/resumo`);
+}
+
+/**
+ * Custos reais introduzidos na tab Resultado: detenção, financiamento e outros
+ * custos de venda ficam na venda; os custos de aquisição ficam no negócio
+ * (é lá que a aquisição vive). Tudo o resto do P&L vem dos outros módulos.
+ */
+export async function updateSaleRealCosts(id: string, input: RealCostsInput): Promise<Result> {
+  const user = await requireUser();
+  const parsed = realCostsSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]!.message };
+  const sale = await ownSale(user.organizationId, id);
+  if (!sale) return { ok: false, error: "Venda não encontrada." };
+  const d = parsed.data;
+  try {
+    await db.transaction(async (tx) => {
+      await tx
+        .update(sales)
+        .set({ actualHoldingCosts: d.holdingCosts ?? null, actualFinancingCosts: d.financingCosts ?? null, otherSaleCosts: d.otherSaleCosts ?? "0", updatedBy: user.id })
+        .where(eq(sales.id, id));
+      if (sale.dealId) {
+        await tx.update(deals).set({ actualAcquisitionCosts: d.acquisitionCosts ?? null, updatedBy: user.id }).where(and(eq(deals.id, sale.dealId), eq(deals.organizationId, user.organizationId)));
+      }
+    });
+  } catch (e) {
+    return { ok: false, error: dbErrorMessage(e) };
+  }
+  revalidateSale(id, sale.propertyId, sale.dealId);
+  return { ok: true };
 }
 
 export type StageChangeResult = Result | { ok: false; needsClose: true; error: string };

@@ -16,6 +16,9 @@ import { sales, type Sale } from "./schema";
 export type SalePnl = ReturnType<typeof buildPnl> & {
   scenarioName: string | null;
   notes: string[];
+  /** Entradas do lado real, para o formulário da tab Resultado. */
+  inputs: RealInputs;
+  hasDeal: boolean;
 };
 
 /** P&L de uma venda: cenário ativo do negócio de origem vs custos e receita reais. */
@@ -73,8 +76,8 @@ export async function getSalePnl(organizationId: string, sale: Sale): Promise<Sa
     (a, ag) => a + commissionAmount(price ? Number(price) : null, { commissionPct: ag.commissionPct ? Number(ag.commissionPct) : null, commissionFixed: ag.commissionFixed ? Number(ag.commissionFixed) : null, commissionVatPct: Number(ag.commissionVatPct) }).total,
     0,
   );
-  if (sale.actualHoldingCosts === null) notes.push("Custos de detenção reais por preencher (Resumo).");
-  if (sale.actualFinancingCosts === null && bp && bp.financing > 0) notes.push("Custos de financiamento reais por preencher (Resumo).");
+  if (sale.actualHoldingCosts === null) notes.push("Custos de detenção reais por preencher (formulário abaixo).");
+  if (sale.actualFinancingCosts === null && bp && bp.financing > 0) notes.push("Custos de financiamento reais por preencher (formulário abaixo).");
 
   const real: RealInputs = {
     purchasePrice: deal?.finalPrice ? Number(deal.finalPrice) : null,
@@ -91,7 +94,7 @@ export async function getSalePnl(organizationId: string, sale: Sale): Promise<Sa
     saleDate: sale.stage === "vendido" ? sale.deedDate : null,
     today,
   };
-  return { ...buildPnl(bp, real), scenarioName, notes };
+  return { ...buildPnl(bp, real), scenarioName, notes, inputs: real, hasDeal: Boolean(deal) };
 }
 
 /** Vendas fechadas num ano com o lucro líquido real (para o dashboard). */

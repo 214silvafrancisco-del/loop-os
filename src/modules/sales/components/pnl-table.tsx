@@ -47,6 +47,7 @@ export function PnlTable({ pnl }: { pnl: SalePnl }) {
                 <tr key={row.key} className={cn("border-b last:border-0", isStrong && "bg-muted/40 font-semibold")}>
                   <td className="px-3 py-2">
                     {row.label}
+                    {row.source ? <span className="block text-[11px] font-normal text-muted-foreground">{row.source}</span> : null}
                     <dl className="mt-1 grid grid-cols-3 gap-2 text-xs font-normal md:hidden">
                       <div><dt className="text-muted-foreground">BP</dt><dd className="tabular-nums">{cell(row.bp, row.kind)}</dd></div>
                       <div><dt className="text-muted-foreground">Real</dt><dd className={cn("tabular-nums", isStrong && "font-semibold")}>{cell(row.real, row.kind)}</dd></div>
@@ -69,7 +70,7 @@ export function PnlTable({ pnl }: { pnl: SalePnl }) {
           ))}
         </ul>
       ) : null}
-      <p className="text-xs text-muted-foreground">Aquisição real = valor final de compra + custos reais de aquisição (ficha do negócio). Obra real = faturas registadas, com IVA. Detenção e financiamento reais vêm do Resumo. Imposto estimado com a taxa do cenário.</p>
+      <p className="text-xs text-muted-foreground">Imposto estimado com a taxa do cenário ativo (IRC, ou 50 % × IRS no regime particular).</p>
     </div>
   );
 }
