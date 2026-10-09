@@ -24,7 +24,7 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
   const user = await requireUser();
   const sp = await searchParams;
   const cookieStore = await cookies();
-  const view = sp.view === "kanban" || sp.view === "list" ? sp.view : cookieStore.get("sales_view")?.value === "list" ? "list" : "kanban";
+  const view = sp.view === "kanban" || sp.view === "list" ? sp.view : cookieStore.get("sales_view")?.value === "kanban" ? "kanban" : "list";
   const stage = STAGE_VALUES.includes(sp.stage as SaleStage) ? (sp.stage as SaleStage) : undefined;
   const scope = sp.scope === "closed" || sp.scope === "all" ? sp.scope : stage && (stage === "vendido" || stage === "cancelada") ? "all" : "open";
 

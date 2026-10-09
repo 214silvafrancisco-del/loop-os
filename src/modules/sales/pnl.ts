@@ -13,7 +13,8 @@ export type PnlSide = {
   tax: number;
   netProfit: number;
   margin: number | null;
-  roi: number | null;
+  /** Retorno anualizado bruto: lucro bruto / investimento total × 12 / meses (critério da LOOP). */
+  annualized: number | null;
   months: number | null;
 };
 
@@ -64,7 +65,7 @@ export function bpSide(o: ScenarioOutputs): PnlSide {
     tax: r2(o.tax),
     netProfit: r2(o.netProfit),
     margin: o.revenue ? o.margin : null,
-    roi: o.totalInvestment ? o.roi : null,
+    annualized: o.totalInvestment && o.months > 0 ? o.annualized : null,
     months: o.months,
   };
 }
@@ -82,6 +83,7 @@ export function realSide(i: RealInputs): { side: PnlSide; final: boolean } {
   const grossProfit = revenue - totalInvestment;
   const tax = Math.max(0, grossProfit) * i.taxRate;
   const netProfit = grossProfit - tax;
+  const months = monthsBetween(i.purchaseDate, i.saleDate ?? i.today);
   return {
     final,
     side: {
@@ -96,8 +98,8 @@ export function realSide(i: RealInputs): { side: PnlSide; final: boolean } {
       tax: r2(tax),
       netProfit: r2(netProfit),
       margin: revenue ? netProfit / revenue : null,
-      roi: totalInvestment ? grossProfit / totalInvestment : null,
-      months: monthsBetween(i.purchaseDate, i.saleDate ?? i.today),
+      annualized: totalInvestment && months ? (grossProfit / totalInvestment) * (12 / months) : null,
+      months,
     },
   };
 }
@@ -114,7 +116,7 @@ export const PNL_ROWS: { key: PnlRow["key"]; label: string; kind: PnlRow["kind"]
   { key: "tax", label: "Imposto estimado", kind: "money", cost: true },
   { key: "netProfit", label: "Lucro líquido", kind: "money" },
   { key: "margin", label: "Margem (líquido / receita)", kind: "pct" },
-  { key: "roi", label: "ROI (bruto / investimento)", kind: "pct" },
+  { key: "annualized", label: "Retorno anualizado (bruto)", kind: "pct", source: "Lucro bruto / investimento × 12 / meses" },
   { key: "months", label: "Duração", kind: "months" },
 ];
 

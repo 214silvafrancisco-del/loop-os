@@ -26,7 +26,7 @@ describe("P&L real", () => {
     expect(side.tax).toBe(10070);
     expect(side.netProfit).toBe(42930);
     expect(side.margin).toBeCloseTo(42930 / 330000, 6);
-    expect(side.roi).toBeCloseTo(53000 / 277000, 6);
+    expect(side.annualized).toBeCloseTo((53000 / 277000) * (12 / 8), 6);
     expect(side.months).toBe(8);
   });
 
