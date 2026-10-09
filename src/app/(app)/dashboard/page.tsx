@@ -1,17 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Building2, FileText, Handshake, ShoppingCart, Sparkles, Tag } from "lucide-react";
+import { Building2, Handshake, Tag } from "lucide-react";
 import { requireUser } from "@/core/auth/current-user";
 import { formatCurrency, formatDate, formatMoney, formatPercent } from "@/core/lib/format";
 import { PageHeader } from "@/core/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { ActionsList } from "@/modules/dashboard/components/actions-list";
-import { getWeekStats } from "@/modules/dashboard/queries";
 import { countDealsByStage, listUpcomingActions, sumPurchases } from "@/modules/deals/queries";
 import { todayIso } from "@/modules/deals/utils";
 import { listActiveProjectFinancials, listUnpaidInvoices } from "@/modules/projects/invoices/queries";
 import { PROJECT_STATUS_LABEL } from "@/modules/projects/validation";
+import { ForecastPanel } from "@/modules/funnel/components/forecast-panel";
+import { FunnelTable } from "@/modules/funnel/components/funnel-table";
+import { getFunnelForecast, listRecentFunnelWeeks } from "@/modules/funnel/queries";
 import { SaleStageBadge } from "@/modules/sales/components/sale-badges";
 import { daysOnMarket } from "@/modules/sales/constants";
 import { listSoldSummary } from "@/modules/sales/pnl-queries";
@@ -69,8 +71,9 @@ export default async function DashboardPage() {
   const stages = await listDealStages(orgId);
   const purchaseStage = stages.find((s) => s.isPurchase) ?? null;
 
-  const [week, counts, actions, purchases, activeProjects, unpaidInvoices, openSales, sold] = await Promise.all([
-    getWeekStats(orgId, weekStart, purchaseStage?.id ?? null),
+  const [funnel, forecast, counts, actions, purchases, activeProjects, unpaidInvoices, openSales, sold] = await Promise.all([
+    listRecentFunnelWeeks(orgId, today, 5),
+    getFunnelForecast(orgId, today),
     countDealsByStage(orgId),
     listUpcomingActions(orgId, weekEnd),
     sumPurchases(orgId),
@@ -88,12 +91,15 @@ export default async function DashboardPage() {
     <>
       <PageHeader title="Dashboard" description={`Semana de ${formatDate(weekStart)} a ${formatDate(weekEnd)}.`} />
 
-      <h2 className="mb-2 text-sm font-semibold">Esta semana</h2>
-      <div className="mb-6 grid grid-cols-3 gap-2 sm:gap-3">
-        <Kpi label="Leads novas" value={String(week.newLeads)} hint="negócios entrados" icon={Sparkles} href="/deals?view=list" compact />
-        <Kpi label="Propostas feitas" value={String(week.proposals)} hint="geradas esta semana" icon={FileText} href="/deals?view=list" compact />
-        <Kpi label="Compras feitas" value={String(week.purchases)} hint="passaram a Compra" icon={ShoppingCart} href={purchaseStage ? `/deals?stage=${purchaseStage.id}` : "/deals"} compact />
-      </div>
+      <section className="mb-6">
+        <h2 className="mb-2 text-sm font-semibold">Funil comercial</h2>
+        <FunnelTable rows={funnel} historyHref="/funil" />
+      </section>
+
+      <section className="mb-6">
+        <h2 className="mb-2 text-sm font-semibold">Previsão de compras</h2>
+        <ForecastPanel f={forecast} />
+      </section>
 
       <h2 className="mb-2 text-sm font-semibold">Em aberto</h2>
       <div className="mb-6 grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">

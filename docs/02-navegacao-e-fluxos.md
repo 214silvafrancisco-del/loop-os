@@ -73,6 +73,15 @@ Barra superior: pesquisa global (⌘K: negócios, imóveis, contactos, documento
 - Componentes: cartões KPI, lista de ações, mini-tabela de obras, gráfico de barras do pipeline (simples).
 - Filtros: responsável (todos / eu).
 
+### 3.2b Funil comercial e previsão de compras (Step 27, 2026-10-09)
+- **Funil comercial** (dashboard, substitui os cartões «Esta semana»): tabela das 5 semanas mais recentes (atual incluída), segunda a domingo, com Leads, Visitas, Propostas e Compras editáveis na célula (grava ao sair do campo). Vazio = por preencher, 0 = zero. Cada célula mostra «sug. n», o valor que a app conta sozinha (leads = negócios entrados; visitas e compras = passagens de fase na auditoria, compra também por escritura; propostas = geradas), e «usar valores da app» preenche a semana de uma vez. «Ver histórico completo» → `/funil`: todas as semanas registadas, editáveis, e «Acrescentar semana» para semanas antigas. Tabela `funnel_weeks` (única por organização e semana). No telemóvel, um cartão por semana.
+- **Previsão de compras** (dashboard e `/funil`), calculada em `src/modules/funnel/forecast.ts` a partir das semanas **completas** registadas (a atual fica de fora), sem parâmetros manuais:
+  1. Ritmo base = média móvel exponencial das compras (meia-vida 8 semanas), encolhida para a média global com pouco histórico (peso n/(n+6)).
+  2. Funil (só com ≥ 8 semanas): rácios agregados de todo o histórico (compras/propostas, compras/leads, sem assumir desfasamento) × volume recente de propostas e leads (EWMA, meia-vida 4) = ritmo implícito, limitado a ±50 % do ritmo base, com peso 35 %.
+  3. Previsões = ritmo × 1, 4 e 13 semanas, com intervalo 80 % (Poisson); tendência = últimas 4 semanas vs as 8 anteriores; médias semanais e conversões aproximadas.
+  4. Fiabilidade: < 4 semanas ⇒ «Dados insuficientes para uma previsão fiável»; 4–7 baixa; 8–15 média; ≥ 16 boa; desce um nível com compras muito irregulares (CV > 1,2) ou > 25 % de semanas sem compras preenchidas.
+  Os blocos de previsão aparecem a tracejado para se distinguirem dos valores reais. Evolução prevista: ligar cada lead ao negócio para medir conversões e tempos reais entre fases.
+
 ### 3.3 Negócios — lista
 - Objetivo: encontrar e trabalhar negócios ativos.
 - Informação: tabela com Ref, Nome/Morada, Freguesia, Tipologia, Piso, Preço pedido, Fase, Fonte, Próxima ação (texto + data), Responsável, Lucro estimado e ROE do cenário ativo, Data de entrada.

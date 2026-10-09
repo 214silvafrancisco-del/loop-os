@@ -639,3 +639,17 @@ Extensão `pg_trgm` com índices GIN em `properties.address_line`, `properties.p
 | created_at, last_seen_at | timestamptz | |
 
 Um registo por dispositivo. Sem trigger de auditoria (dados técnicos). Quando o serviço de push responde 404/410 a linha é apagada no envio seguinte. O resumo diário (`sendDailyDigest`) agrupa por organização e envia a todos os utilizadores ativos com subscrição.
+
+## 16. Funil comercial (Step 27, 2026-10-09)
+
+### funnel_weeks
+| Coluna | Tipo | Notas |
+|---|---|---|
+| id | uuid PK | |
+| organization_id | uuid FK | |
+| week_start | date not null | segunda-feira; UNIQUE (organization_id, week_start) |
+| leads, visits, proposals, purchases | integer | nulo = por preencher; 0 = zero |
+| notes | text | |
+| created_by, updated_by, timestamps | | `set_updated_at` e `audit_trigger` |
+
+Sem colunas de taxas ou previsões: tudo derivado em `forecast.ts`. Os valores sugeridos vêm de `deals.entered_at`, `audit_log` (mudanças de `stage_id`), `proposals.created_at` e `deals.deed_date`.

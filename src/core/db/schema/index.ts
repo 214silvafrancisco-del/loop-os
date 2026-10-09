@@ -15,3 +15,4 @@ export * from "@/modules/projects/schema";
 export * from "@/modules/checklists/schema";
 export * from "@/modules/notifications/schema";
 export * from "@/modules/sales/schema";
+export * from "@/modules/funnel/schema";
