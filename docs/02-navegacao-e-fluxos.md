@@ -199,6 +199,10 @@ Barra superior: pesquisa global (⌘K: negócios, imóveis, contactos, documento
 2. Cada capítulo do orçamento pertence a um fornecedor; a importação do Excel pergunta para qual. O orçamento mostra uma secção por fornecedor.
 3. Autos: um por mês por fornecedor "por autos". Faturas: escolhem o fornecedor da obra; se for por autos, ligam-se ao auto dele.
 
+### F5b-ii. Orçamento em PDF e fornecedor a partir do orçamento (Step 28, 2026-10-11)
+- O botão «Importar Excel/PDF» do orçamento aceita também PDF com texto. A leitura é por regras (`src/modules/projects/budget/pdf-parse.ts`, sem IA): capítulos (código sem valores), artigos (código, descrição, unidade, quantidade, unitário, total), números em formato português, descrições partidas em duas linhas. Confirma total = qtd × unitário por artigo e assinala dúvidas (total que não bate, sem unitário, sem código, só dois valores). O resultado entra no editor como o Excel e só grava com «Guardar orçamento»; a faixa amarela resume capítulos, total e dúvidas. PDFs digitalizados (sem texto) dão erro claro: usar Excel ou criar à mão.
+- No diálogo «Novo fornecedor», «Carregar orçamento (PDF ou Excel)» lê o ficheiro: do PDF tira nome, NIF, telefone e email para o formulário (editáveis); ao «Adicionar e importar orçamento» o fornecedor é criado e a árvore entra no editor já atribuída a ele (passa pelo `sessionStorage` da mesma página), para rever e gravar.
+
 ### F5c. Auto de adiantamento (Step 24)
 1. Obra → Autos → "Novo auto" → "Auto de adiantamento": n.º, data, valor, % (sugerida = valor ÷ adjudicado), documento, observações. Fica identificado como ADIANTAMENTO.
 2. Faturas → nova fatura ligada ao auto de adiantamento → "Fatura de adiantamento", líquido = valor.

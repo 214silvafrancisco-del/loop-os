@@ -1,8 +1,8 @@
 "use client";
 
-import { Copy, Pencil, Plus, Trash2, Users } from "lucide-react";
+import { Copy, FileUp, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,9 @@ import { FormField, NativeSelect } from "@/core/ui/form-field";
 import { createProjectSupplier, deleteProjectSupplier, updateProjectSupplier, type SupplierInput } from "../suppliers/actions";
 import { CONTROL_MODE_LABEL, SUPPLIER_KINDS } from "../suppliers/constants";
 import type { ReusableSupplier, SupplierRow } from "../suppliers/queries";
+import type { ImportedNode } from "../budget/tree";
+
+type ReadBudget = { tree: ImportedNode[]; total: number; doubts: string[]; items: number; header: { name: string | null; nif: string | null; phone: string | null; email: string | null } | null };
 
 type Props = {
   projectId: string;
@@ -119,7 +122,32 @@ function SupplierDialog({ state, projectId, onClose }: { state: DialogState; pro
   const [error, setError] = useState<string | null>(null);
   const editing = state?.mode === "edit" ? state.supplier : null;
   const preset = state?.mode === "create" ? state.preset : undefined;
-  const initial = editing ?? preset ?? null;
+  const [budget, setBudget] = useState<ReadBudget | null>(null);
+  const [reading, setReading] = useState(false);
+  const [formKey, setFormKey] = useState(0);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const initial = budget?.header
+    ? { name: budget.header.name ?? preset?.name ?? "", kind: preset?.kind ?? null, nif: budget.header.nif ?? preset?.nif ?? null, phone: budget.header.phone ?? preset?.phone ?? null, email: budget.header.email ?? preset?.email ?? null, controlMode: preset?.controlMode ?? ("autos" as const) }
+    : (editing ?? preset ?? null);
+
+  /** Lê um orçamento (PDF ou Excel): pré-preenche o fornecedor e guarda a árvore para o editor. */
+  async function readBudget(file: File) {
+    setReading(true);
+    setError(null);
+    try {
+      const body = new FormData();
+      body.set("file", file);
+      const res = await fetch(`/api/projects/${projectId}/budget/import`, { method: "POST", body });
+      const json = (await res.json()) as { error?: string } & Partial<ReadBudget>;
+      if (!res.ok || !json.tree) throw new Error(json.error ?? `Erro ${res.status}`);
+      setBudget({ tree: json.tree, total: json.total ?? 0, doubts: json.doubts ?? [], items: json.items ?? 0, header: json.header ?? null });
+      setFormKey((k) => k + 1);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Não foi possível ler o orçamento.");
+    } finally {
+      setReading(false);
+    }
+  }
 
   function submit(formData: FormData) {
     setError(null);
@@ -135,6 +163,14 @@ function SupplierDialog({ state, projectId, onClose }: { state: DialogState; pro
     startTransition(async () => {
       const r = editing ? await updateProjectSupplier(editing.id, input) : await createProjectSupplier(projectId, input);
       if (!r.ok) return setError(r.error);
+      if (!editing && budget && "id" in r) {
+        // O editor do orçamento (mesma página) apanha isto e junta a árvore a este fornecedor.
+        try {
+          sessionStorage.setItem(`loop:pendingImport:${projectId}`, JSON.stringify({ supplierId: r.id, tree: budget.tree, total: budget.total, doubts: budget.doubts }));
+        } catch {
+          /* sem storage: o utilizador importa à mão */
+        }
+      }
       onClose();
       router.refresh();
     });
@@ -156,7 +192,20 @@ function SupplierDialog({ state, projectId, onClose }: { state: DialogState; pro
               )}
             </DialogDescription>
           </DialogHeader>
-          <div className="my-4 grid gap-3 sm:grid-cols-2">
+          {!editing ? (
+            <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-dashed px-3 py-2 text-xs">
+              <Button type="button" size="sm" variant="outline" className="h-9 gap-1" onClick={() => fileInput.current?.click()} disabled={reading || pending}>
+                <FileUp className="size-4" /> {reading ? "A ler…" : "Carregar orçamento (PDF ou Excel)"}
+              </Button>
+              <input ref={fileInput} type="file" accept=".pdf,application/pdf,.xlsx,.xls" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void readBudget(f); e.target.value = ""; }} />
+              <span className="text-muted-foreground">
+                {budget
+                  ? `Lido: ${budget.tree.length} capítulos, ${budget.items} artigos, ${formatMoney(budget.total)} s/ IVA${budget.doubts.length ? ` · ${budget.doubts.length} a rever` : ""}. Ao adicionar, entra no orçamento atribuído a este fornecedor.`
+                  : "Do PDF tiro nome, NIF, telefone e email; do Excel só os artigos."}
+              </span>
+            </div>
+          ) : null}
+          <div key={formKey} className="my-4 grid gap-3 sm:grid-cols-2">
             <FormField id="sup-name" label="Nome" className="sm:col-span-2">
               <Input id="sup-name" name="name" defaultValue={initial?.name ?? ""} required autoFocus />
             </FormField>
@@ -193,7 +242,7 @@ function SupplierDialog({ state, projectId, onClose }: { state: DialogState; pro
               Cancelar
             </Button>
             <Button type="submit" disabled={pending}>
-              {pending ? "A guardar…" : editing ? "Guardar" : "Adicionar"}
+              {pending ? "A guardar…" : editing ? "Guardar" : budget ? "Adicionar e importar orçamento" : "Adicionar"}
             </Button>
           </DialogFooter>
         </form>

@@ -2,7 +2,7 @@
 
 import { Check, ChevronDown, ChevronRight, FileSpreadsheet, Plus, Sparkles, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatMoney } from "@/core/lib/format";
@@ -43,6 +43,35 @@ export function BudgetEditor({ projectId, initialNodes, suppliers, categories, d
   const [error, setError] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
   const [importSupplierId, setImportSupplierId] = useState(suppliers[0]?.id ?? "");
+  const [importNote, setImportNote] = useState<string | null>(null);
+
+  // Orçamento lido ao criar o fornecedor (SuppliersPanel) fica à espera no sessionStorage.
+  useEffect(() => {
+    const key = `loop:pendingImport:${projectId}`;
+    const id = window.setTimeout(() => {
+      let raw: string | null = null;
+      try {
+        raw = sessionStorage.getItem(key);
+      } catch {
+        return;
+      }
+      if (!raw) return;
+      try {
+        const p = JSON.parse(raw) as { supplierId: string; tree: ImportedNode[]; total: number; doubts: string[] };
+        if (!suppliers.some((s) => s.id === p.supplierId)) return;
+        sessionStorage.removeItem(key);
+        setNodes((prev) => {
+          const startSort = childrenOf(prev, null).at(-1)?.sort ?? 0;
+          return [...prev, ...importedToNodes(p.tree, startSort, defaultVatRate, p.supplierId)];
+        });
+        setImportSupplierId(p.supplierId);
+        setImportNote(`Orçamento do fornecedor lido: ${p.tree.length} capítulos, ${formatMoney(p.total)} s/ IVA. ${p.doubts.length ? `${p.doubts.length} artigo(s) a rever: ${p.doubts.slice(0, 3).join("; ")}. ` : ""}Revê e carrega em «Guardar orçamento».`);
+      } catch {
+        /* conteúdo inválido: ignorar */
+      }
+    }, 0);
+    return () => window.clearTimeout(id);
+  }, [projectId, suppliers, defaultVatRate]);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const nodes = useMemo(() => inheritSuppliers(rawNodes), [rawNodes]);
@@ -141,12 +170,14 @@ export function BudgetEditor({ projectId, initialNodes, suppliers, categories, d
       const body = new FormData();
       body.set("file", file);
       const res = await fetch(`/api/projects/${projectId}/budget/import`, { method: "POST", body });
-      const json = (await res.json()) as { error?: string; tree?: ImportedNode[]; total?: number; skipped?: number };
+      const json = (await res.json()) as { error?: string; tree?: ImportedNode[]; total?: number; skipped?: number; doubts?: string[]; source?: string };
       if (!res.ok || !json.tree) throw new Error(json.error ?? `Erro ${res.status}`);
       const mine = childrenOf(nodes, null).filter((c) => c.supplierId === importSupplierId);
       const replace = mine.length > 0 && confirm(`Encontrei ${json.tree.length} capítulos, total ${formatMoney(json.total ?? 0)} s/ IVA, para ${supplierName(importSupplierId)}.\n\nOK = substituir o orçamento deste fornecedor · Cancelar = juntar ao existente`);
       const startSort = childrenOf(nodes, null).at(-1)?.sort ?? 0;
       const imported = importedToNodes(json.tree, startSort, defaultVatRate, importSupplierId);
+      const doubts = json.doubts ?? [];
+      setImportNote(json.source === "pdf" ? `PDF lido: ${json.tree.length} capítulos, ${formatMoney(json.total ?? 0)} s/ IVA.${doubts.length ? ` ${doubts.length} artigo(s) a rever: ${doubts.slice(0, 3).join("; ")}${doubts.length > 3 ? "…" : ""}.` : ""} Confirma e carrega em «Guardar orçamento».` : null);
       if (replace) {
         const drop = new Set<string>();
         const collect = (pid: string) => { for (const c of childrenOf(nodes, pid)) { drop.add(c.id); collect(c.id); } };
@@ -220,14 +251,15 @@ export function BudgetEditor({ projectId, initialNodes, suppliers, categories, d
           </select>
         </span>
         <Button size="sm" variant="outline" className="gap-1" onClick={() => fileInput.current?.click()} disabled={importing || !importSupplierId}>
-          <FileSpreadsheet className="size-4" /> {importing ? "A ler…" : "Importar Excel"}
+          <FileSpreadsheet className="size-4" /> {importing ? "A ler…" : "Importar Excel/PDF"}
         </Button>
-        <input ref={fileInput} type="file" accept=".xlsx,.xls" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void importExcel(f); e.target.value = ""; }} />
+        <input ref={fileInput} type="file" accept=".xlsx,.xls,.pdf,application/pdf" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void importExcel(f); e.target.value = ""; }} />
         {nodes.length === 0 && hasBusinessPlanBudget ? (
           <Button size="sm" variant="outline" className="gap-1" onClick={seed} disabled={pending}><Sparkles className="size-4" /> Começar pelo valor do Business Plan</Button>
         ) : null}
         <span className="ml-auto flex items-center gap-2">
           {error ? <span className="text-xs text-destructive">{error}</span> : null}
+          {importNote ? <span className="max-w-md text-xs text-warning">{importNote}</span> : null}
           <Button size="sm" className="gap-1" onClick={save} disabled={!dirty || pending}>
             <Check className="size-4" /> {pending ? "…" : dirty ? "Guardar orçamento" : "Guardado"}
           </Button>
