@@ -6,9 +6,9 @@ import { NextTaskControl } from "@/modules/tasks/components/next-task-control";
 import type { TaskListRow } from "@/modules/tasks/queries";
 
 /** Lista de próximas tarefas do dashboard: atrasadas, hoje, esta semana. */
-export function ActionsList({ tasks, today }: { tasks: TaskListRow[]; today: string }) {
+export function ActionsList({ tasks, today, empty = "Nada agendado para esta semana." }: { tasks: TaskListRow[]; today: string; empty?: string }) {
   if (tasks.length === 0) {
-    return <p className="rounded-lg border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">Nada agendado para esta semana.</p>;
+    return <p className="rounded-lg border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">{empty}</p>;
   }
   return (
     <ul className="divide-y rounded-lg border bg-card">

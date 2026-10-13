@@ -26,6 +26,8 @@ const FIELD_LABEL: Record<string, string> = {
   stage_id: "fase",
   status: "estado",
   owner_user_id: "responsável",
+  manager_user_id: "responsável",
+  assignee_user_id: "responsável",
   name: "nome",
   next_action: "próxima ação",
   next_action_date: "data da próxima ação",
@@ -80,7 +82,7 @@ const FIELD_LABEL: Record<string, string> = {
 };
 
 const MONEY = new Set(["asking_price", "target_price", "max_price", "estimated_works", "estimated_sale_price", "final_price", "actual_acquisition_costs", "vpt"]);
-const DATES = new Set(["next_action_date", "cpcv_date", "deed_date", "imt_resale_deadline", "entered_at"]);
+const DATES = new Set(["next_action_date", "cpcv_date", "deed_date", "imt_resale_deadline", "entered_at", "due_date"]);
 const STATUS_LABEL: Record<string, string> = { active: "ativo", excluded: "excluído", prospect: "prospeção", owned: "comprado", for_sale: "à venda", sold: "vendido" };
 
 function fmt(field: string, value: unknown, lookups: AuditLookups): string {
@@ -88,7 +90,7 @@ function fmt(field: string, value: unknown, lookups: AuditLookups): string {
   if (MONEY.has(field)) return formatCurrency(String(value));
   if (DATES.has(field)) return formatDate(String(value));
   if (field === "stage_id") return lookups.stages?.[String(value)] ?? "?";
-  if (field === "owner_user_id") return lookups.users?.[String(value)] ?? "?";
+  if (field === "owner_user_id" || field === "manager_user_id" || field === "assignee_user_id") return lookups.users?.[String(value)] ?? "?";
   if (field === "source_channel_id") return lookups.sources?.[String(value)] ?? "?";
   if (field === "source_contact_id") return lookups.contacts?.[String(value)] ?? "?";
   if (field === "status") return STATUS_LABEL[String(value)] ?? String(value);
@@ -99,7 +101,7 @@ function fmt(field: string, value: unknown, lookups: AuditLookups): string {
   return s.length > 80 ? s.slice(0, 77) + "…" : s;
 }
 
-const when = new Intl.DateTimeFormat("pt-PT", { dateStyle: "medium", timeStyle: "short" });
+export const auditWhen = new Intl.DateTimeFormat("pt-PT", { dateStyle: "medium", timeStyle: "short" });
 
 const CHECKLIST_STATUS: Record<string, string> = { pending: "pendente", done: "concluído", not_applicable: "não aplicável" };
 
@@ -151,7 +153,8 @@ function describeTask(e: AuditRow, lookups: AuditLookups): { title: string; deta
   return { title: `atualizou a tarefa «${title}»`, details };
 }
 
-function describe(e: AuditRow, lookups: AuditLookups): { title: string; details: string[] } | null {
+/** Frase legível de uma entrada da auditoria (também usada no dashboard). */
+export function describeAudit(e: AuditRow, lookups: AuditLookups): { title: string; details: string[] } | null {
   if (e.tableName === "checklist_items") return describeChecklistItem(e, lookups);
   if (e.tableName === "tasks") return describeTask(e, lookups);
   const table = TABLE_LABEL[e.tableName] ?? e.tableName;
@@ -185,13 +188,13 @@ export function AuditTimeline({ entries, lookups = {} }: { entries: AuditRow[]; 
   return (
     <ol className="relative ml-2 border-l">
       {entries.map((e) => {
-        const d = describe(e, lookups);
+        const d = describeAudit(e, lookups);
         if (!d) return null;
         const { title, details } = d;
         return (
           <li key={e.id} className="mb-5 ml-4">
             <span className="absolute -left-[5px] mt-1.5 size-2.5 rounded-full border-2 border-background bg-muted-foreground/60" />
-            <div className="text-xs text-muted-foreground">{when.format(e.at)}</div>
+            <div className="text-xs text-muted-foreground">{auditWhen.format(e.at)}</div>
             <div className="text-sm">
               <span className="font-medium">{e.userName ?? "Sistema"}</span> {title}
             </div>

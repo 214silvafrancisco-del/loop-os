@@ -115,7 +115,7 @@ export async function listTasks(organizationId: string, filters: TaskListFilters
     .where(and(...conditions))
     .orderBy(sql`case ${tasks.status} when 'concluida' then 1 else 0 end`, sql`${tasks.dueDate} asc nulls last`, desc(tasks.completedAt), asc(tasks.createdAt))
     .limit(filters.limit ?? 300);
-  const labels = await entityLabels(organizationId, rows.map((r) => ({ entityType: r.task.entityType, entityId: r.task.entityId })));
+  const labels = await getEntityLabels(organizationId, rows.map((r) => ({ entityType: r.task.entityType, entityId: r.task.entityId })));
   const allowedSet = filters.allowedEntityTypes ? new Set<string>(filters.allowedEntityTypes) : null;
   return rows.map((r) => {
     const l = labels.get(`${r.task.entityType}:${r.task.entityId}`) ?? { label: "(registo apagado)", href: "/dashboard", ref: null };
@@ -126,7 +126,7 @@ export async function listTasks(organizationId: string, filters: TaskListFilters
 }
 
 /** Rótulos e links dos registos das tarefas (um pedido por tipo). */
-async function entityLabels(organizationId: string, refs: { entityType: TaskEntity; entityId: string }[]) {
+export async function getEntityLabels(organizationId: string, refs: { entityType: TaskEntity; entityId: string }[]) {
   const map = new Map<string, { label: string; href: string; ref: string | null }>();
   const ids = (t: TaskEntity) => [...new Set(refs.filter((r) => r.entityType === t).map((r) => r.entityId))];
   const dealIds = ids("deal");

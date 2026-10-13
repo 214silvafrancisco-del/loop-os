@@ -38,10 +38,10 @@ export async function listTags(organizationId: string): Promise<Tag[]> {
 }
 
 /** Utilizadores ativos da organização, para "Responsável". */
-export async function listUsers(organizationId: string): Promise<UserOption[]> {
+export async function listUsers(organizationId: string, opts: { includeInactive?: boolean } = {}): Promise<UserOption[]> {
   return db
     .select({ id: profiles.id, fullName: profiles.fullName, role: profiles.role })
     .from(profiles)
-    .where(and(eq(profiles.organizationId, organizationId), eq(profiles.isActive, true)))
+    .where(opts.includeInactive ? eq(profiles.organizationId, organizationId) : and(eq(profiles.organizationId, organizationId), eq(profiles.isActive, true)))
     .orderBy(asc(profiles.fullName));
 }
