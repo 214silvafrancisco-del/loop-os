@@ -63,10 +63,12 @@ function base() {
 }
 
 /** Todos os documentos de um imóvel (de todas as entidades), por categoria. */
-export async function listDocumentsForProperty(organizationId: string, propertyId: string): Promise<DocumentRow[]> {
-  return base()
+export async function listDocumentsForProperty(organizationId: string, propertyId: string, allowedEntityTypes?: string[]): Promise<DocumentRow[]> {
+  const rows = await base()
     .where(and(eq(documents.organizationId, organizationId), eq(documents.propertyId, propertyId), isNull(documents.deletedAt)))
     .orderBy(asc(documentCategories.group), asc(documentCategories.sort), desc(documents.createdAt));
+  // Acessos por módulo: um utilizador só de Vendas não vê as faturas da obra do mesmo imóvel.
+  return allowedEntityTypes ? rows.filter((r) => allowedEntityTypes.includes(String(r.entityType))) : rows;
 }
 
 export async function getDocumentRow(organizationId: string, id: string): Promise<DocumentRow | null> {
@@ -87,6 +89,7 @@ export async function getVersionForDownload(organizationId: string, versionId: s
       version: documentVersions,
       documentId: documents.id,
       documentName: documents.name,
+      entityType: documents.entityType,
       deletedAt: documents.deletedAt,
     })
     .from(documentVersions)

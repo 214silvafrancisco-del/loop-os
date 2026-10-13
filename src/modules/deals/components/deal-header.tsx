@@ -17,10 +17,11 @@ import { DealStatusButton } from "./deal-status-button";
 import { NextTaskControl } from "@/modules/tasks/components/next-task-control";
 import { StageSelect } from "./stage-select";
 
-type Props = { deal: Deal; row: DealListRow; stages: DealStage[]; project: { id: string; name: string } | null; sale?: { id: string; stage: SaleStage } | null; checklist?: ChecklistView | null };
+type Props = { deal: Deal; row: DealListRow; stages: DealStage[]; project: { id: string; name: string } | null; sale?: { id: string; stage: SaleStage } | null; checklist?: ChecklistView | null; /** Módulos do utilizador: esconde ligações a módulos sem acesso. */ modules?: readonly string[] };
 
 /** Cabeçalho comum a todas as tabs do negócio. */
-export function DealHeader({ deal, row, stages, project, sale = null, checklist }: Props) {
+export function DealHeader({ deal, row, stages, project, sale = null, checklist, modules }: Props) {
+  const can = (m: string) => !modules || modules.includes(m);
   const label = `${dealRef(row)} · ${deal.name ?? row.addressLine}`;
   const facts = [
     row.typology,
@@ -67,12 +68,14 @@ export function DealHeader({ deal, row, stages, project, sale = null, checklist 
           ) : null}
         </div>
         <div className="flex flex-wrap gap-2">
+          {can("imoveis") ? (
           <Button asChild variant="outline" size="sm" className="gap-1">
             <Link href={`/properties/${deal.propertyId}`}>
               <Building2 className="size-4" />
               Imóvel {row.ref}
             </Link>
           </Button>
+          ) : null}
           {deal.listingUrl ? (
             <Button asChild variant="outline" size="sm" className="gap-1">
               <a href={deal.listingUrl} target="_blank" rel="noreferrer">
@@ -81,8 +84,8 @@ export function DealHeader({ deal, row, stages, project, sale = null, checklist 
               </a>
             </Button>
           ) : null}
-          <CreateProjectButton dealId={deal.id} existing={project} canCreate={canCreateProject && deal.status === "active"} />
-          <CreateSaleButton dealId={deal.id} existing={sale} canCreate={canCreateSale && deal.status === "active"} />
+          {can("obras") ? <CreateProjectButton dealId={deal.id} existing={project} canCreate={canCreateProject && deal.status === "active"} /> : null}
+          {can("vendas") ? <CreateSaleButton dealId={deal.id} existing={sale} canCreate={canCreateSale && deal.status === "active"} /> : null}
           <DealStatusButton id={deal.id} status={deal.status} />
         </div>
       </div>

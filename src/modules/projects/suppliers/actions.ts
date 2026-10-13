@@ -48,7 +48,7 @@ function revalidate(projectId: string) {
 }
 
 export async function createProjectSupplier(projectId: string, raw: unknown): Promise<Result<{ id: string }>> {
-  const user = await requireUser();
+  const user = await requireUser("obras");
   const parsed = supplierSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   if (!(await ownProject(user.organizationId, projectId))) return { ok: false, error: "Obra não encontrada." };
@@ -70,7 +70,7 @@ export async function createProjectSupplier(projectId: string, raw: unknown): Pr
 }
 
 export async function updateProjectSupplier(id: string, raw: unknown): Promise<Result> {
-  const user = await requireUser();
+  const user = await requireUser("obras");
   const parsed = supplierSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   const existing = await getProjectSupplier(user.organizationId, id);
@@ -87,7 +87,7 @@ export async function updateProjectSupplier(id: string, raw: unknown): Promise<R
 
 /** Só se não tiver orçamento, autos nem faturas. */
 export async function deleteProjectSupplier(id: string): Promise<Result> {
-  const user = await requireUser();
+  const user = await requireUser("obras");
   const existing = await getProjectSupplier(user.organizationId, id);
   if (!existing) return { ok: false, error: "Fornecedor não encontrado." };
   const [use] = await db.select({

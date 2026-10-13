@@ -7,7 +7,7 @@ import { getDeal } from "@/modules/deals/queries";
 import { listDealStages, listSourceChannels, listUsers } from "@/modules/settings/queries";
 
 export default async function DealResumoPage({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   const { id } = await params;
   const orgId = user.organizationId;
   const [deal, stages, sources, users, contacts] = await Promise.all([

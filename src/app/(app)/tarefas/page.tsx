@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { allowedTaskEntities } from "@/core/auth/access";
 import { requireUser } from "@/core/auth/current-user";
 import { formatDate } from "@/core/lib/format";
 import { PageHeader } from "@/core/ui/page-header";
@@ -25,9 +26,9 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
   const status = (TASK_STATUSES.some((s) => s.value === sp.status) ? sp.status : "abertas") as TaskStatus | "abertas";
   const entityType = ENTITIES.includes(sp.module as TaskEntity) ? (sp.module as TaskEntity) : undefined;
   const [tasks, users, counts] = await Promise.all([
-    listTasks(user.organizationId, { assigneeUserId: sp.owner || undefined, entityType, status, dueUntil: sp.until || undefined, overdueOnly: sp.overdue === "1" }, today),
+    listTasks(user.organizationId, { assigneeUserId: sp.owner || undefined, entityType, status, dueUntil: sp.until || undefined, overdueOnly: sp.overdue === "1", allowedEntityTypes: allowedTaskEntities(user), viewerUserId: user.id }, today),
     listUsers(user.organizationId),
-    countTaskAlerts(user.organizationId, today),
+    countTaskAlerts(user.organizationId, today, user.role === "admin" ? undefined : user.id),
   ]);
 
   const chip = (label: string, n: number, href: string, tone?: string) => (
@@ -60,7 +61,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
         </NativeSelect>
         <NativeSelect name="module" defaultValue={sp.module ?? ""} className="h-10 w-auto md:h-9" aria-label="Módulo">
           <option value="">Módulo</option>
-          {ENTITIES.map((e) => (
+          {allowedTaskEntities(user).map((e) => (
             <option key={e} value={e}>
               {TASK_ENTITY_LABEL[e]}
             </option>
@@ -90,9 +91,13 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
           {tasks.map((t) => (
             <li key={t.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-sm">
               <span className="w-20 shrink-0 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{TASK_ENTITY_LABEL[t.entityType]}</span>
-              <Link href={t.href} className="min-w-0 truncate font-medium hover:underline">
-                {t.entityLabel}
-              </Link>
+              {t.href ? (
+                <Link href={t.href} className="min-w-0 truncate font-medium hover:underline">
+                  {t.entityLabel}
+                </Link>
+              ) : (
+                <span className="min-w-0 truncate text-muted-foreground">{t.entityLabel}</span>
+              )}
               {t.alert ? (
                 <span className={cn("rounded-full px-1.5 text-[11px] font-medium", t.alert === "proxima" ? "bg-primary/10 text-primary" : t.alert === "sem_responsavel" ? "bg-warning/15 text-warning" : "bg-destructive/10 text-destructive")}>
                   {TASK_ALERT_LABEL[t.alert]}

@@ -52,7 +52,7 @@ async function syncPropertyStatus(propertyId: string, stageId: string, userId: s
 }
 
 export async function createDeal(_prev: DealFormState, formData: FormData): Promise<DealFormState> {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   const values = dealCreateInputFromForm(formData);
   const parsed = dealCreateSchema.safeParse(values);
   if (!parsed.success) {
@@ -165,7 +165,7 @@ export async function createDeal(_prev: DealFormState, formData: FormData): Prom
 }
 
 export async function updateDeal(id: string, _prev: DealFormState, formData: FormData): Promise<DealFormState> {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   const values = dealUpdateInputFromForm(formData);
   const parsed = dealUpdateSchema.safeParse(values);
   if (!parsed.success) {
@@ -222,7 +222,7 @@ export async function changeDealStage(
   purchase?: PurchaseInput,
   options?: { force?: boolean },
 ): Promise<StageChangeResult> {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   const [deal] = await db
     .select({ propertyId: deals.propertyId, deedDate: deals.deedDate, finalPrice: deals.finalPrice, stageId: deals.stageId })
     .from(deals)
@@ -283,7 +283,7 @@ export async function updateNextAction(
   dealId: string,
   input: { nextAction: string; nextActionDate: string },
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   const parsed = nextActionSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]!.message };
   await db
@@ -298,7 +298,7 @@ export async function updateNextAction(
 
 /** Marca a próxima ação como feita (limpa texto e data). */
 export async function completeNextAction(dealId: string): Promise<void> {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   await db
     .update(deals)
     .set({ nextAction: null, nextActionDate: null, updatedBy: user.id })
@@ -310,7 +310,7 @@ export async function completeNextAction(dealId: string): Promise<void> {
 
 /** Excluir (sai do pipeline) ou reativar. Reversível. */
 export async function setDealStatus(id: string, status: "active" | "excluded"): Promise<void> {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   await db
     .update(deals)
     .set({

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { extractText, getDocumentProxy } from "unpdf";
 import * as XLSX from "xlsx";
+import { hasModule } from "@/core/auth/access";
 import { getCurrentUser } from "@/core/auth/current-user";
 import { parseBudgetText } from "@/modules/projects/budget/pdf-parse";
 import { parseBudgetSheet, type ParsedRow } from "@/modules/projects/budget/tree";
@@ -15,6 +16,7 @@ import { getProject } from "@/modules/projects/queries";
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+  if (!hasModule(user, "obras")) return NextResponse.json({ error: "Sem acesso ao módulo Obras." }, { status: 403 });
   const { id } = await params;
   const project = await getProject(user.organizationId, id);
   if (!project) return NextResponse.json({ error: "Obra não encontrada." }, { status: 404 });

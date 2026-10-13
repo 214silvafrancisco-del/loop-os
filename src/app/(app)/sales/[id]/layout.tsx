@@ -10,14 +10,14 @@ import { getSale, getSaleRow } from "@/modules/sales/queries";
 type Params = Promise<{ id: string }>;
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const user = await requireUser();
+  const user = await requireUser("vendas");
   const row = await getSaleRow(user.organizationId, (await params).id);
   return { title: row ? `Venda ${row.ref} · ${row.dealName ?? row.addressLine}` : "Venda" };
 }
 
 /** Cabeçalho e tabs comuns a todas as páginas da venda. */
 export default async function SaleLayout({ children, params }: { children: React.ReactNode; params: Params }) {
-  const user = await requireUser();
+  const user = await requireUser("vendas");
   const { id } = await params;
   const [sale, row] = await Promise.all([getSale(user.organizationId, id), getSaleRow(user.organizationId, id)]);
   if (!sale || !row) notFound();
@@ -26,7 +26,7 @@ export default async function SaleLayout({ children, params }: { children: React
   const checklist = await getChecklistView(user.organizationId, "sale", id);
   return (
     <div className="mx-auto max-w-5xl">
-      <SaleHeader sale={sale} row={row} canDelete={user.role !== "user"} checklist={checklist} />
+      <SaleHeader sale={sale} row={row} canDelete={user.role !== "user"} checklist={checklist} modules={user.modules} />
       <SaleTabs saleId={sale.id} counts={{ leads: row.leadsOpen, procedimento: checklist ? checklist.totalCount - checklist.doneCount : undefined }} />
       {children}
     </div>

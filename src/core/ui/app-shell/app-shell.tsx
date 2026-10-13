@@ -12,12 +12,12 @@ export function AppShell({
 }) {
   return (
     <div className="flex min-h-screen">
-      <Sidebar />
+      <Sidebar user={{ role: user.role, modules: user.modules }} />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar user={user} />
         <main className="flex-1 px-4 py-6 pb-24 md:px-8 md:pb-8">{children}</main>
       </div>
-      <MobileNav />
+      <MobileNav user={{ role: user.role, modules: user.modules }} />
     </div>
   );
 }

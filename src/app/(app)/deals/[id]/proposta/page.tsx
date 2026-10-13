@@ -8,7 +8,7 @@ import { listProposals, listTemplates } from "@/modules/proposals/queries";
 import { DEFAULT_CONDITIONS } from "@/modules/proposals/snapshot";
 
 export default async function DealPropostaPage({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   const { id } = await params;
   const orgId = user.organizationId;
   const deal = await getDeal(orgId, id);

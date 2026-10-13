@@ -34,7 +34,7 @@ async function leavesWithPrevious(projectId: string, projectSupplierId: string, 
  * seguinte ao último auto desse fornecedor, % pré-preenchidas com o anterior.
  */
 export async function createMeasurement(projectId: string, projectSupplierId: string): Promise<Result<{ id: string }>> {
-  const user = await requireUser();
+  const user = await requireUser("obras");
   const project = await ownProject(user.organizationId, projectId);
   if (!project) return { ok: false, error: "Obra não encontrada." };
   const [supplier] = await db
@@ -108,7 +108,7 @@ const metaSchema = z.object({
 
 /** Guarda as % de um auto em rascunho e recalcula os valores. */
 export async function saveMeasurement(reportId: string, rawLines: unknown, rawMeta: unknown, close: boolean): Promise<Result> {
-  const user = await requireUser();
+  const user = await requireUser("obras");
   const report = await getMeasurement(user.organizationId, reportId);
   if (!report) return { ok: false, error: "Auto não encontrado." };
   if (report.status === "closed") return { ok: false, error: "Este auto está fechado. Cria o auto seguinte para corrigir." };
@@ -155,7 +155,7 @@ export async function saveMeasurement(reportId: string, rawLines: unknown, rawMe
 
 /** Apaga um auto em rascunho. */
 export async function deleteDraftMeasurement(reportId: string): Promise<Result> {
-  const user = await requireUser();
+  const user = await requireUser("obras");
   const report = await getMeasurement(user.organizationId, reportId);
   if (!report) return { ok: false, error: "Auto não encontrado." };
   if (report.status === "closed") return { ok: false, error: "Autos fechados não se apagam." };
@@ -182,7 +182,7 @@ export type AdvanceInput = z.input<typeof advanceSchema>;
  * seguintes descontam na fatura.
  */
 export async function createAdvanceMeasurement(projectId: string, raw: unknown): Promise<Result<{ id: string }>> {
-  const user = await requireUser();
+  const user = await requireUser("obras");
   const parsed = advanceSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   const project = await ownProject(user.organizationId, projectId);
@@ -227,7 +227,7 @@ export async function createAdvanceMeasurement(projectId: string, raw: unknown):
 
 /** Fecha o auto de adiantamento, com o documento (opcional) anexado. */
 export async function finalizeAdvanceMeasurement(reportId: string, documentId: string | null): Promise<Result> {
-  const user = await requireUser();
+  const user = await requireUser("obras");
   const report = await getMeasurement(user.organizationId, reportId);
   if (!report || report.kind !== "adiantamento") return { ok: false, error: "Auto de adiantamento não encontrado." };
   if (report.status === "closed") return { ok: true };
@@ -243,7 +243,7 @@ export async function finalizeAdvanceMeasurement(reportId: string, documentId: s
 
 /** Apaga um auto de adiantamento sem faturas ligadas. */
 export async function deleteAdvanceMeasurement(reportId: string): Promise<Result> {
-  const user = await requireUser();
+  const user = await requireUser("obras");
   const report = await getMeasurement(user.organizationId, reportId);
   if (!report || report.kind !== "adiantamento") return { ok: false, error: "Auto de adiantamento não encontrado." };
   const [inv] = await db.select({ id: invoices.id }).from(invoices).where(and(eq(invoices.measurementReportId, reportId), isNull(invoices.deletedAt))).limit(1);

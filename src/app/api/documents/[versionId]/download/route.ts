@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { hasModule, moduleForEntity } from "@/core/auth/access";
 import { getCurrentUser } from "@/core/auth/current-user";
 import { getStorage } from "@/core/storage";
 import { getVersionForDownload } from "@/modules/documents/queries";
@@ -15,6 +16,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const { versionId } = await params;
   const row = await getVersionForDownload(user.organizationId, versionId);
   if (!row) return NextResponse.json({ error: "Não encontrado." }, { status: 404 });
+  if (!hasModule(user, moduleForEntity(String(row.entityType)))) return NextResponse.json({ error: "Sem acesso ao módulo deste documento." }, { status: 403 });
 
   const inline = request.nextUrl.searchParams.get("inline") === "1";
   const storage = getStorage();

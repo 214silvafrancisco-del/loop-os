@@ -17,7 +17,7 @@ export const metadata: Metadata = { title: "Obras" };
 type Search = { q?: string; status?: string; manager?: string };
 
 export default async function ProjectsPage({ searchParams }: { searchParams: Promise<Search> }) {
-  const user = await requireUser();
+  const user = await requireUser("obras");
   const sp = await searchParams;
   const status = (PROJECT_STATUSES as readonly string[]).includes(sp.status ?? "") ? (sp.status as ProjectStatus) : undefined;
   const [projects, users] = await Promise.all([

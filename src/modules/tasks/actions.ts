@@ -3,6 +3,7 @@
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { hasModule, moduleForEntity } from "@/core/auth/access";
 import { requireUser } from "@/core/auth/current-user";
 import { db } from "@/core/db/client";
 import { profiles } from "@/core/db/schema/core";
@@ -52,9 +53,12 @@ function revalidate(paths: string[]) {
   for (const p of ["/dashboard", "/tarefas", ...paths]) revalidatePath(p, p.split("/").length > 2 ? "layout" : "page");
 }
 
+const NO_ACCESS = { ok: false as const, error: "Sem acesso ao módulo deste registo." };
+
 export async function createTask(entityType: TaskEntity, entityId: string, input: TaskInput): Promise<Result<{ id: string }>> {
   const user = await requireUser();
   if (!taskEntity.enumValues.includes(entityType)) return { ok: false, error: "Tipo de registo inválido." };
+  if (!hasModule(user, moduleForEntity(entityType))) return NO_ACCESS;
   const parsed = taskSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]!.message };
   const entity = await resolveEntity(user.organizationId, entityType, entityId);
@@ -79,6 +83,10 @@ export async function updateTask(id: string, input: Partial<TaskInput>): Promise
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]!.message };
   const [t] = await db.select().from(tasks).where(and(eq(tasks.id, id), eq(tasks.organizationId, user.organizationId)));
   if (!t) return { ok: false, error: "Tarefa não encontrada." };
+  // Quem só é responsável (sem acesso ao módulo) pode mudar o estado e concluir, não o resto.
+  const own = t.assigneeUserId === user.id;
+  const onlyStatus = Object.keys(parsed.data).every((k) => k === "status");
+  if (!hasModule(user, moduleForEntity(t.entityType)) && !(own && onlyStatus)) return NO_ACCESS;
   if (parsed.data.assigneeUserId !== undefined && !(await assigneeOk(user.organizationId, parsed.data.assigneeUserId))) return { ok: false, error: "O responsável tem de ser um utilizador ativo." };
   const d = parsed.data;
   const closing = d.status === "concluida" && t.status !== "concluida";
@@ -113,6 +121,7 @@ export async function completeTask(id: string, next?: TaskInput | null): Promise
   const user = await requireUser();
   const [t] = await db.select().from(tasks).where(and(eq(tasks.id, id), eq(tasks.organizationId, user.organizationId)));
   if (!t) return { ok: false, error: "Tarefa não encontrada." };
+  if (next?.title?.trim() && !hasModule(user, moduleForEntity(t.entityType))) return NO_ACCESS;
   const r = await updateTask(id, { status: "concluida" });
   if (!r.ok) return r;
   if (!next || !next.title?.trim()) return { ok: true, nextId: null };
@@ -124,6 +133,7 @@ export async function deleteTask(id: string): Promise<Result> {
   const user = await requireUser();
   const [t] = await db.select().from(tasks).where(and(eq(tasks.id, id), eq(tasks.organizationId, user.organizationId)));
   if (!t) return { ok: false, error: "Tarefa não encontrada." };
+  if (!hasModule(user, moduleForEntity(t.entityType))) return NO_ACCESS;
   if (t.status === "concluida" && user.role === "user") return { ok: false, error: "Tarefas concluídas fazem parte do histórico." };
   await db.delete(tasks).where(eq(tasks.id, id));
   const entity = await resolveEntity(user.organizationId, t.entityType, t.entityId);

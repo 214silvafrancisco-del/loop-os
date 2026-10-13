@@ -3,6 +3,7 @@
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { hasModule, moduleForEntity } from "@/core/auth/access";
 import { requireUser } from "@/core/auth/current-user";
 import { db } from "@/core/db/client";
 import { getChecklistItemOwner } from "./queries";
@@ -33,6 +34,7 @@ export async function setChecklistItemStatus(itemId: string, input: { status: st
 
   const owner = await getChecklistItemOwner(itemId);
   if (!owner || owner.organizationId !== user.organizationId) return { ok: false, error: "Item não encontrado." };
+  if (!hasModule(user, moduleForEntity(owner.entityType))) return { ok: false, error: "Sem acesso ao módulo deste procedimento." };
   if (owner.kind === "auto" && status === "done") return { ok: false, error: "Este passo conclui-se automaticamente a partir dos dados." };
 
   const now = new Date();
@@ -59,6 +61,7 @@ export async function assignChecklistItem(itemId: string, assigneeUserId: string
   if (assigneeUserId && !z.uuid().safeParse(assigneeUserId).success) return { ok: false, error: "Utilizador inválido." };
   const owner = await getChecklistItemOwner(itemId);
   if (!owner || owner.organizationId !== user.organizationId) return { ok: false, error: "Item não encontrado." };
+  if (!hasModule(user, moduleForEntity(owner.entityType))) return { ok: false, error: "Sem acesso ao módulo deste procedimento." };
   await db.update(checklistItems).set({ assigneeUserId, updatedBy: user.id }).where(eq(checklistItems.id, itemId));
   revalidatePath(entityPath(owner.entityType, owner.entityId), "layout");
   return { ok: true };
@@ -67,6 +70,7 @@ export async function assignChecklistItem(itemId: string, assigneeUserId: string
 /** Sincroniza a partir da UI (ex.: ao abrir a tab Processo). */
 export async function refreshChecklist(entityType: ChecklistEntityType, entityId: string): Promise<Result> {
   const user = await requireUser();
+  if (!hasModule(user, moduleForEntity(entityType))) return { ok: false, error: "Sem acesso ao módulo deste procedimento." };
   const r = await syncChecklist(user.organizationId, entityType, entityId, user.id);
   if (!r) return { ok: false, error: "Não foi possível sincronizar." };
   revalidatePath(entityPath(entityType, entityId), "layout");

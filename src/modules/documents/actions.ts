@@ -3,6 +3,7 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { hasModule, moduleForEntity } from "@/core/auth/access";
 import { requireUser } from "@/core/auth/current-user";
 import { db } from "@/core/db/client";
 import { documents } from "./schema";
@@ -22,10 +23,17 @@ function revalidate() {
   revalidatePath("/properties", "layout");
 }
 
+/** O documento pertence ao módulo do seu registo (negócio, obra, venda, imóvel…). */
+async function canTouch(user: { organizationId: string; role: "admin" | "manager" | "user"; modules: readonly string[] }, documentId: string): Promise<boolean> {
+  const [d] = await db.select({ entityType: documents.entityType }).from(documents).where(and(eq(documents.id, documentId), eq(documents.organizationId, user.organizationId)));
+  return d ? hasModule(user as Parameters<typeof hasModule>[0], moduleForEntity(String(d.entityType))) : false;
+}
+
 export async function updateDocumentMeta(documentId: string, raw: unknown): Promise<Result> {
   const user = await requireUser();
   const parsed = metaSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  if (!(await canTouch(user, documentId))) return { ok: false, error: "Sem acesso ao módulo deste documento." };
   const res = await db
     .update(documents)
     .set({ ...parsed.data, updatedBy: user.id })
@@ -39,6 +47,7 @@ export async function updateDocumentMeta(documentId: string, raw: unknown): Prom
 /** Soft delete: o ficheiro fica no storage 30 dias (purga futura). */
 export async function deleteDocument(documentId: string): Promise<Result> {
   const user = await requireUser();
+  if (!(await canTouch(user, documentId))) return { ok: false, error: "Sem acesso ao módulo deste documento." };
   const res = await db
     .update(documents)
     .set({ deletedAt: new Date(), status: "archived", updatedBy: user.id })

@@ -23,7 +23,7 @@ export type ProjectFormState = { error?: string; fieldErrors?: Record<string, st
  * retenção do cenário ativo (ou 4). O orçamento vem no Step 14.
  */
 export async function createProjectFromDeal(dealId: string): Promise<{ ok: false; error: string } | never> {
-  const user = await requireUser();
+  const user = await requireUser("obras");
   const [row] = await db
     .select({ deal: deals, isPurchase: dealStages.isPurchase })
     .from(deals)
@@ -63,7 +63,7 @@ export async function createProjectFromDeal(dealId: string): Promise<{ ok: false
 }
 
 export async function updateProject(id: string, _prev: ProjectFormState, formData: FormData): Promise<ProjectFormState> {
-  const user = await requireUser();
+  const user = await requireUser("obras");
   const values = projectUpdateInputFromForm(formData);
   const parsed = projectUpdateSchema.safeParse(values);
   if (!parsed.success) return { error: "Corrige os campos assinalados.", fieldErrors: fieldErrorsOf(parsed.error.issues), values };
@@ -97,7 +97,7 @@ export async function updateProject(id: string, _prev: ProjectFormState, formDat
 export type ProjectStatusResult = { ok: true } | { ok: false; needsConfirm: true; missing: GateMissing[] } | { ok: false; error: string };
 
 export async function setProjectStatus(id: string, status: (typeof projects.$inferSelect)["status"], options?: { force?: boolean }): Promise<ProjectStatusResult> {
-  const user = await requireUser();
+  const user = await requireUser("obras");
   const [project] = await db
     .select({ status: projects.status, actualStart: projects.actualStart, actualEnd: projects.actualEnd })
     .from(projects)

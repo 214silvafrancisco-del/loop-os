@@ -6,7 +6,7 @@ import { listTasksForEntity } from "@/modules/tasks/queries";
 
 /** Tarefas do negócio: abertas e histórico. */
 export default async function DealTarefasPage({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   const { id } = await params;
   const deal = await getDeal(user.organizationId, id);
   if (!deal) notFound();

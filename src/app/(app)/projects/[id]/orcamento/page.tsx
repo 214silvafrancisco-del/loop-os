@@ -8,7 +8,7 @@ import { getProject } from "@/modules/projects/queries";
 import { listProjectSuppliers, listReusableSuppliers } from "@/modules/projects/suppliers/queries";
 
 export default async function ProjectOrcamentoPage({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requireUser();
+  const user = await requireUser("obras");
   const { id } = await params;
   const orgId = user.organizationId;
   const project = await getProject(orgId, id);

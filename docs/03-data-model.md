@@ -675,3 +675,15 @@ Enums: `task_status` (por_iniciar, em_curso, concluida, bloqueada), `task_entity
 | INDEX (entity_type, entity_id), (organization_id, status, due_date), (assignee_user_id, status) | | |
 
 A migração 0024 converteu `deals.next_action`/`next_action_date` (negócios ativos), `sales.*` (vendas em curso) e `sale_leads.*` (leads em aberto) em tarefas; essas colunas ficam como legado.
+
+## 18. Acessos (Fase 3, 2026-10-13)
+
+### user_modules
+| Coluna | Tipo | Notas |
+|---|---|---|
+| id | uuid PK | |
+| user_id | uuid FK profiles | on delete cascade |
+| module | text | chave de `APP_MODULES`: negocios, imoveis, contactos, obras, vendas, funil; UNIQUE (user_id, module) |
+| created_by, created_at | | |
+
+Presença da linha = com acesso. O admin não tem linhas (acesso global). `role_permissions` continua sem uso.

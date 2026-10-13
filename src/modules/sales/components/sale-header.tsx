@@ -14,10 +14,11 @@ import { DeleteSaleButton } from "./delete-sale-button";
 import { NextTaskControl } from "@/modules/tasks/components/next-task-control";
 import { SaleStageSelect } from "./sale-stage-select";
 
-type Props = { sale: Sale; row: SaleListRow; canDelete: boolean; checklist?: ChecklistView | null };
+type Props = { sale: Sale; row: SaleListRow; canDelete: boolean; checklist?: ChecklistView | null; modules?: readonly string[] };
 
 /** Cabeçalho comum a todas as tabs da venda. */
-export function SaleHeader({ sale, row, canDelete, checklist }: Props) {
+export function SaleHeader({ sale, row, canDelete, checklist, modules }: Props) {
+  const can = (m: string) => !modules || modules.includes(m);
   const title = row.dealName ?? row.addressLine;
   const days = daysOnMarket(sale.listingDate, sale.deedDate, todayIso());
   const facts = [
@@ -43,13 +44,15 @@ export function SaleHeader({ sale, row, canDelete, checklist }: Props) {
           {row.agencies ? <p className="mt-1 text-sm text-muted-foreground">Mediadoras: {row.agencies}</p> : null}
         </div>
         <div className="flex flex-wrap gap-2">
+          {can("imoveis") ? (
           <Button asChild variant="outline" size="sm" className="gap-1">
             <Link href={`/properties/${sale.propertyId}`}>
               <Building2 className="size-4" />
               Imóvel {row.ref}
             </Link>
           </Button>
-          {sale.dealId ? (
+          ) : null}
+          {sale.dealId && can("negocios") ? (
             <Button asChild variant="outline" size="sm" className="gap-1">
               <Link href={`/deals/${sale.dealId}`}>
                 <Handshake className="size-4" />
@@ -57,7 +60,7 @@ export function SaleHeader({ sale, row, canDelete, checklist }: Props) {
               </Link>
             </Button>
           ) : null}
-          {sale.projectId ? (
+          {sale.projectId && can("obras") ? (
             <Button asChild variant="outline" size="sm" className="gap-1">
               <Link href={`/projects/${sale.projectId}`}>
                 <HardHat className="size-4" />

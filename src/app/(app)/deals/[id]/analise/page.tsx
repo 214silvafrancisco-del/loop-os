@@ -11,7 +11,7 @@ import { properties } from "@/modules/properties/schema";
 const num = (v: string | null) => (v === null ? null : Number(v));
 
 export default async function DealAnalisePage({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   const { id } = await params;
   const orgId = user.organizationId;
 

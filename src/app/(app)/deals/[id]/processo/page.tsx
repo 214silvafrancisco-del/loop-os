@@ -7,7 +7,7 @@ import { listUsers } from "@/modules/settings/queries";
 
 /** Checklist do processo "Novo Negócio" (a sincronização corre no layout). */
 export default async function DealProcessoPage({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   const { id } = await params;
   // O layout sincroniza, mas layout e página renderizam em paralelo: na
   // primeira abertura a instância pode ainda não existir. Garantimos aqui.

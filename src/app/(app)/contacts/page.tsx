@@ -17,7 +17,7 @@ export default async function ContactsPage({
 }: {
   searchParams: Promise<{ q?: string; role?: string }>;
 }) {
-  const user = await requireUser();
+  const user = await requireUser("contactos");
   const { q, role } = await searchParams;
   const roleFilter = (CONTACT_ROLES as readonly string[]).includes(role ?? "")
     ? (role as ContactRole)

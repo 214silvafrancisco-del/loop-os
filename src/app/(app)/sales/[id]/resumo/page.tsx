@@ -8,7 +8,7 @@ import { getSale, listSaleAgencies } from "@/modules/sales/queries";
 import { listUsers } from "@/modules/settings/queries";
 
 export default async function SaleResumoPage({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requireUser();
+  const user = await requireUser("vendas");
   const { id } = await params;
   const orgId = user.organizationId;
   const [sale, agencies, users, contacts] = await Promise.all([getSale(orgId, id), listSaleAgencies(orgId, id), listUsers(orgId), listContacts(orgId, { limit: 500 })]);

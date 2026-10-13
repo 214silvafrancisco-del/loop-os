@@ -9,7 +9,7 @@ import { listDealStages, listSourceChannels, listUsers } from "@/modules/setting
 
 /** Tudo o que aconteceu ao imóvel deste negócio: negócios, notas, alterações ao imóvel. */
 export default async function DealHistoricoPage({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   const { id } = await params;
   const orgId = user.organizationId;
   const deal = await getDeal(orgId, id);

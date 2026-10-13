@@ -11,13 +11,13 @@ import { getNextTask } from "@/modules/tasks/queries";
 type Params = Promise<{ id: string }>;
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const user = await requireUser();
+  const user = await requireUser("obras");
   const row = await getProjectRow(user.organizationId, (await params).id);
   return { title: row ? `Obra ${row.ref} · ${row.name}` : "Obra" };
 }
 
 export default async function ProjectLayout({ children, params }: { children: React.ReactNode; params: Params }) {
-  const user = await requireUser();
+  const user = await requireUser("obras");
   const { id } = await params;
   const row = await getProjectRow(user.organizationId, id);
   if (!row) notFound();
@@ -29,7 +29,7 @@ export default async function ProjectLayout({ children, params }: { children: Re
 
   return (
     <div className="mx-auto max-w-5xl">
-      <ProjectHeader row={row} checklist={checklist} nextTask={nextTask} />
+      <ProjectHeader row={row} checklist={checklist} nextTask={nextTask} modules={user.modules} />
       <ProjectTabs projectId={row.id} counts={{ processo: checklist ? checklist.totalCount - checklist.doneCount : undefined }} />
       {children}
     </div>

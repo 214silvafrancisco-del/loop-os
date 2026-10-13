@@ -36,7 +36,7 @@ export async function createContact(
   _prev: ContactFormState,
   formData: FormData,
 ): Promise<ContactFormState> {
-  const user = await requireUser();
+  const user = await requireUser("contactos");
   const values = contactInputFromForm(formData);
   const parsed = contactInputSchema.safeParse(values);
   if (!parsed.success) {
@@ -84,7 +84,7 @@ export async function updateContact(
   _prev: ContactFormState,
   formData: FormData,
 ): Promise<ContactFormState> {
-  const user = await requireUser();
+  const user = await requireUser("contactos");
   const values = contactInputFromForm(formData);
   const parsed = contactInputSchema.safeParse(values);
   if (!parsed.success) {
@@ -124,7 +124,7 @@ export async function updateContact(
 
 /** Soft delete. Só admin e manager. */
 export async function deleteContact(id: string): Promise<void> {
-  const user = await requireUser();
+  const user = await requireUser("contactos");
   if (user.role === "user") throw new Error("Sem permissão para eliminar contactos.");
 
   await db

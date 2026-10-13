@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Building2, Handshake, Tag } from "lucide-react";
+import { allowedTaskEntities, hasModule } from "@/core/auth/access";
 import { requireUser } from "@/core/auth/current-user";
 import { formatCurrency, formatDate, formatMoney, formatPercent } from "@/core/lib/format";
 import { PageHeader } from "@/core/ui/page-header";
@@ -76,7 +77,7 @@ export default async function DashboardPage() {
     listRecentFunnelWeeks(orgId, today, 2),
     getFunnelForecast(orgId, today),
     countDealsByStage(orgId),
-    listDueTasks(orgId, weekEnd, today),
+    listDueTasks(orgId, weekEnd, today, { allowedEntityTypes: allowedTaskEntities(user), viewerUserId: user.id }),
     sumPurchases(orgId),
     listActiveProjectFinancials(orgId),
     listUnpaidInvoices(orgId, 8),
@@ -92,6 +93,8 @@ export default async function DashboardPage() {
     <>
       <PageHeader title="Dashboard" description={`Semana de ${formatDate(weekStart)} a ${formatDate(weekEnd)}.`} />
 
+      {hasModule(user, "funil") ? (
+      <>
       <section className="mb-6">
         <h2 className="mb-2 text-sm font-semibold">Funil comercial</h2>
         <FunnelTable rows={funnel} historyHref="/funil" />
@@ -101,7 +104,11 @@ export default async function DashboardPage() {
         <h2 className="mb-2 text-sm font-semibold">Previsão de compras</h2>
         <ForecastPanel f={forecast} />
       </section>
+      </>
+      ) : null}
 
+      {hasModule(user, "negocios") ? (
+      <>
       <h2 className="mb-2 text-sm font-semibold">Em aberto</h2>
       <div className="mb-6 grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
         {openStages.map((s) => {
@@ -127,6 +134,8 @@ export default async function DashboardPage() {
           className={openStages.length % 2 === 0 ? "col-span-2 xl:col-span-1" : undefined}
         />
       </div>
+      </>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <section className="flex flex-col gap-6 lg:col-span-2">
@@ -135,6 +144,7 @@ export default async function DashboardPage() {
             <ActionsList tasks={actions} today={today} />
           </div>
 
+          {hasModule(user, "obras") ? (
           <div>
             <h2 className="mb-2 text-sm font-semibold">Obras em curso</h2>
             {activeProjects.length === 0 ? (
@@ -218,9 +228,11 @@ export default async function DashboardPage() {
               </>
             )}
           </div>
+          ) : null}
         </section>
 
         <div className="flex flex-col gap-6">
+          {hasModule(user, "vendas") ? (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-sm">
@@ -264,7 +276,9 @@ export default async function DashboardPage() {
               </p>
             </CardContent>
           </Card>
+          ) : null}
 
+          {hasModule(user, "obras") ? (
           <Card>
             <CardHeader>
               <CardTitle className="text-sm">Faturas por pagar</CardTitle>
@@ -295,6 +309,7 @@ export default async function DashboardPage() {
               )}
             </CardContent>
           </Card>
+          ) : null}
         </div>
       </div>
     </>

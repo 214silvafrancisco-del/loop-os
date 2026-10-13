@@ -15,14 +15,14 @@ import { listDealStages } from "@/modules/settings/queries";
 type Params = Promise<{ id: string }>;
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   const row = await getDealRow(user.organizationId, (await params).id);
   return { title: row ? `${dealRef(row)} · ${row.name ?? row.addressLine}` : "Negócio" };
 }
 
 /** Cabeçalho e tabs comuns a todas as páginas do negócio. */
 export default async function DealLayout({ children, params }: { children: React.ReactNode; params: Params }) {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   const { id } = await params;
   const orgId = user.organizationId;
   const [deal, row, stages, notesCount, project, sale] = await Promise.all([
@@ -43,7 +43,7 @@ export default async function DealLayout({ children, params }: { children: React
 
   return (
     <div className="mx-auto max-w-5xl">
-      <DealHeader deal={deal} row={row} stages={stages.filter((s) => s.isActive || s.id === deal.stageId)} project={project} sale={sale} checklist={checklist} />
+      <DealHeader deal={deal} row={row} stages={stages.filter((s) => s.isActive || s.id === deal.stageId)} project={project} sale={sale} checklist={checklist} modules={user.modules} />
       <DealTabs dealId={deal.id} counts={{ notas: notesCount, processo: checklist ? checklist.totalCount - checklist.doneCount : undefined }} />
       {children}
     </div>

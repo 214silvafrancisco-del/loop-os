@@ -78,6 +78,10 @@ wget -qO- --header="Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3000/ap
 
    A resposta é JSON (`sent`, `skipped`, `removed`). Sem ações para hoje nem faturas a vencer, não é enviada notificação nenhuma. Para pré-visualizar o texto sem enviar: `pnpm digest:preview` no PC.
 
+### 3c. Acessos dos colaboradores (Fase 3)
+
+Definições → Utilizadores e acessos (só o admin): matriz utilizadores × módulos. Novo colaborador: `pnpm user:invite <email> "<Nome>" user` no PC, depois ligar os módulos na matriz (começa sem nenhum). Para desativar: botão «Desativar» na mesma página; as tarefas abertas podem ser reatribuídas ali.
+
 ## 4. Migrações da base de dados
 
 As migrações não correm dentro da imagem. Correm a partir do teu PC (o Drizzle liga-se ao Supabase):

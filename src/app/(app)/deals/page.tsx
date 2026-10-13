@@ -28,7 +28,7 @@ type Search = {
 };
 
 export default async function DealsPage({ searchParams }: { searchParams: Promise<Search> }) {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   const sp = await searchParams;
   const cookieStore = await cookies();
   const view: DealsView =

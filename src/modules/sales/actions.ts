@@ -57,7 +57,7 @@ async function ownSale(organizationId: string, id: string) {
  * Preparação com o preço de venda do cenário ativo como preço sugerido.
  */
 export async function createSale(input: { dealId?: string; propertyId?: string }): Promise<{ ok: false; error: string } | never> {
-  const user = await requireUser();
+  const user = await requireUser("vendas");
   const orgId = user.organizationId;
   let propertyId = input.propertyId ?? null;
   let dealId = input.dealId ?? null;
@@ -116,7 +116,7 @@ export async function createSale(input: { dealId?: string; propertyId?: string }
 }
 
 export async function updateSale(id: string, _prev: SaleFormState, formData: FormData): Promise<SaleFormState> {
-  const user = await requireUser();
+  const user = await requireUser("vendas");
   const values = saleInputFromForm(formData);
   const parsed = saleSchema.safeParse(values);
   if (!parsed.success) return { error: "Corrige os campos assinalados.", fieldErrors: fieldErrorsOf(parsed.error.issues), values };
@@ -141,7 +141,7 @@ export async function updateSale(id: string, _prev: SaleFormState, formData: For
  * (é lá que a aquisição vive). Tudo o resto do P&L vem dos outros módulos.
  */
 export async function updateSaleRealCosts(id: string, input: RealCostsInput): Promise<Result> {
-  const user = await requireUser();
+  const user = await requireUser("vendas");
   const parsed = realCostsSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]!.message };
   const sale = await ownSale(user.organizationId, id);
@@ -171,7 +171,7 @@ export type StageChangeResult = Result | { ok: false; needsClose: true; error: s
  * origem (sold quando escriturado). «Vendido» exige preço e data da escritura.
  */
 export async function changeSaleStage(id: string, stage: SaleStage, close?: { salePrice: string; deedDate: string }): Promise<StageChangeResult> {
-  const user = await requireUser();
+  const user = await requireUser("vendas");
   const sale = await ownSale(user.organizationId, id);
   if (!sale) return { ok: false, error: "Venda não encontrada." };
   if (stage === sale.stage) return { ok: true };
@@ -214,7 +214,7 @@ export async function changeSaleStage(id: string, stage: SaleStage, close?: { sa
 }
 
 export async function updateSaleNextAction(id: string, input: { nextAction: string; nextActionDate: string }): Promise<Result> {
-  const user = await requireUser();
+  const user = await requireUser("vendas");
   const parsed = nextActionSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]!.message };
   await db
@@ -226,7 +226,7 @@ export async function updateSaleNextAction(id: string, input: { nextAction: stri
 }
 
 export async function completeSaleNextAction(id: string): Promise<void> {
-  const user = await requireUser();
+  const user = await requireUser("vendas");
   await db
     .update(sales)
     .set({ nextAction: null, nextActionDate: null, updatedBy: user.id })
@@ -235,7 +235,7 @@ export async function completeSaleNextAction(id: string): Promise<void> {
 }
 
 export async function deleteSale(id: string): Promise<Result> {
-  const user = await requireUser();
+  const user = await requireUser("vendas");
   if (user.role === "user") return { ok: false, error: "Sem permissão para apagar vendas." };
   const sale = await ownSale(user.organizationId, id);
   if (!sale) return { ok: false, error: "Venda não encontrada." };
@@ -251,7 +251,7 @@ export async function deleteSale(id: string): Promise<Result> {
 // ---------- Mediadoras ----------
 
 export async function saveAgency(saleId: string, agencyId: string | null, _prev: AgencyFormState, formData: FormData): Promise<AgencyFormState> {
-  const user = await requireUser();
+  const user = await requireUser("vendas");
   const values = agencyInputFromForm(formData);
   const parsed = agencySchema.safeParse(values);
   if (!parsed.success) return { error: "Corrige os campos assinalados.", fieldErrors: fieldErrorsOf(parsed.error.issues), values };
@@ -276,7 +276,7 @@ export async function saveAgency(saleId: string, agencyId: string | null, _prev:
 }
 
 export async function removeAgency(saleId: string, agencyId: string): Promise<Result> {
-  const user = await requireUser();
+  const user = await requireUser("vendas");
   await db
     .delete(saleAgencies)
     .where(and(eq(saleAgencies.id, agencyId), eq(saleAgencies.saleId, saleId), eq(saleAgencies.organizationId, user.organizationId)));
@@ -287,7 +287,7 @@ export async function removeAgency(saleId: string, agencyId: string): Promise<Re
 // ---------- Leads ----------
 
 export async function saveLead(saleId: string, leadId: string | null, _prev: LeadFormState, formData: FormData): Promise<LeadFormState> {
-  const user = await requireUser();
+  const user = await requireUser("vendas");
   const values = leadInputFromForm(formData);
   const parsed = leadSchema.safeParse(values);
   if (!parsed.success) return { error: "Corrige os campos assinalados.", fieldErrors: fieldErrorsOf(parsed.error.issues), values };
@@ -322,7 +322,7 @@ async function applyWonLead(saleId: string, lead: { contactId?: string | null; o
 }
 
 export async function setLeadStatus(saleId: string, leadId: string, status: (typeof saleLeads.$inferSelect)["status"]): Promise<Result> {
-  const user = await requireUser();
+  const user = await requireUser("vendas");
   const [lead] = await db
     .select({ contactId: saleLeads.contactId, offerAmount: saleLeads.offerAmount })
     .from(saleLeads)
@@ -335,7 +335,7 @@ export async function setLeadStatus(saleId: string, leadId: string, status: (typ
 }
 
 export async function updateLeadNextAction(saleId: string, leadId: string, input: { nextAction: string; nextActionDate: string }): Promise<Result> {
-  const user = await requireUser();
+  const user = await requireUser("vendas");
   const parsed = nextActionSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]!.message };
   await db
@@ -347,7 +347,7 @@ export async function updateLeadNextAction(saleId: string, leadId: string, input
 }
 
 export async function completeLeadNextAction(saleId: string, leadId: string): Promise<void> {
-  const user = await requireUser();
+  const user = await requireUser("vendas");
   await db
     .update(saleLeads)
     .set({ nextAction: null, nextActionDate: null, updatedBy: user.id })
@@ -356,7 +356,7 @@ export async function completeLeadNextAction(saleId: string, leadId: string): Pr
 }
 
 export async function removeLead(saleId: string, leadId: string): Promise<Result> {
-  const user = await requireUser();
+  const user = await requireUser("vendas");
   await db.delete(saleLeads).where(and(eq(saleLeads.id, leadId), eq(saleLeads.saleId, saleId), eq(saleLeads.organizationId, user.organizationId)));
   revalidateSale(saleId);
   return { ok: true };

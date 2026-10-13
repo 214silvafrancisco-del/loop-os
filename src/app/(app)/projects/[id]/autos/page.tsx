@@ -9,7 +9,7 @@ import { listProjectSuppliers } from "@/modules/projects/suppliers/queries";
 import { documentCategories } from "@/modules/settings/schema";
 
 export default async function ProjectAutosPage({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requireUser();
+  const user = await requireUser("obras");
   const { id } = await params;
   const orgId = user.organizationId;
   const project = await getProject(orgId, id);

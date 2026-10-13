@@ -56,7 +56,7 @@ const pct4 = (v: number) => v.toFixed(4);
  * novos (id null) e apaga os que deixaram de estar na lista.
  */
 export async function saveComparables(businessPlanId: string, rawRows: unknown, rawRefs: unknown): Promise<Result> {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   const rows = z.array(comparableSchema).max(20).safeParse(rawRows);
   if (!rows.success) return { ok: false, error: rows.error.issues[0]?.message ?? "Dados inválidos." };
   const refs = referencesSchema.safeParse(rawRefs);
@@ -125,7 +125,7 @@ export async function saveComparables(businessPlanId: string, rawRows: unknown, 
 
 /** Leva o valor de venda da avaliação para um cenário do Business Plan e recalcula. */
 export async function applyValuationToScenario(scenarioId: string, salePrice: number): Promise<Result> {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   if (!Number.isFinite(salePrice) || salePrice <= 0) return { ok: false, error: "Valor inválido." };
   const scenario = await getScenario(user.organizationId, scenarioId);
   if (!scenario) return { ok: false, error: "Cenário não encontrado." };

@@ -6,7 +6,7 @@ import { listTasksForEntity } from "@/modules/tasks/queries";
 
 /** Tarefas da venda: abertas e histórico. */
 export default async function SaleTarefasPage({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requireUser();
+  const user = await requireUser("vendas");
   const { id } = await params;
   const sale = await getSale(user.organizationId, id);
   if (!sale) notFound();

@@ -9,7 +9,7 @@ import { getImtContext } from "@/modules/business-plan/queries";
 import { ensureBusinessPlan, getDealContext, propertyContextOf } from "@/modules/business-plan/service";
 
 export default async function DealBusinessPlanPage({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   const { id } = await params;
   const orgId = user.organizationId;
 

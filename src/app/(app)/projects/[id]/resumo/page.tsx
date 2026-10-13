@@ -10,7 +10,7 @@ import { getProject } from "@/modules/projects/queries";
 import { listUsers } from "@/modules/settings/queries";
 
 export default async function ProjectResumoPage({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requireUser();
+  const user = await requireUser("obras");
   const { id } = await params;
   const orgId = user.organizationId;
   const [project, users, fin, executed] = await Promise.all([

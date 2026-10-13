@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { allowedDocumentEntities } from "@/core/auth/access";
 import { requireUser } from "@/core/auth/current-user";
 import { getDeal } from "@/modules/deals/queries";
 import { DocumentsPanel } from "@/modules/documents/components/documents-panel";
@@ -6,14 +7,14 @@ import { listDocumentCategories, listDocumentsForProperty } from "@/modules/docu
 
 /** Documentos do negócio e do imóvel, sem duplicar: tudo o que pertence ao mesmo imóvel. */
 export default async function DealDocumentosPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ categoria?: string }> }) {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   const { id } = await params;
   const { categoria } = await searchParams;
   const deal = await getDeal(user.organizationId, id);
   if (!deal) notFound();
 
   const [documents, categories] = await Promise.all([
-    listDocumentsForProperty(user.organizationId, deal.propertyId),
+    listDocumentsForProperty(user.organizationId, deal.propertyId, allowedDocumentEntities(user)),
     listDocumentCategories(user.organizationId),
   ]);
 

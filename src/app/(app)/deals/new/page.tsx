@@ -10,7 +10,7 @@ import { listDealStages, listSourceChannels, listUsers } from "@/modules/setting
 export const metadata: Metadata = { title: "Novo negócio" };
 
 export default async function NewDealPage() {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   const orgId = user.organizationId;
   const [stages, sources, users, contacts, parishes, municipalities] = await Promise.all([
     listDealStages(orgId),

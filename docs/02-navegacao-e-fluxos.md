@@ -82,6 +82,13 @@ Barra superior: pesquisa global (⌘K: negócios, imóveis, contactos, documento
   4. Fiabilidade: < 4 semanas ⇒ «Dados insuficientes para uma previsão fiável»; 4–7 baixa; 8–15 média; ≥ 16 boa; desce um nível com compras muito irregulares (CV > 1,2) ou > 25 % de semanas sem compras preenchidas.
   Os blocos de previsão aparecem a tracejado para se distinguirem dos valores reais. Evolução prevista: ligar cada lead ao negócio para medir conversões e tempos reais entre fases.
 
+### 3.2c Acessos por módulo (Fase 3, 2026-10-13)
+- Módulos da matriz: Negócios, Imóveis, Contactos, Obras (inclui faturas e pagamentos), Vendas (inclui o Resultado), Funil comercial. Dashboard, Tarefas e `/notificacoes` são sempre acessíveis e mostram só o que os acessos permitem. Definições (procedimentos, utilizadores) são só do admin (Founder), que tem acesso global e não passa pela matriz.
+- Dois estados por utilizador e módulo: com acesso (linha em `user_modules`) ou sem acesso. Sem acesso: o item não aparece no menu, as páginas redirecionam para `/sem-acesso`, as server actions recusam, as rotas API respondem 403, os documentos do módulo não aparecem nas fichas partilhadas do imóvel nem se descarregam, a pesquisa do topo e «Novo negócio» só aparecem com Negócios, e o dashboard esconde os blocos dos módulos sem acesso. As ligações cruzadas nos cabeçalhos (Negócio, Obra, Venda, Imóvel) só aparecem com acesso ao destino.
+- Tarefas: a lista e o dashboard mostram as dos módulos acessíveis e, além dessas, as atribuídas ao próprio utilizador noutros módulos, mas sem link nem identificação do registo («módulo sem acesso»). Quem só é responsável pode mudar o estado e concluir; criar a seguinte, editar ou apagar exige acesso ao módulo.
+- Aplicação: `requireUser("<módulo>")` em páginas e actions (`src/core/auth/current-user.ts`), `hasModule`/`moduleForEntity` (`src/core/auth/access.ts`) em tarefas, procedimentos, documentos e rotas API. Os acessos são lidos a cada pedido: alterar a matriz tem efeito no pedido seguinte. RLS do Supabase não entra: a app liga-se como dona das tabelas, por isso a autorização vive na app.
+- Administração: Definições → **Utilizadores e acessos** (`/settings/utilizadores`): matriz utilizadores × módulos com interruptores, desativar/reativar (revoga o acesso, preserva histórico) e reatribuir as tarefas abertas de um utilizador. Novos convites começam sem acessos. Migração 0025 deu a Duarte todos os módulos e a Gonçalo Negócios, Imóveis e Contactos.
+
 ### 3.3 Negócios — lista
 - Objetivo: encontrar e trabalhar negócios ativos.
 - Informação: tabela com Ref, Nome/Morada, Freguesia, Tipologia, Piso, Preço pedido, Fase, Fonte, Próxima ação (texto + data), Responsável, Lucro estimado e ROE do cenário ativo, Data de entrada.

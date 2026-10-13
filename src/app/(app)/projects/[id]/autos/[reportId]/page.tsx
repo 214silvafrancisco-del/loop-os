@@ -13,7 +13,7 @@ import { budgetLines, invoices } from "@/modules/projects/schema";
 import { getProjectSupplier } from "@/modules/projects/suppliers/queries";
 
 export default async function MeasurementPage({ params }: { params: Promise<{ id: string; reportId: string }> }) {
-  const user = await requireUser();
+  const user = await requireUser("obras");
   const { id, reportId } = await params;
   const report = await getMeasurement(user.organizationId, reportId);
   if (!report || report.projectId !== id) notFound();

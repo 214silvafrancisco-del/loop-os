@@ -11,13 +11,13 @@ import { getContact } from "@/modules/contacts/queries";
 type Params = Promise<{ id: string }>;
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const user = await requireUser();
+  const user = await requireUser("contactos");
   const contact = await getContact(user.organizationId, (await params).id);
   return { title: contact?.name ?? "Contacto" };
 }
 
 export default async function ContactPage({ params }: { params: Params }) {
-  const user = await requireUser();
+  const user = await requireUser("contactos");
   const { id } = await params;
   const contact = await getContact(user.organizationId, id);
   if (!contact) notFound();

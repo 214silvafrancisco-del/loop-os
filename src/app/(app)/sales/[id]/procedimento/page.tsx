@@ -7,7 +7,7 @@ import { listUsers } from "@/modules/settings/queries";
 
 /** Checklist do procedimento «Venda» (a sincronização corre no layout). */
 export default async function SaleProcedimentoPage({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requireUser();
+  const user = await requireUser("vendas");
   const { id } = await params;
   const users = await listUsers(user.organizationId);
   let view = await getChecklistView(user.organizationId, "sale", id);

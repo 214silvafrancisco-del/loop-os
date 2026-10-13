@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { hasModule, moduleForEntity } from "@/core/auth/access";
 import { getCurrentUser } from "@/core/auth/current-user";
 import { addDocumentVersion, createDocumentWithFile, MAX_FILE_BYTES, mimeFromName } from "@/modules/documents/service";
 
@@ -53,6 +54,7 @@ export async function POST(request: NextRequest) {
     }
     const { propertyId, entityType, entityId } = meta.data;
     if (!propertyId || !entityType || !entityId) return NextResponse.json({ error: "Falta o contexto do documento." }, { status: 400 });
+    if (!hasModule(user, moduleForEntity(entityType))) return NextResponse.json({ error: "Sem acesso ao módulo deste documento." }, { status: 403 });
     const result = await createDocumentWithFile(
       user,
       {

@@ -22,13 +22,13 @@ import { listDealsForProperty } from "@/modules/deals/queries";
 type Params = Promise<{ id: string }>;
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const user = await requireUser();
+  const user = await requireUser("imoveis");
   const property = await getProperty(user.organizationId, (await params).id);
   return { title: property ? `${property.ref} · ${property.name ?? property.addressLine}` : "Imóvel" };
 }
 
 export default async function PropertyPage({ params }: { params: Params }) {
-  const user = await requireUser();
+  const user = await requireUser("imoveis");
   const { id } = await params;
   const [property, parishes, municipalities, deals] = await Promise.all([
     getProperty(user.organizationId, id),

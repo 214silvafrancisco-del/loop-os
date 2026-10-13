@@ -79,6 +79,8 @@ export type TaskListFilters = {
   overdueOnly?: boolean;
   /** Restringe aos tipos de registo a que o utilizador tem acesso (Fase 3). */
   allowedEntityTypes?: TaskEntity[];
+  /** Com `allowedEntityTypes`: inclui também as tarefas atribuídas a este utilizador noutros módulos, sem expor o registo. */
+  viewerUserId?: string;
   limit?: number;
 };
 
@@ -97,7 +99,10 @@ export async function listTasks(organizationId: string, filters: TaskListFilters
   if (filters.assigneeUserId === "none") conditions.push(isNull(tasks.assigneeUserId));
   else if (filters.assigneeUserId) conditions.push(eq(tasks.assigneeUserId, filters.assigneeUserId));
   if (filters.entityType) conditions.push(eq(tasks.entityType, filters.entityType));
-  if (filters.allowedEntityTypes) conditions.push(inArray(tasks.entityType, filters.allowedEntityTypes));
+  if (filters.allowedEntityTypes) {
+    const allowed = filters.allowedEntityTypes.length ? inArray(tasks.entityType, filters.allowedEntityTypes) : sql`false`;
+    conditions.push(filters.viewerUserId ? or(allowed, eq(tasks.assigneeUserId, filters.viewerUserId))! : allowed);
+  }
   if (filters.status === "abertas" || !filters.status) conditions.push(ne(tasks.status, "concluida"));
   else conditions.push(eq(tasks.status, filters.status));
   if (filters.dueUntil) conditions.push(lte(tasks.dueDate, filters.dueUntil));
@@ -111,9 +116,12 @@ export async function listTasks(organizationId: string, filters: TaskListFilters
     .orderBy(sql`case ${tasks.status} when 'concluida' then 1 else 0 end`, sql`${tasks.dueDate} asc nulls last`, desc(tasks.completedAt), asc(tasks.createdAt))
     .limit(filters.limit ?? 300);
   const labels = await entityLabels(organizationId, rows.map((r) => ({ entityType: r.task.entityType, entityId: r.task.entityId })));
+  const allowedSet = filters.allowedEntityTypes ? new Set<string>(filters.allowedEntityTypes) : null;
   return rows.map((r) => {
     const l = labels.get(`${r.task.entityType}:${r.task.entityId}`) ?? { label: "(registo apagado)", href: "/dashboard", ref: null };
-    return { ...r.task, assigneeName: r.assigneeName, completedByName: null, alert: taskAlert(r.task, today), href: l.href, entityLabel: l.label, propertyRef: l.ref };
+    // Tarefa de um módulo sem acesso: só o título; sem link nem identificação do registo.
+    const masked = allowedSet !== null && !allowedSet.has(r.task.entityType);
+    return { ...r.task, assigneeName: r.assigneeName, completedByName: null, alert: taskAlert(r.task, today), href: masked ? "" : l.href, entityLabel: masked ? "(módulo sem acesso)" : l.label, propertyRef: masked ? null : l.ref };
   });
 }
 
@@ -164,8 +172,8 @@ async function entityLabels(organizationId: string, refs: { entityType: TaskEnti
 }
 
 /** Tarefas abertas com prazo até `until` (inclui atrasadas): dashboard e resumo diário. */
-export async function listDueTasks(organizationId: string, until: string, today: string, opts: { assigneeUserId?: string; allowedEntityTypes?: TaskEntity[]; limit?: number } = {}): Promise<TaskListRow[]> {
-  return listTasks(organizationId, { status: "abertas", dueUntil: until, assigneeUserId: opts.assigneeUserId, allowedEntityTypes: opts.allowedEntityTypes, limit: opts.limit ?? 50 }, today);
+export async function listDueTasks(organizationId: string, until: string, today: string, opts: { assigneeUserId?: string; allowedEntityTypes?: TaskEntity[]; viewerUserId?: string; limit?: number } = {}): Promise<TaskListRow[]> {
+  return listTasks(organizationId, { status: "abertas", dueUntil: until, assigneeUserId: opts.assigneeUserId, allowedEntityTypes: opts.allowedEntityTypes, viewerUserId: opts.viewerUserId, limit: opts.limit ?? 50 }, today);
 }
 
 /** Contagens para alertas: abertas, atrasadas, sem responsável, bloqueadas. */

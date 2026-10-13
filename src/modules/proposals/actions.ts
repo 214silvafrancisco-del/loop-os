@@ -41,7 +41,7 @@ const schema = z.object({
 
 /** Gera o PDF e o texto WhatsApp. Nunca envia nada. */
 export async function createProposal(dealId: string, _prev: ProposalFormState, formData: FormData): Promise<ProposalFormState> {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   const values = Object.fromEntries(["templateId", "offerPrice", "deadlineDays", "validityDays", "conditions", "observations"].map((k) => [k, String(formData.get(k) ?? "")]));
   const parsed = schema.safeParse(values);
   if (!parsed.success) return { error: "Corrige os campos assinalados.", fieldErrors: fieldErrorsOf(parsed.error.issues), values };
@@ -89,7 +89,7 @@ const STATUSES = ["generated", "sent", "accepted", "rejected"] as const;
 
 /** Estado marcado à mão pelo utilizador (enviada, aceite, recusada). */
 export async function setProposalStatus(proposalId: string, status: (typeof STATUSES)[number]): Promise<{ ok: true } | { ok: false; error: string }> {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   if (!STATUSES.includes(status)) return { ok: false, error: "Estado inválido." };
   const now = new Date();
   const [row] = await db

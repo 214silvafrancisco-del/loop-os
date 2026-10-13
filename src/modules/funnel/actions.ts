@@ -37,7 +37,7 @@ export type FunnelWeekInput = z.input<typeof weekSchema>;
 
 /** Grava (ou cria) o registo de uma semana. A semana é normalizada para a segunda-feira. */
 export async function saveFunnelWeek(input: FunnelWeekInput): Promise<Result> {
-  const user = await requireUser();
+  const user = await requireUser("funil");
   const parsed = weekSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]!.message };
   const d = parsed.data;
@@ -61,14 +61,14 @@ export async function saveFunnelWeek(input: FunnelWeekInput): Promise<Result> {
 
 /** Preenche a semana com os valores sugeridos pela app (substitui o que lá estiver). */
 export async function applySuggestedFunnelWeek(weekStart: string): Promise<Result> {
-  const user = await requireUser();
+  const user = await requireUser("funil");
   const s = await getSuggestedCounts(user.organizationId, weekStartOf(weekStart));
   return saveFunnelWeek({ weekStart, leads: s.leads, visits: s.visits, proposals: s.proposals, purchases: s.purchases });
 }
 
 /** Apaga o registo de uma semana (volta a «por preencher»). */
 export async function deleteFunnelWeek(weekStart: string): Promise<Result> {
-  const user = await requireUser();
+  const user = await requireUser("funil");
   await db.delete(funnelWeeks).where(and(eq(funnelWeeks.organizationId, user.organizationId), eq(funnelWeeks.weekStart, weekStartOf(weekStart))));
   revalidatePath("/dashboard");
   revalidatePath("/funil");

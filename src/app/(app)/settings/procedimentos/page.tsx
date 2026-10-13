@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Lock, Zap } from "lucide-react";
-import { requireUser } from "@/core/auth/current-user";
+import { requireAdmin } from "@/core/auth/current-user";
 import { PageHeader } from "@/core/ui/page-header";
 import { listTemplatesWithItems } from "@/modules/checklists/queries";
 import { SECTION_LABELS } from "@/modules/checklists/templates";
@@ -24,7 +24,7 @@ function gateText(g: string) {
 
 /** Procedimentos da empresa (só leitura no MVP; edição e versões na Phase 2). */
 export default async function ProcedimentosPage() {
-  const user = await requireUser();
+  const user = await requireAdmin();
   const templates = await listTemplatesWithItems(user.organizationId);
 
   return (

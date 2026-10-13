@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import { allowedDocumentEntities } from "@/core/auth/access";
 import { requireUser } from "@/core/auth/current-user";
 import { PageHeader } from "@/core/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -13,19 +14,19 @@ import { getProperty } from "@/modules/properties/queries";
 type Params = Promise<{ id: string }>;
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const user = await requireUser();
+  const user = await requireUser("imoveis");
   const p = await getProperty(user.organizationId, (await params).id);
   return { title: p ? `Documentos · ${p.ref}` : "Documentos" };
 }
 
 export default async function PropertyDocumentosPage({ params }: { params: Params }) {
-  const user = await requireUser();
+  const user = await requireUser("imoveis");
   const { id } = await params;
   const property = await getProperty(user.organizationId, id);
   if (!property) notFound();
 
   const [documents, categories] = await Promise.all([
-    listDocumentsForProperty(user.organizationId, property.id),
+    listDocumentsForProperty(user.organizationId, property.id, allowedDocumentEntities(user)),
     listDocumentCategories(user.organizationId),
   ]);
 

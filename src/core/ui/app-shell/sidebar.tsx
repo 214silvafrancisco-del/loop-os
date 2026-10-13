@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { NAV_ITEMS, SECONDARY_NAV_ITEMS, type NavItem } from "@/core/navigation";
+import type { AppModule } from "@/core/auth/access";
+import { NAV_ITEMS, SECONDARY_NAV_ITEMS, visibleNavItems, type NavItem } from "@/core/navigation";
 import { Brand } from "./brand";
 
 function NavLink({ item }: { item: NavItem }) {
@@ -26,18 +27,18 @@ function NavLink({ item }: { item: NavItem }) {
   );
 }
 
-export function Sidebar() {
+export function Sidebar({ user }: { user: { role: string; modules: readonly AppModule[] } }) {
   return (
     <aside className="hidden md:flex md:w-60 md:flex-col md:border-r md:border-sidebar-border md:bg-sidebar">
       <div className="flex h-14 items-center border-b border-sidebar-border px-3">
         <Brand />
       </div>
       <nav className="flex flex-1 flex-col gap-1 p-3">
-        {NAV_ITEMS.map((item) => (
+        {visibleNavItems(NAV_ITEMS, user).map((item) => (
           <NavLink key={item.href} item={item} />
         ))}
         <div className="my-2 border-t border-sidebar-border" />
-        {SECONDARY_NAV_ITEMS.map((item) => (
+        {visibleNavItems(SECONDARY_NAV_ITEMS, user).map((item) => (
           <NavLink key={item.href} item={item} />
         ))}
       </nav>

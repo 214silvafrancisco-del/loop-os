@@ -33,7 +33,7 @@ function revalidateDeal(dealId: string) {
 
 /** Guarda os inputs de um cenário e recalcula o snapshot. */
 export async function saveScenario(scenarioId: string, rawInputs: unknown): Promise<Result<{ outputs: ScenarioOutputs }>> {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   const parsed = scenarioInputsSchema.safeParse(rawInputs);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   const link = await planOfScenario(user.organizationId, scenarioId);
@@ -60,7 +60,7 @@ export async function saveScenario(scenarioId: string, rawInputs: unknown): Prom
 
 /** Define o cenário que alimenta a lista, o Kanban e o dashboard. */
 export async function setActiveScenario(scenarioId: string): Promise<Result> {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   const link = await planOfScenario(user.organizationId, scenarioId);
   if (!link) return { ok: false, error: "Cenário não encontrado." };
 
@@ -80,7 +80,7 @@ export async function setActiveScenario(scenarioId: string): Promise<Result> {
 
 /** Novo cenário, copiado de outro (ou do primeiro). */
 export async function addScenario(businessPlanId: string, name: string, copyFromId?: string): Promise<Result<{ id: string }>> {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   const trimmed = name.trim();
   if (trimmed.length < 2) return { ok: false, error: "Dá um nome ao cenário." };
   const scenarios = await listScenarios(user.organizationId, businessPlanId);
@@ -114,7 +114,7 @@ export async function addScenario(businessPlanId: string, name: string, copyFrom
 }
 
 export async function renameScenario(scenarioId: string, name: string): Promise<Result> {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   const trimmed = name.trim();
   if (trimmed.length < 2) return { ok: false, error: "Nome demasiado curto." };
   const link = await planOfScenario(user.organizationId, scenarioId);
@@ -126,7 +126,7 @@ export async function renameScenario(scenarioId: string, name: string): Promise<
 
 /** Apaga um cenário que não seja o ativo nem o último. */
 export async function deleteScenario(scenarioId: string): Promise<Result> {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   const link = await planOfScenario(user.organizationId, scenarioId);
   if (!link) return { ok: false, error: "Cenário não encontrado." };
   if (link.isActive) return { ok: false, error: "Escolhe outro cenário como ativo antes de apagar este." };
@@ -139,7 +139,7 @@ export async function deleteScenario(scenarioId: string): Promise<Result> {
 
 /** Copia um valor calculado (preço máximo) para a ficha do negócio. */
 export async function applyMaxPriceToDeal(dealId: string, value: number): Promise<Result> {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   if (!Number.isFinite(value) || value < 0) return { ok: false, error: "Valor inválido." };
   await db
     .update(deals)

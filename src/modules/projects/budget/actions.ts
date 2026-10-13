@@ -39,7 +39,7 @@ async function ownProject(organizationId: string, projectId: string) {
  * desapareceram são apagadas.
  */
 export async function saveBudget(projectId: string, rawNodes: unknown): Promise<Result<{ idMap: Record<string, string> }>> {
-  const user = await requireUser();
+  const user = await requireUser("obras");
   const parsed = z.array(nodeSchema).max(2000).safeParse(rawNodes);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   const project = await ownProject(user.organizationId, projectId);
@@ -110,7 +110,7 @@ export async function saveBudget(projectId: string, rawNodes: unknown): Promise<
 
 /** Orçamento vazio: começa com um capítulo "Geral" e o valor de obra do Business Plan. */
 export async function seedBudgetFromBusinessPlan(projectId: string): Promise<Result<{ amount: number }>> {
-  const user = await requireUser();
+  const user = await requireUser("obras");
   const project = await ownProject(user.organizationId, projectId);
   if (!project) return { ok: false, error: "Obra não encontrada." };
   const existing = await db.select({ id: budgetLines.id }).from(budgetLines).where(eq(budgetLines.projectId, projectId)).limit(1);
@@ -155,7 +155,7 @@ export async function seedBudgetFromBusinessPlan(projectId: string): Promise<Res
 }
 
 export async function deleteBudgetLinesByIds(projectId: string, ids: string[]): Promise<Result> {
-  const user = await requireUser();
+  const user = await requireUser("obras");
   const project = await ownProject(user.organizationId, projectId);
   if (!project) return { ok: false, error: "Obra não encontrada." };
   if (ids.length) await db.delete(budgetLines).where(and(eq(budgetLines.projectId, projectId), inArray(budgetLines.id, ids)));

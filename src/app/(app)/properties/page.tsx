@@ -20,7 +20,7 @@ export const metadata: Metadata = { title: "Imóveis" };
 type Search = { q?: string; status?: string; type?: string; municipality?: string };
 
 export default async function PropertiesPage({ searchParams }: { searchParams: Promise<Search> }) {
-  const user = await requireUser();
+  const user = await requireUser("imoveis");
   const sp = await searchParams;
   const status = (PROPERTY_STATUSES as readonly string[]).includes(sp.status ?? "")
     ? (sp.status as (typeof PROPERTY_STATUSES)[number])

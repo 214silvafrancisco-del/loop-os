@@ -12,7 +12,7 @@ export type NoteFormState = { error?: string; body?: string };
 const bodySchema = z.string().trim().min(1, "Escreve alguma coisa.").max(10000, "Nota demasiado longa.");
 
 export async function addDealNote(dealId: string, _prev: NoteFormState, formData: FormData): Promise<NoteFormState> {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   const raw = String(formData.get("body") ?? "");
   const parsed = bodySchema.safeParse(raw);
   if (!parsed.success) return { error: parsed.error.issues[0]!.message, body: raw };
@@ -35,7 +35,7 @@ export async function addDealNote(dealId: string, _prev: NoteFormState, formData
 }
 
 export async function toggleNotePinned(noteId: string, dealId: string): Promise<void> {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   const [note] = await db
     .select({ isPinned: dealNotes.isPinned })
     .from(dealNotes)
@@ -50,7 +50,7 @@ export async function toggleNotePinned(noteId: string, dealId: string): Promise<
 
 /** O autor apaga as suas; admin e manager apagam qualquer uma. */
 export async function deleteDealNote(noteId: string, dealId: string): Promise<void> {
-  const user = await requireUser();
+  const user = await requireUser("negocios");
   const [note] = await db
     .select({ createdBy: dealNotes.createdBy })
     .from(dealNotes)

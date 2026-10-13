@@ -65,7 +65,7 @@ function moneyCols(d: z.output<typeof invoiceSchema>) {
 }
 
 export async function createInvoice(projectId: string, raw: unknown): Promise<Result<{ id: string }>> {
-  const user = await requireUser();
+  const user = await requireUser("obras");
   const parsed = invoiceSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   if (!(await ownProject(user.organizationId, projectId))) return { ok: false, error: "Obra não encontrada." };
@@ -100,7 +100,7 @@ export async function createInvoice(projectId: string, raw: unknown): Promise<Re
 }
 
 export async function updateInvoice(invoiceId: string, raw: unknown): Promise<Result> {
-  const user = await requireUser();
+  const user = await requireUser("obras");
   const parsed = invoiceSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   const existing = await getInvoice(user.organizationId, invoiceId);
@@ -134,7 +134,7 @@ export async function updateInvoice(invoiceId: string, raw: unknown): Promise<Re
 
 /** Liga o PDF carregado (via /api/documents/upload com entityType=invoice) à fatura. */
 export async function attachInvoiceDocument(invoiceId: string, documentId: string): Promise<Result> {
-  const user = await requireUser();
+  const user = await requireUser("obras");
   const existing = await getInvoice(user.organizationId, invoiceId);
   if (!existing) return { ok: false, error: "Fatura não encontrada." };
   await db.update(invoices).set({ documentId, updatedBy: user.id }).where(eq(invoices.id, invoiceId));
@@ -143,7 +143,7 @@ export async function attachInvoiceDocument(invoiceId: string, documentId: strin
 }
 
 export async function deleteInvoice(invoiceId: string): Promise<Result> {
-  const user = await requireUser();
+  const user = await requireUser("obras");
   if (user.role === "user") return { ok: false, error: "Sem permissão para eliminar faturas." };
   const existing = await getInvoice(user.organizationId, invoiceId);
   if (!existing) return { ok: false, error: "Fatura não encontrada." };
@@ -153,7 +153,7 @@ export async function deleteInvoice(invoiceId: string): Promise<Result> {
 }
 
 export async function addPayment(invoiceId: string, raw: unknown): Promise<Result> {
-  const user = await requireUser();
+  const user = await requireUser("obras");
   const parsed = paymentSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   const existing = await getInvoice(user.organizationId, invoiceId);
@@ -178,7 +178,7 @@ export async function addPayment(invoiceId: string, raw: unknown): Promise<Resul
 }
 
 export async function deletePayment(paymentId: string): Promise<Result> {
-  const user = await requireUser();
+  const user = await requireUser("obras");
   const [row] = await db
     .select({ projectId: invoices.projectId })
     .from(payments)

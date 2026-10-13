@@ -10,7 +10,8 @@ import { NextTaskControl } from "@/modules/tasks/components/next-task-control";
 import type { NextTask } from "@/modules/tasks/queries";
 import { ProjectStatusSelect } from "./project-badges";
 
-export function ProjectHeader({ row, checklist, nextTask = null }: { row: ProjectRow; checklist?: ChecklistView | null; nextTask?: NextTask | null }) {
+export function ProjectHeader({ row, checklist, nextTask = null, modules }: { row: ProjectRow; checklist?: ChecklistView | null; nextTask?: NextTask | null; modules?: readonly string[] }) {
+  const can = (m: string) => !modules || modules.includes(m);
   const facts = [
     row.typology,
     row.parish ?? row.municipality,
@@ -33,18 +34,22 @@ export function ProjectHeader({ row, checklist, nextTask = null }: { row: Projec
           <p className="text-sm text-muted-foreground">{facts.join(" · ")}</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {can("negocios") ? (
           <Button asChild variant="outline" size="sm" className="gap-1">
             <Link href={`/deals/${row.dealId}`}>
               <Handshake className="size-4" />
               Negócio
             </Link>
           </Button>
+          ) : null}
+          {can("imoveis") ? (
           <Button asChild variant="outline" size="sm" className="gap-1">
             <Link href={`/properties/${row.propertyId}`}>
               <Building2 className="size-4" />
               Imóvel {row.ref}
             </Link>
           </Button>
+          ) : null}
         </div>
       </div>
       <div className="mt-3 grid gap-3 md:grid-cols-2">

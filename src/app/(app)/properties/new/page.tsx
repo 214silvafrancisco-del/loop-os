@@ -8,7 +8,7 @@ import { listMunicipalities, listParishes } from "@/modules/properties/queries";
 export const metadata: Metadata = { title: "Novo imóvel" };
 
 export default async function NewPropertyPage() {
-  const user = await requireUser();
+  const user = await requireUser("imoveis");
   const [parishes, municipalities] = await Promise.all([
     listParishes(user.organizationId),
     listMunicipalities(user.organizationId),

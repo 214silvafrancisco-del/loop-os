@@ -35,7 +35,7 @@ export async function createProperty(
   _prev: PropertyFormState,
   formData: FormData,
 ): Promise<PropertyFormState> {
-  const user = await requireUser();
+  const user = await requireUser("imoveis");
   const values = propertyInputFromForm(formData);
   const parsed = propertyInputSchema.safeParse(values);
   if (!parsed.success) {
@@ -75,7 +75,7 @@ export async function updateProperty(
   _prev: PropertyFormState,
   formData: FormData,
 ): Promise<PropertyFormState> {
-  const user = await requireUser();
+  const user = await requireUser("imoveis");
   const values = propertyInputFromForm(formData);
   const parsed = propertyInputSchema.safeParse(values);
   if (!parsed.success) {
@@ -107,7 +107,7 @@ export async function updateProperty(
 
 /** Soft delete. Só admin e manager. (A partir do Step 06 bloqueia se tiver negócios.) */
 export async function deleteProperty(id: string): Promise<void> {
-  const user = await requireUser();
+  const user = await requireUser("imoveis");
   if (user.role === "user") throw new Error("Sem permissão para eliminar imóveis.");
 
   await db

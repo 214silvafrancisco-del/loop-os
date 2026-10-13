@@ -5,7 +5,7 @@ import { LeadsPanel } from "@/modules/sales/components/leads-panel";
 import { getSale, listSaleAgencies, listSaleLeads } from "@/modules/sales/queries";
 
 export default async function SaleLeadsPage({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requireUser();
+  const user = await requireUser("vendas");
   const { id } = await params;
   const orgId = user.organizationId;
   const [sale, leads, agencies, contacts] = await Promise.all([getSale(orgId, id), listSaleLeads(orgId, id), listSaleAgencies(orgId, id), listContacts(orgId, { limit: 500 })]);

@@ -21,7 +21,7 @@ type Search = { q?: string; stage?: string; scope?: string; owner?: string; view
 const STAGE_VALUES = SALE_STAGES.map((s) => s.value);
 
 export default async function SalesPage({ searchParams }: { searchParams: Promise<Search> }) {
-  const user = await requireUser();
+  const user = await requireUser("vendas");
   const sp = await searchParams;
   const cookieStore = await cookies();
   const view = sp.view === "kanban" || sp.view === "list" ? sp.view : cookieStore.get("sales_view")?.value === "kanban" ? "kanban" : "list";

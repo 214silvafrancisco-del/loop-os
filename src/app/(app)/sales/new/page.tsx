@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Nova venda" };
 
 /** Escolher um imóvel detido (sem venda ativa) para começar a vender. */
 export default async function NewSalePage() {
-  const user = await requireUser();
+  const user = await requireUser("vendas");
   const properties = await listSellableProperties(user.organizationId);
   return (
     <div className="mx-auto max-w-3xl">

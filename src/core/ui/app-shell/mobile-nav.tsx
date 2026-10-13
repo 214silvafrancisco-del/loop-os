@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { NAV_ITEMS } from "@/core/navigation";
+import type { AppModule } from "@/core/auth/access";
+import { NAV_ITEMS, visibleNavItems } from "@/core/navigation";
 
 /** Barra inferior em ecrãs pequenos (< md). */
-export function MobileNav() {
+export function MobileNav({ user }: { user: { role: string; modules: readonly AppModule[] } }) {
   const pathname = usePathname();
-  const items = NAV_ITEMS.filter((i) => i.mobile).slice(0, 5);
+  const items = visibleNavItems(NAV_ITEMS, user).filter((i) => i.mobile).slice(0, 5);
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t bg-card pb-[env(safe-area-inset-bottom)] md:hidden">
       {items.map((item) => {

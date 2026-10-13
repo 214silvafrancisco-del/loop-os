@@ -1,4 +1,5 @@
-import { Building2, ListChecks, LogOut, Settings, Users } from "lucide-react";
+import { Bell, Building2, ListChecks, LogOut, Settings, Users } from "lucide-react";
+import { hasModule } from "@/core/auth/access";
 import Link from "next/link";
 import { signOut } from "@/core/auth/actions";
 import type { CurrentUser } from "@/core/auth/current-user";
@@ -38,30 +39,50 @@ export function UserMenu({ user }: { user: CurrentUser }) {
           <span className="text-xs font-normal text-muted-foreground">{ROLE_LABEL[user.role]}</span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild className="md:hidden">
-          <Link href="/properties" className="min-h-10">
-            <Building2 className="size-4" />
-            Imóveis
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild className="md:hidden">
-          <Link href="/contacts" className="min-h-10">
-            <Users className="size-4" />
-            Contactos
-          </Link>
-        </DropdownMenuItem>
+        {hasModule(user, "imoveis") ? (
+          <DropdownMenuItem asChild className="md:hidden">
+            <Link href="/properties" className="min-h-10">
+              <Building2 className="size-4" />
+              Imóveis
+            </Link>
+          </DropdownMenuItem>
+        ) : null}
+        {hasModule(user, "contactos") ? (
+          <DropdownMenuItem asChild className="md:hidden">
+            <Link href="/contacts" className="min-h-10">
+              <Users className="size-4" />
+              Contactos
+            </Link>
+          </DropdownMenuItem>
+        ) : null}
         <DropdownMenuItem asChild>
-          <Link href="/settings" className="min-h-10">
-            <Settings className="size-4" />
-            Definições
+          <Link href="/notificacoes" className="min-h-10">
+            <Bell className="size-4" />
+            Notificações
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/settings/procedimentos" className="min-h-10">
-            <ListChecks className="size-4" />
-            Procedimentos
-          </Link>
-        </DropdownMenuItem>
+        {user.role === "admin" ? (
+          <>
+            <DropdownMenuItem asChild>
+              <Link href="/settings" className="min-h-10">
+                <Settings className="size-4" />
+                Definições
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/settings/utilizadores" className="min-h-10">
+                <Users className="size-4" />
+                Utilizadores e acessos
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/settings/procedimentos" className="min-h-10">
+                <ListChecks className="size-4" />
+                Procedimentos
+              </Link>
+            </DropdownMenuItem>
+          </>
+        ) : null}
         <DropdownMenuSeparator />
         <form action={signOut}>
           <DropdownMenuItem asChild>

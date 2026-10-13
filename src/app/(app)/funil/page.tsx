@@ -13,7 +13,7 @@ export const metadata: Metadata = { title: "Funil comercial" };
 
 /** Histórico completo do funil semanal, editável, e a previsão derivada. */
 export default async function FunnelPage() {
-  const user = await requireUser();
+  const user = await requireUser("funil");
   const today = todayIso();
   const [rows, forecast] = await Promise.all([listAllFunnelWeeks(user.organizationId, today), getFunnelForecast(user.organizationId, today)]);
   return (

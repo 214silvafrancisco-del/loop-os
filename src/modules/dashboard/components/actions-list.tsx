@@ -22,9 +22,13 @@ export function ActionsList({ tasks, today }: { tasks: TaskListRow[]; today: str
               title={t.status === "bloqueada" ? "Bloqueada" : overdue ? "Atrasada" : isToday ? "Hoje" : "Esta semana"}
             />
             <span className="hidden text-[11px] font-semibold uppercase tracking-wide text-muted-foreground sm:inline">{TASK_ENTITY_LABEL[t.entityType]}</span>
-            <Link href={t.href} className="min-w-0 truncate font-medium hover:underline">
-              {t.entityLabel}
-            </Link>
+            {t.href ? (
+              <Link href={t.href} className="min-w-0 truncate font-medium hover:underline">
+                {t.entityLabel}
+              </Link>
+            ) : (
+              <span className="min-w-0 truncate text-muted-foreground">{t.entityLabel}</span>
+            )}
             {t.assigneeName ? <span className="hidden text-xs text-muted-foreground md:inline">{t.assigneeName}</span> : <span className="text-xs text-warning">sem responsável</span>}
             <span className={cn("hidden text-xs md:inline", overdue ? "font-medium text-destructive" : "text-muted-foreground")}>{t.dueDate ? formatDate(t.dueDate) : ""}</span>
             <div className="w-full sm:ml-auto sm:w-80">

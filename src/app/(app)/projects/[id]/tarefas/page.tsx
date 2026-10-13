@@ -6,7 +6,7 @@ import { listTasksForEntity } from "@/modules/tasks/queries";
 
 /** Tarefas da obra: abertas e histórico. */
 export default async function ProjectTarefasPage({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requireUser();
+  const user = await requireUser("obras");
   const { id } = await params;
   const project = await getProject(user.organizationId, id);
   if (!project) notFound();
