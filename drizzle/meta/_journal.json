@@ -169,6 +169,13 @@
       "when": 1791576083204,
       "tag": "0023_sales_actual_months",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791925988343,
+      "tag": "0024_tasks",
+      "breakpoints": true
     }
   ]
 }

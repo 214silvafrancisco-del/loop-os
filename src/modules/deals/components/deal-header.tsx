@@ -14,7 +14,7 @@ import type { Deal } from "../schema";
 import { dealRef, floorLabel } from "../utils";
 import { DealStatusBadge } from "./deal-badges";
 import { DealStatusButton } from "./deal-status-button";
-import { NextActionEditor } from "./next-action-editor";
+import { NextTaskControl } from "@/modules/tasks/components/next-task-control";
 import { StageSelect } from "./stage-select";
 
 type Props = { deal: Deal; row: DealListRow; stages: DealStage[]; project: { id: string; name: string } | null; sale?: { id: string; stage: SaleStage } | null; checklist?: ChecklistView | null };
@@ -89,7 +89,7 @@ export function DealHeader({ deal, row, stages, project, sale = null, checklist 
 
       <div className="mt-3 grid gap-3 md:grid-cols-2">
         <div className="rounded-lg border bg-card">
-          <NextActionEditor dealId={deal.id} action={deal.nextAction} date={deal.nextActionDate} />
+          <NextTaskControl entityType="deal" entityId={deal.id} task={row.nextTask} historyHref={`/deals/${deal.id}/tarefas`} />
         </div>
         {checklist ? (
           <ChecklistProgress

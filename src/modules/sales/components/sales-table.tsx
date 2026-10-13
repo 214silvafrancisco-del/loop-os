@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency, formatDate } from "@/core/lib/format";
 import { todayIso } from "@/core/lib/dates";
-import { NextAction } from "@/modules/deals/components/deal-badges";
+import { NextTaskControl } from "@/modules/tasks/components/next-task-control";
 import { PropertyRef } from "@/modules/properties/components/property-badges";
 import { daysOnMarket } from "../constants";
 import type { SaleListRow } from "../queries";
@@ -73,7 +73,7 @@ export function SalesTable({ sales }: { sales: SaleListRow[] }) {
                   </TableCell>
                   <TableCell className="max-w-48 truncate text-xs text-muted-foreground">{s.agencies ?? "—"}</TableCell>
                   <TableCell className="max-w-56 text-xs">
-                    <NextAction action={s.nextAction} date={s.nextActionDate} />
+                    <NextTaskControl entityType="sale" entityId={s.id} task={s.nextTask} compact />
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">{s.ownerName ?? "—"}</TableCell>
                 </TableRow>

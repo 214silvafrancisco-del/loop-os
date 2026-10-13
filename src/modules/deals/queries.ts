@@ -1,10 +1,11 @@
 import "server-only";
-import { and, asc, desc, eq, ilike, isNull, or, sql } from "drizzle-orm";
+import { and, asc, eq, ilike, isNull, or, sql } from "drizzle-orm";
 import { db } from "@/core/db/client";
 import { profiles } from "@/core/db/schema/core";
 import { contacts } from "@/modules/contacts/schema";
 import { properties } from "@/modules/properties/schema";
 import { dealStages, sourceChannels } from "@/modules/settings/schema";
+import { getNextTasksMap, type NextTask } from "@/modules/tasks/queries";
 import { deals, type Deal } from "./schema";
 
 /** Linha da lista: negócio + colunas do imóvel, fase, fonte, responsável e contacto. */
@@ -14,8 +15,10 @@ export type DealListRow = {
   seq: number;
   status: Deal["status"];
   enteredAt: string;
+  /** Título e prazo da próxima tarefa aberta (vindos de `tasks`). */
   nextAction: string | null;
   nextActionDate: string | null;
+  nextTask: NextTask | null;
   askingPrice: string | null;
   bpProfitNet: string | null;
   bpRoe: string | null;
@@ -94,6 +97,15 @@ const listSelection = {
   requiredMissing: requiredMissingSql,
 };
 
+/** Junta a próxima tarefa aberta a cada negócio (um pedido para a lista toda). */
+async function withNextTasks<T extends { id: string }>(organizationId: string, rows: T[]): Promise<(T & { nextTask: NextTask | null; nextAction: string | null; nextActionDate: string | null })[]> {
+  const map = await getNextTasksMap(organizationId, "deal", rows.map((r) => r.id));
+  return rows.map((r) => {
+    const t = map.get(r.id) ?? null;
+    return { ...r, nextTask: t, nextAction: t?.title ?? null, nextActionDate: t?.dueDate ?? null };
+  });
+}
+
 function baseQuery() {
   return db
     .select(listSelection)
@@ -140,17 +152,18 @@ export async function listDeals(
   }
 
   // Lista por referência ascendente (LH-0001, LH-0002…); vários negócios no mesmo imóvel pela sequência.
-  return baseQuery()
+  const rows = await baseQuery()
     .where(and(...conditions))
     .orderBy(asc(properties.ref), asc(deals.seq))
     .limit(filters.limit ?? 300);
+  return withNextTasks(organizationId, rows);
 }
 
 export async function getDealRow(organizationId: string, id: string): Promise<DealListRow | null> {
   const [row] = await baseQuery()
     .where(and(eq(deals.id, id), eq(deals.organizationId, organizationId), isNull(deals.deletedAt)))
     .limit(1);
-  return row ?? null;
+  return row ? (await withNextTasks(organizationId, [row]))[0]! : null;
 }
 
 export async function getDeal(organizationId: string, id: string): Promise<Deal | null> {
@@ -164,9 +177,10 @@ export async function getDeal(organizationId: string, id: string): Promise<Deal 
 
 /** Negócios de um imóvel (histórico), mais antigos primeiro. */
 export async function listDealsForProperty(organizationId: string, propertyId: string): Promise<DealListRow[]> {
-  return baseQuery()
+  const rows = await baseQuery()
     .where(and(eq(deals.propertyId, propertyId), eq(deals.organizationId, organizationId), isNull(deals.deletedAt)))
     .orderBy(asc(deals.seq));
+  return withNextTasks(organizationId, rows);
 }
 
 /** Contagens por fase (para o cabeçalho da lista e, no Step 07, dashboard e Kanban). */
@@ -183,24 +197,18 @@ export async function countDealsByStage(organizationId: string): Promise<{ stage
 }
 
 /**
- * Negócios ativos com próxima ação até `until` (inclui atrasadas), por data.
- * Negócios com texto de ação mas sem data aparecem no fim.
+ * Negócios ativos com a próxima tarefa até `until` (inclui atrasadas), por prazo.
+ * Negócios com tarefa sem prazo aparecem no fim.
  */
 export async function listUpcomingActions(organizationId: string, until: string): Promise<DealListRow[]> {
-  return baseQuery()
-    .where(
-      and(
-        eq(deals.organizationId, organizationId),
-        eq(deals.status, "active"),
-        isNull(deals.deletedAt),
-        or(sql`${deals.nextActionDate} <= ${until}`, and(isNull(deals.nextActionDate), sql`${deals.nextAction} is not null`))!,
-      ),
-    )
-    .orderBy(sql`${deals.nextActionDate} asc nulls last`, desc(deals.enteredAt))
-    .limit(50);
+  const rows = await listDeals(organizationId, { status: "active" });
+  return rows
+    .filter((d) => d.nextTask && (!d.nextTask.dueDate || d.nextTask.dueDate <= until))
+    .sort((a, b) => (a.nextTask!.dueDate ?? "9999") < (b.nextTask!.dueDate ?? "9999") ? -1 : 1)
+    .slice(0, 50);
 }
 
-/** Negócios ativos (fora da fase de compra) sem próxima ação definida. */
+/** Negócios ativos (fora da fase de compra) sem tarefa aberta. */
 export async function countDealsWithoutAction(organizationId: string): Promise<number> {
   const [row] = await db
     .select({ n: sql<number>`count(*)::int` })
@@ -211,9 +219,8 @@ export async function countDealsWithoutAction(organizationId: string): Promise<n
         eq(deals.organizationId, organizationId),
         eq(deals.status, "active"),
         isNull(deals.deletedAt),
-        isNull(deals.nextAction),
-        isNull(deals.nextActionDate),
         eq(dealStages.isPurchase, false),
+        sql`not exists (select 1 from tasks t where t.entity_type = 'deal' and t.entity_id = ${deals.id} and t.status <> 'concluida')`,
       ),
     );
   return row?.n ?? 0;
@@ -221,7 +228,7 @@ export async function countDealsWithoutAction(organizationId: string): Promise<n
 
 /** Compras com prazo de revenda IMT até `until`. */
 export async function listImtDeadlines(organizationId: string, until: string): Promise<(DealListRow & { imtResaleDeadline: string | null; finalPrice: string | null })[]> {
-  return db
+  const rows = await db
     .select({ ...listSelection, imtResaleDeadline: deals.imtResaleDeadline, finalPrice: deals.finalPrice })
     .from(deals)
     .innerJoin(properties, eq(deals.propertyId, properties.id))
@@ -239,6 +246,7 @@ export async function listImtDeadlines(organizationId: string, until: string): P
       ),
     )
     .orderBy(asc(deals.imtResaleDeadline));
+  return withNextTasks(organizationId, rows);
 }
 
 /**

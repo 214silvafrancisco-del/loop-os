@@ -15,7 +15,7 @@ import { LEAD_SOURCES, LEAD_SOURCE_LABEL, LEAD_STATUSES } from "../constants";
 import type { SaleLeadRow } from "../queries";
 import type { LeadStatus } from "../schema";
 import { LeadStatusBadge } from "./sale-badges";
-import { LeadNextAction } from "./sale-next-action";
+import { NextTaskControl } from "@/modules/tasks/components/next-task-control";
 
 type Option = { value: string; label: string };
 type Props = { saleId: string; leads: SaleLeadRow[]; agencies: Option[]; contacts: Option[] };
@@ -98,12 +98,6 @@ function LeadDialog({ saleId, lead, agencies, contacts, onClose }: { saleId: str
             </FormField>
             <FormField id="ld-offer" label="Valor proposto (€)" error={errors.offerAmount}>
               <Input id="ld-offer" name="offerAmount" inputMode="decimal" defaultValue={d("offerAmount", lead?.offerAmount ? String(Number(lead.offerAmount)) : "")} />
-            </FormField>
-            <FormField id="ld-next" label="Próxima ação" error={errors.nextAction}>
-              <Input id="ld-next" name="nextAction" defaultValue={d("nextAction", lead?.nextAction)} placeholder="Ligar, marcar visita…" />
-            </FormField>
-            <FormField id="ld-next-date" label="Data da próxima ação" error={errors.nextActionDate}>
-              <Input id="ld-next-date" name="nextActionDate" type="date" defaultValue={d("nextActionDate", lead?.nextActionDate)} />
             </FormField>
             <FormField id="ld-notes" label="Notas" error={errors.notes} className="sm:col-span-2">
               <Textarea id="ld-notes" name="notes" rows={2} defaultValue={d("notes", lead?.notes)} />
@@ -190,7 +184,7 @@ export function LeadsPanel({ saleId, leads, agencies, contacts }: Props) {
           ))}
         </NativeSelect>
         <div className="min-w-0 flex-1 rounded-md border">
-          <LeadNextAction saleId={saleId} leadId={l.id} action={l.nextAction} date={l.nextActionDate} compact />
+          <NextTaskControl entityType="sale_lead" entityId={l.id} task={l.nextTask} compact />
         </div>
       </div>
     </li>

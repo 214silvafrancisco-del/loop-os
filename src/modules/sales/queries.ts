@@ -5,6 +5,7 @@ import { profiles } from "@/core/db/schema/core";
 import { contacts } from "@/modules/contacts/schema";
 import { deals } from "@/modules/deals/schema";
 import { properties } from "@/modules/properties/schema";
+import { getNextTasksMap, type NextTask } from "@/modules/tasks/queries";
 import { saleAgencies, saleLeads, sales, type Sale, type SaleStage } from "./schema";
 
 export type SaleListRow = {
@@ -25,8 +26,10 @@ export type SaleListRow = {
   salePrice: string | null;
   deedDate: string | null;
   ownerName: string | null;
+  /** Próxima tarefa aberta (de `tasks`). */
   nextAction: string | null;
   nextActionDate: string | null;
+  nextTask: NextTask | null;
   /** Leads ainda em aberto (sem ganho/perdido) e total. */
   leadsOpen: number;
   leadsTotal: number;
@@ -64,6 +67,14 @@ const listSelection = {
   agencies: agenciesSql,
 };
 
+async function withNextTasks<T extends { id: string }>(organizationId: string, rows: T[], entityType: "sale" | "sale_lead" = "sale") {
+  const map = await getNextTasksMap(organizationId, entityType, rows.map((r) => r.id));
+  return rows.map((r) => {
+    const t = map.get(r.id) ?? null;
+    return { ...r, nextTask: t, nextAction: t?.title ?? null, nextActionDate: t?.dueDate ?? null };
+  });
+}
+
 function baseQuery() {
   return db
     .select(listSelection)
@@ -95,9 +106,10 @@ export async function listSales(organizationId: string, filters: SaleListFilters
     const pattern = `%${q}%`;
     conditions.push(or(ilike(properties.ref, pattern), ilike(properties.addressLine, pattern), ilike(properties.parish, pattern), ilike(deals.name, pattern))!);
   }
-  return baseQuery()
+  const rows = await baseQuery()
     .where(and(...conditions))
     .orderBy(STAGE_ORDER, asc(properties.ref), desc(sales.createdAt));
+  return withNextTasks(organizationId, rows);
 }
 
 export async function countSalesByStage(organizationId: string): Promise<{ stage: SaleStage; count: number; listingTotal: string }[]> {
@@ -121,7 +133,7 @@ export async function getSaleRow(organizationId: string, id: string): Promise<Sa
   const [row] = await baseQuery()
     .where(and(eq(sales.id, id), eq(sales.organizationId, organizationId), isNull(sales.deletedAt)))
     .limit(1);
-  return row ?? null;
+  return row ? (await withNextTasks(organizationId, [row]))[0]! : null;
 }
 
 /** Venda (não cancelada) ligada a um negócio: para o botão «Ver venda» na ficha. */
@@ -185,7 +197,7 @@ export async function listSaleAgencies(organizationId: string, saleId: string): 
     .orderBy(asc(saleAgencies.createdAt));
 }
 
-export type SaleLeadRow = typeof saleLeads.$inferSelect & { agencyName: string | null };
+export type SaleLeadRow = typeof saleLeads.$inferSelect & { agencyName: string | null; nextTask: NextTask | null };
 
 export async function listSaleLeads(organizationId: string, saleId: string): Promise<SaleLeadRow[]> {
   const rows = await db
@@ -195,7 +207,7 @@ export async function listSaleLeads(organizationId: string, saleId: string): Pro
     .leftJoin(contacts, eq(saleAgencies.contactId, contacts.id))
     .where(and(eq(saleLeads.organizationId, organizationId), eq(saleLeads.saleId, saleId)))
     .orderBy(sql`case ${saleLeads.status} when 'ganho' then 2 when 'perdido' then 3 else 1 end`, sql`${saleLeads.nextActionDate} asc nulls last`, desc(saleLeads.createdAt));
-  return rows.map((r) => ({ ...r.lead, agencyName: r.agencyName }));
+  return withNextTasks(organizationId, rows.map((r) => ({ ...r.lead, agencyName: r.agencyName })), "sale_lead");
 }
 
 /** Imóveis detidos sem venda ativa: para «Nova venda» a partir da lista. */

@@ -14,7 +14,7 @@ import type { DealListRow } from "../queries";
 import { dealRef } from "../utils";
 import { DealStatusBadge, StageBadge } from "./deal-badges";
 import { DealCard } from "./deal-card";
-import { NextActionEditor } from "./next-action-editor";
+import { NextTaskControl } from "@/modules/tasks/components/next-task-control";
 
 export { dealRef };
 
@@ -81,7 +81,7 @@ export function DealsTable({ deals }: { deals: DealListRow[] }) {
                 <ChecklistMini done={d.checklistDone} total={d.checklistTotal} requiredMissing={d.requiredMissing} href={`/deals/${d.id}/processo`} />
               </TableCell>
               <TableCell className="hidden lg:table-cell max-w-56">
-                <NextActionEditor dealId={d.id} action={d.nextAction} date={d.nextActionDate} compact />
+                <NextTaskControl entityType="deal" entityId={d.id} task={d.nextTask} compact />
               </TableCell>
               <TableCell className="hidden xl:table-cell text-muted-foreground">
                 {d.sourceName ?? "—"}

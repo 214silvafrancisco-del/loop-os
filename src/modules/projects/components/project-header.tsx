@@ -6,9 +6,11 @@ import type { ChecklistView } from "@/modules/checklists/queries";
 import { formatCurrency, formatDate } from "@/core/lib/format";
 import { PropertyRef } from "@/modules/properties/components/property-badges";
 import type { ProjectRow } from "../queries";
+import { NextTaskControl } from "@/modules/tasks/components/next-task-control";
+import type { NextTask } from "@/modules/tasks/queries";
 import { ProjectStatusSelect } from "./project-badges";
 
-export function ProjectHeader({ row, checklist }: { row: ProjectRow; checklist?: ChecklistView | null }) {
+export function ProjectHeader({ row, checklist, nextTask = null }: { row: ProjectRow; checklist?: ChecklistView | null; nextTask?: NextTask | null }) {
   const facts = [
     row.typology,
     row.parish ?? row.municipality,
@@ -45,9 +47,12 @@ export function ProjectHeader({ row, checklist }: { row: ProjectRow; checklist?:
           </Button>
         </div>
       </div>
+      <div className="mt-3 grid gap-3 md:grid-cols-2">
+        <div className="rounded-lg border bg-card">
+          <NextTaskControl entityType="project" entityId={row.id} task={nextTask} historyHref={`/projects/${row.id}/tarefas`} />
+        </div>
       {checklist ? (
         <ChecklistProgress
-          className="mt-3 md:max-w-md"
           done={checklist.doneCount}
           total={checklist.totalCount}
           processHref={`/projects/${row.id}/processo`}
@@ -58,6 +63,7 @@ export function ProjectHeader({ row, checklist }: { row: ProjectRow; checklist?:
           }
         />
       ) : null}
+      </div>
     </header>
   );
 }

@@ -66,15 +66,6 @@ export function DealForm({ action, deal, stages, sources, users, contacts, cance
         </FormField>
       </FormSection>
 
-      <FormSection title="Próxima ação">
-        <FormField id="nextAction" label="O que fazer a seguir" error={errors.nextAction}>
-          <Input id="nextAction" name="nextAction" defaultValue={g("nextAction", deal.nextAction)} />
-        </FormField>
-        <FormField id="nextActionDate" label="Quando" error={errors.nextActionDate}>
-          <Input id="nextActionDate" name="nextActionDate" type="date" defaultValue={g("nextActionDate", deal.nextActionDate)} />
-        </FormField>
-      </FormSection>
-
       <FormSection title="Origem">
         <FormField id="sourceChannelId" label="Fonte" error={errors.sourceChannelId}>
           <NativeSelect id="sourceChannelId" name="sourceChannelId" defaultValue={g("sourceChannelId", deal.sourceChannelId)}>

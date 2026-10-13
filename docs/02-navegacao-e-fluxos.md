@@ -171,10 +171,12 @@ Barra superior: pesquisa global (⌘K: negócios, imóveis, contactos, documento
 2. Guardar → cria `property` (prospect) + `deal` numa transação; atribui Ref LH-xxxx; abre a ficha em Resumo.
 3. Se a morada normalizada já existir noutro imóvel, a app avisa e propõe "usar imóvel existente" (cria só o negócio).
 
-### F2. Follow-up diário
-1. Dashboard → "Ações desta semana" → item.
-2. Na ficha, atualizar próxima ação e data, ou marcar feita (limpa e pede a seguinte).
-3. Mudar fase pelo badge ou no Kanban. Cada mudança fica no histórico.
+### F2. Follow-up diário (tarefas, desde 2026-10-13)
+1. Dashboard → «Próximas tarefas» → item (ou menu **Tarefas** para a lista completa com filtros por responsável, módulo, estado, prazo e atrasadas).
+2. Em qualquer ficha (negócio, obra, venda, lead) o campo «próxima tarefa» no cabeçalho e nos cartões abre um popover: título, **responsável pela tarefa** (utilizador ativo; distinto do responsável global do registo), data-limite e estado (por iniciar, em curso, bloqueada). «Concluir» regista quem e quando e permite criar a seguinte no mesmo passo, herdando o responsável. A tab **Tarefas** de cada ficha mostra as abertas e o histórico (reabrir, apagar).
+3. A «próxima tarefa» de um registo é a tarefa aberta com prazo mais próximo (sem prazo no fim). Alertas iguais em toda a app (`src/modules/tasks/alerts.ts`): bloqueada, atrasada (prazo passado), sem responsável, prazo próximo (7 dias). O procedimento «Próxima ação definida» e o resumo diário por notificação passam a ler as tarefas.
+4. Migração: as próximas ações existentes viraram tarefas atribuídas ao responsável do registo; as colunas `next_action` ficaram como legado sem uso.
+5. Mudar fase pelo badge ou no Kanban. Cada mudança fica no histórico.
 
 ### F3. Estudo de mercado e Business Plan
 1. Negócio → Análise: adicionar 3–4 comparáveis, ajustar homogeneização, ver €/m² médio.

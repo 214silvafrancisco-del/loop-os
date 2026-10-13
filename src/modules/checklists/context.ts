@@ -8,6 +8,7 @@ import { contacts } from "@/modules/contacts/schema";
 import { deals } from "@/modules/deals/schema";
 import { documents } from "@/modules/documents/schema";
 import { saleAgencies, saleLeads, sales } from "@/modules/sales/schema";
+import { getNextTask } from "@/modules/tasks/queries";
 import { budgetLines, invoices, measurementReports, payments, projectSuppliers, projects } from "@/modules/projects/schema";
 import { properties } from "@/modules/properties/schema";
 import { proposals } from "@/modules/proposals/schema";
@@ -72,6 +73,7 @@ export async function loadDealContext(organizationId: string, dealId: string): P
 
   const d = row.deal;
   const pr = row.property;
+  const nextTask = await getNextTask(organizationId, "deal", dealId);
   return {
     entity: { propertyId: d.propertyId, ownerUserId: d.ownerUserId },
     ctx: {
@@ -83,8 +85,8 @@ export async function loadDealContext(organizationId: string, dealId: string): P
         sourceContactId: d.sourceContactId,
         contactPhone: row.contactPhone,
         ownerUserId: d.ownerUserId,
-        nextAction: d.nextAction,
-        nextActionDate: d.nextActionDate,
+        nextAction: nextTask?.title ?? null,
+        nextActionDate: nextTask?.dueDate ?? null,
         maxPrice: num(d.maxPrice),
         finalPrice: num(d.finalPrice),
         deedDate: d.deedDate,

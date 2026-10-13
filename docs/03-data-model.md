@@ -654,3 +654,24 @@ Um registo por dispositivo. Sem trigger de auditoria (dados técnicos). Quando o
 | created_by, updated_by, timestamps | | `set_updated_at` e `audit_trigger` |
 
 Sem colunas de taxas ou previsões: tudo derivado em `forecast.ts`. Os valores sugeridos vêm de `deals.entered_at`, `audit_log` (mudanças de `stage_id`), `proposals.created_at` e `deals.deed_date`.
+
+## 17. Tarefas (Fase 2, 2026-10-13)
+
+Enums: `task_status` (por_iniciar, em_curso, concluida, bloqueada), `task_entity` (deal, project, sale, sale_lead).
+
+### tasks
+| Coluna | Tipo | Notas |
+|---|---|---|
+| id | uuid PK | |
+| organization_id | uuid FK | |
+| entity_type, entity_id | task_entity, uuid | registo a que pertence (sem FK, como `checklists`) |
+| property_id | uuid FK | imóvel do registo (auditoria, ficha do imóvel) |
+| title, notes | text | |
+| assignee_user_id | uuid FK profiles | responsável pela execução |
+| due_date | date | |
+| status | task_status | default por_iniciar |
+| completed_at, completed_by | | preenchidos ao concluir |
+| created_by, updated_by, timestamps | | `set_updated_at` e `audit_trigger` (criação, responsável, prazo, estado, conclusão ficam na auditoria com utilizador e data) |
+| INDEX (entity_type, entity_id), (organization_id, status, due_date), (assignee_user_id, status) | | |
+
+A migração 0024 converteu `deals.next_action`/`next_action_date` (negócios ativos), `sales.*` (vendas em curso) e `sale_leads.*` (leads em aberto) em tarefas; essas colunas ficam como legado.

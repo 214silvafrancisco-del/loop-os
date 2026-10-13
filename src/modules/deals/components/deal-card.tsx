@@ -5,7 +5,7 @@ import { ChecklistMini } from "@/modules/checklists/components/checklist-mini";
 import type { DealListRow } from "../queries";
 import { dealRef, floorLabel } from "../utils";
 import { DealStatusBadge, StageBadge } from "./deal-badges";
-import { NextActionEditor } from "./next-action-editor";
+import { NextTaskControl } from "@/modules/tasks/components/next-task-control";
 
 /** Cartão de negócio para ecrãs pequenos: o que a tabela esconde no telemóvel fica aqui à vista. */
 export function DealCard({ deal }: { deal: DealListRow }) {
@@ -34,7 +34,7 @@ export function DealCard({ deal }: { deal: DealListRow }) {
         <span>{facts || "—"}</span>
         <ChecklistMini done={deal.checklistDone} total={deal.checklistTotal} requiredMissing={deal.requiredMissing} href={`/deals/${deal.id}/processo`} />
       </div>
-      <NextActionEditor dealId={deal.id} action={deal.nextAction} date={deal.nextActionDate} compact />
+      <NextTaskControl entityType="deal" entityId={deal.id} task={deal.nextTask} compact />
       {deal.ownerName || deal.sourceName ? (
         <p className="text-xs text-muted-foreground">
           {[deal.ownerName, deal.sourceName].filter(Boolean).join(" · ")}

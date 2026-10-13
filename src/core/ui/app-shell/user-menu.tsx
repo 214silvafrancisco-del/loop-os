@@ -1,4 +1,4 @@
-import { ListChecks, LogOut, Settings, Users } from "lucide-react";
+import { Building2, ListChecks, LogOut, Settings, Users } from "lucide-react";
 import Link from "next/link";
 import { signOut } from "@/core/auth/actions";
 import type { CurrentUser } from "@/core/auth/current-user";
@@ -38,6 +38,12 @@ export function UserMenu({ user }: { user: CurrentUser }) {
           <span className="text-xs font-normal text-muted-foreground">{ROLE_LABEL[user.role]}</span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild className="md:hidden">
+          <Link href="/properties" className="min-h-10">
+            <Building2 className="size-4" />
+            Imóveis
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem asChild className="md:hidden">
           <Link href="/contacts" className="min-h-10">
             <Users className="size-4" />

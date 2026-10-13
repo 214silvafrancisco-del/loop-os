@@ -7,7 +7,8 @@ import { PageHeader } from "@/core/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { ActionsList } from "@/modules/dashboard/components/actions-list";
-import { countDealsByStage, listUpcomingActions, sumPurchases } from "@/modules/deals/queries";
+import { countDealsByStage, sumPurchases } from "@/modules/deals/queries";
+import { listDueTasks } from "@/modules/tasks/queries";
 import { todayIso } from "@/modules/deals/utils";
 import { listActiveProjectFinancials, listUnpaidInvoices } from "@/modules/projects/invoices/queries";
 import { PROJECT_STATUS_LABEL } from "@/modules/projects/validation";
@@ -75,7 +76,7 @@ export default async function DashboardPage() {
     listRecentFunnelWeeks(orgId, today, 2),
     getFunnelForecast(orgId, today),
     countDealsByStage(orgId),
-    listUpcomingActions(orgId, weekEnd),
+    listDueTasks(orgId, weekEnd, today),
     sumPurchases(orgId),
     listActiveProjectFinancials(orgId),
     listUnpaidInvoices(orgId, 8),
@@ -130,8 +131,8 @@ export default async function DashboardPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         <section className="flex flex-col gap-6 lg:col-span-2">
           <div>
-            <h2 className="mb-2 text-sm font-semibold">Próximas ações</h2>
-            <ActionsList deals={actions} />
+            <h2 className="mb-2 text-sm font-semibold">Próximas tarefas</h2>
+            <ActionsList tasks={actions} today={today} />
           </div>
 
           <div>

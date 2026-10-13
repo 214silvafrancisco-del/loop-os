@@ -11,7 +11,7 @@ import { daysOnMarket } from "../constants";
 import type { SaleListRow } from "../queries";
 import type { Sale } from "../schema";
 import { DeleteSaleButton } from "./delete-sale-button";
-import { SaleNextAction } from "./sale-next-action";
+import { NextTaskControl } from "@/modules/tasks/components/next-task-control";
 import { SaleStageSelect } from "./sale-stage-select";
 
 type Props = { sale: Sale; row: SaleListRow; canDelete: boolean; checklist?: ChecklistView | null };
@@ -78,7 +78,7 @@ export function SaleHeader({ sale, row, canDelete, checklist }: Props) {
       </div>
       <div className="mt-3 grid gap-3 md:grid-cols-2">
         <div className="rounded-lg border bg-card">
-          <SaleNextAction saleId={sale.id} action={sale.nextAction} date={sale.nextActionDate} />
+          <NextTaskControl entityType="sale" entityId={sale.id} task={row.nextTask} historyHref={`/sales/${sale.id}/tarefas`} />
         </div>
         {checklist ? (
           <ChecklistProgress

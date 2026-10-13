@@ -8,7 +8,7 @@ import { formatCurrency } from "@/core/lib/format";
 import { ChecklistMini } from "@/modules/checklists/components/checklist-mini";
 import type { DealListRow } from "../queries";
 import { dealRef, floorLabel } from "../utils";
-import { NextActionEditor } from "./next-action-editor";
+import { NextTaskControl } from "@/modules/tasks/components/next-task-control";
 
 function initials(name: string | null) {
   return (name ?? "")
@@ -54,7 +54,7 @@ export function KanbanCardBody({ deal, dragging }: { deal: DealListRow; dragging
       {deal.checklistTotal ? (
         <ChecklistMini done={deal.checklistDone} total={deal.checklistTotal} requiredMissing={deal.requiredMissing} />
       ) : null}
-      <NextActionEditor dealId={deal.id} action={deal.nextAction} date={deal.nextActionDate} compact />
+      <NextTaskControl entityType="deal" entityId={deal.id} task={deal.nextTask} compact />
     </div>
   );
 }

@@ -19,6 +19,7 @@ const TABLE_LABEL: Record<string, string> = {
   contacts: "o contacto",
   projects: "a obra",
   documents: "o documento",
+  tasks: "a tarefa",
 };
 
 const FIELD_LABEL: Record<string, string> = {
@@ -130,8 +131,29 @@ function describeChecklistItem(e: AuditRow, lookups: AuditLookups): { title: str
   return { title: `${auto ? "voltou a pendente (dados alterados)" : "repôs como pendente"}: "${label}"`, details: [...details, `antes: ${CHECKLIST_STATUS[String(od.status)] ?? od.status}`] };
 }
 
+const TASK_STATUS_PT: Record<string, string> = { por_iniciar: "por iniciar", em_curso: "em curso", concluida: "concluída", bloqueada: "bloqueada" };
+
+function describeTask(e: AuditRow, lookups: AuditLookups): { title: string; details: string[] } {
+  const nd = (e.newData ?? {}) as Record<string, unknown>;
+  const od = (e.oldData ?? {}) as Record<string, unknown>;
+  const title = String(nd.title ?? od.title ?? "");
+  if (e.action === "insert") return { title: `criou a tarefa «${title}»`, details: [nd.assignee_user_id ? `responsável: ${fmt("owner_user_id", nd.assignee_user_id, lookups)}` : "", nd.due_date ? `prazo: ${fmt("due_date", nd.due_date, lookups)}` : ""].filter(Boolean) };
+  if (e.action === "delete") return { title: `apagou a tarefa «${title}»`, details: [] };
+  const fields = e.changedFields ?? [];
+  const details: string[] = [];
+  if (fields.includes("assignee_user_id")) details.push(`responsável: ${fmt("owner_user_id", od.assignee_user_id, lookups)} → ${fmt("owner_user_id", nd.assignee_user_id, lookups)}`);
+  if (fields.includes("due_date")) details.push(`prazo: ${fmt("due_date", od.due_date, lookups)} → ${fmt("due_date", nd.due_date, lookups)}`);
+  if (fields.includes("title")) details.push(`título: ${od.title} → ${nd.title}`);
+  if (fields.includes("status")) {
+    if (nd.status === "concluida") return { title: `concluiu a tarefa «${title}»`, details };
+    return { title: `tarefa «${title}»: ${TASK_STATUS_PT[String(od.status)] ?? od.status} → ${TASK_STATUS_PT[String(nd.status)] ?? nd.status}`, details };
+  }
+  return { title: `atualizou a tarefa «${title}»`, details };
+}
+
 function describe(e: AuditRow, lookups: AuditLookups): { title: string; details: string[] } | null {
   if (e.tableName === "checklist_items") return describeChecklistItem(e, lookups);
+  if (e.tableName === "tasks") return describeTask(e, lookups);
   const table = TABLE_LABEL[e.tableName] ?? e.tableName;
   const nd = (e.newData ?? {}) as Record<string, unknown>;
   const od = (e.oldData ?? {}) as Record<string, unknown>;

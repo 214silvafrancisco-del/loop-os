@@ -7,7 +7,7 @@ import { formatCurrency } from "@/core/lib/format";
 import { floorLabel } from "@/modules/deals/utils";
 import type { SaleListRow } from "../queries";
 import { SaleStageBadge } from "./sale-badges";
-import { SaleNextAction } from "./sale-next-action";
+import { NextTaskControl } from "@/modules/tasks/components/next-task-control";
 
 function initials(name: string | null) {
   return (name ?? "").split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]!.toUpperCase()).join("");
@@ -44,7 +44,7 @@ export function SaleCardBody({ sale, dragging, showStage }: { sale: SaleListRow;
         </span>
       </div>
       {sale.agencies ? <p className="truncate text-xs text-muted-foreground">{sale.agencies}</p> : null}
-      <SaleNextAction saleId={sale.id} action={sale.nextAction} date={sale.nextActionDate} compact />
+      <NextTaskControl entityType="sale" entityId={sale.id} task={sale.nextTask} compact />
     </div>
   );
 }

@@ -180,13 +180,7 @@ export function DealCreateForm({ action, stages, sources, users, contacts, curre
         )}
       </FormSection>
 
-      <FormSection title="Próxima ação">
-        <FormField id="nextAction" label="O que fazer a seguir" error={errors.nextAction}>
-          <Input id="nextAction" name="nextAction" placeholder="Agendar visita, pedir plantas…" defaultValue={g("nextAction")} />
-        </FormField>
-        <FormField id="nextActionDate" label="Quando" error={errors.nextActionDate}>
-          <Input id="nextActionDate" name="nextActionDate" type="date" defaultValue={g("nextActionDate")} />
-        </FormField>
+      <FormSection title="Observações">
         <FormField id="sourceNotes" label="Observações" error={errors.sourceNotes} className="md:col-span-2">
           <Textarea id="sourceNotes" name="sourceNotes" rows={2} defaultValue={g("sourceNotes")} />
         </FormField>

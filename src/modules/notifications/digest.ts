@@ -2,11 +2,9 @@ import "server-only";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/core/db/client";
 import { profiles } from "@/core/db/schema/core";
-import { dealRef, todayIso } from "@/modules/deals/utils";
-import { listUpcomingActions } from "@/modules/deals/queries";
+import { todayIso } from "@/modules/deals/utils";
 import { invoices } from "@/modules/projects/schema";
-import { listLeadActions } from "@/modules/sales/queries";
-import { sales } from "@/modules/sales/schema";
+import { listDueTasks } from "@/modules/tasks/queries";
 import { formatDigest, type DigestData } from "./digest-format";
 import { pushSubscriptions } from "./schema";
 import { sendToUsers, type SendResult } from "./send";
@@ -23,21 +21,17 @@ const paidSub = sql<string>`coalesce((select sum(p.amount) from payments p where
 /** Números do dia para uma organização: próximas ações e faturas por pagar a vencer. */
 export async function buildDigest(organizationId: string, today = todayIso()): Promise<DigestData> {
   const weekEnd = addDays(today, 7);
-  const [actions, invoiceRows, leadActions, [saleActions]] = await Promise.all([
-    listUpcomingActions(organizationId, today),
+  const [dueTasks, invoiceRows] = await Promise.all([
+    listDueTasks(organizationId, today, today, { limit: 200 }),
     db
       .select({ total: invoices.total, dueDate: invoices.dueDate, paid: paidSub })
       .from(invoices)
       .where(and(eq(invoices.organizationId, organizationId), isNull(invoices.deletedAt), sql`${invoices.dueDate} <= ${weekEnd}`)),
-    listLeadActions(organizationId, today),
-    db
-      .select({ n: sql<number>`count(*)::int` })
-      .from(sales)
-      .where(and(eq(sales.organizationId, organizationId), isNull(sales.deletedAt), sql`${sales.stage} in ('preparacao', 'a_venda', 'cpcv')`, sql`${sales.nextActionDate} <= ${today}`)),
   ]);
 
-  // Só ações com data (as sem data aparecem no dashboard, não no resumo).
-  const dated = actions.filter((a) => a.nextActionDate);
+  // Tarefas com prazo até hoje: negócios e obras contam como «ações»; vendas e leads à parte.
+  const dated = dueTasks.filter((t) => t.dueDate && (t.entityType === "deal" || t.entityType === "project"));
+  const salesDue = dueTasks.filter((t) => t.dueDate && (t.entityType === "sale" || t.entityType === "sale_lead"));
   const first = dated[0];
   let invoicesDue = 0;
   let invoicesOverdue = 0;
@@ -51,12 +45,12 @@ export async function buildDigest(organizationId: string, today = todayIso()): P
   }
   return {
     actionsDue: dated.length,
-    actionsOverdue: dated.filter((a) => a.nextActionDate! < today).length,
-    firstAction: first ? `${dealRef(first)} · ${first.nextAction ?? first.name ?? first.addressLine}` : null,
+    actionsOverdue: dated.filter((t) => t.dueDate! < today).length,
+    firstAction: first ? `${first.entityLabel} · ${first.title}` : null,
     invoicesDue,
     invoicesOverdue,
     invoicesAmount,
-    salesActionsDue: leadActions.length + (saleActions?.n ?? 0),
+    salesActionsDue: salesDue.length,
   };
 }
 

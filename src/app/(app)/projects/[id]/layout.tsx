@@ -6,6 +6,7 @@ import { syncChecklist } from "@/modules/checklists/sync";
 import { ProjectHeader } from "@/modules/projects/components/project-header";
 import { ProjectTabs } from "@/modules/projects/components/project-tabs";
 import { getProjectRow } from "@/modules/projects/queries";
+import { getNextTask } from "@/modules/tasks/queries";
 
 type Params = Promise<{ id: string }>;
 
@@ -24,10 +25,11 @@ export default async function ProjectLayout({ children, params }: { children: Re
   // Checklist "Nova Obra": sincroniza a cada abertura (idempotente).
   await syncChecklist(user.organizationId, "project", id, user.id);
   const checklist = await getChecklistView(user.organizationId, "project", id);
+  const nextTask = await getNextTask(user.organizationId, "project", id);
 
   return (
     <div className="mx-auto max-w-5xl">
-      <ProjectHeader row={row} checklist={checklist} />
+      <ProjectHeader row={row} checklist={checklist} nextTask={nextTask} />
       <ProjectTabs projectId={row.id} counts={{ processo: checklist ? checklist.totalCount - checklist.doneCount : undefined }} />
       {children}
     </div>

@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 export const SALE_TABS = [
   { slug: "resumo", label: "Resumo" },
   { slug: "procedimento", label: "Procedimento" },
+  { slug: "tarefas", label: "Tarefas" },
   { slug: "leads", label: "Leads" },
   { slug: "documentos", label: "Documentos" },
   { slug: "resultado", label: "Resultado" },

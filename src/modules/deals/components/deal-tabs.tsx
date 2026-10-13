@@ -12,6 +12,7 @@ export const DEAL_TABS = [
   { slug: "business-plan", label: "Business Plan" },
   { slug: "documentos", label: "Documentos" },
   { slug: "proposta", label: "Proposta" },
+  { slug: "tarefas", label: "Tarefas" },
   { slug: "notas", label: "Notas" },
   { slug: "historico", label: "Histórico" },
 ] as const;
