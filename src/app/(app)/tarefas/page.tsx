@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import Link from "next/link";
 import { allowedTaskEntities } from "@/core/auth/access";
 import { requireUser } from "@/core/auth/current-user";
@@ -6,30 +7,40 @@ import { formatDate } from "@/core/lib/format";
 import { PageHeader } from "@/core/ui/page-header";
 import { NativeSelect } from "@/core/ui/form-field";
 import { cn } from "@/lib/utils";
+import { ViewToggle, type DealsView } from "@/modules/deals/components/view-toggle";
 import { todayIso } from "@/modules/deals/utils";
-import { TASK_ALERT_LABEL, TASK_ENTITY_LABEL, TASK_STATUSES } from "@/modules/tasks/alerts";
+import { addDaysIso, TASK_ALERT_LABEL, TASK_ENTITY_LABEL, TASK_STATUSES } from "@/modules/tasks/alerts";
 import { NextTaskControl } from "@/modules/tasks/components/next-task-control";
+import { TasksKanban } from "@/modules/tasks/components/tasks-kanban";
 import { countTaskAlerts, listTasks } from "@/modules/tasks/queries";
 import type { TaskEntity, TaskStatus } from "@/modules/tasks/schema";
 import { listUsers } from "@/modules/settings/queries";
 
 export const metadata: Metadata = { title: "Tarefas" };
 
-type Search = { owner?: string; module?: string; status?: string; until?: string; overdue?: string };
+type Search = { owner?: string; module?: string; status?: string; until?: string; overdue?: string; view?: string };
 const ENTITIES: TaskEntity[] = ["deal", "project", "sale", "sale_lead"];
 
 /** Todas as tarefas da organização, com filtros. (Fase 3 restringe aos módulos acessíveis.) */
 export default async function TasksPage({ searchParams }: { searchParams: Promise<Search> }) {
   const user = await requireUser();
   const sp = await searchParams;
+  const cookieStore = await cookies();
+  const view: DealsView = sp.view === "kanban" || sp.view === "list" ? sp.view : cookieStore.get("tasks_view")?.value === "kanban" ? "kanban" : "list";
   const today = todayIso();
   const status = (TASK_STATUSES.some((s) => s.value === sp.status) ? sp.status : "abertas") as TaskStatus | "abertas";
   const entityType = ENTITIES.includes(sp.module as TaskEntity) ? (sp.module as TaskEntity) : undefined;
-  const [tasks, users, counts] = await Promise.all([
-    listTasks(user.organizationId, { assigneeUserId: sp.owner || undefined, entityType, status, dueUntil: sp.until || undefined, overdueOnly: sp.overdue === "1", allowedEntityTypes: allowedTaskEntities(user), viewerUserId: user.id }, today),
+  const base = { assigneeUserId: sp.owner || undefined, entityType, dueUntil: sp.until || undefined, overdueOnly: sp.overdue === "1", allowedEntityTypes: allowedTaskEntities(user), viewerUserId: user.id };
+  // Kanban: todas as abertas por estado + concluídas dos últimos 7 dias (o filtro de estado não se aplica).
+  const [tasks, doneRecent, users, counts] = await Promise.all([
+    listTasks(user.organizationId, { ...base, status: view === "kanban" ? "abertas" : status }, today),
+    view === "kanban" ? listTasks(user.organizationId, { ...base, status: "concluida", limit: 60 }, today) : [],
     listUsers(user.organizationId),
     countTaskAlerts(user.organizationId, today, user.role === "admin" ? undefined : user.id),
   ]);
+  const recentStart = addDaysIso(today, -7);
+  const board = view === "kanban" ? [...tasks, ...doneRecent.filter((t) => t.completedAt && t.completedAt.toISOString().slice(0, 10) >= recentStart)] : [];
+  const query = new URLSearchParams(Object.entries(sp).filter(([k, v]) => v && k !== "view") as [string, string][]).toString();
 
   const chip = (label: string, n: number, href: string, tone?: string) => (
     <Link href={href} className={cn("flex items-center gap-2 rounded-lg border bg-card px-3 py-1.5 text-sm hover:bg-accent", tone)}>
@@ -40,7 +51,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
 
   return (
     <>
-      <PageHeader title="Tarefas" description="O que tem de ser feito, por quem e até quando. Em todos os negócios, obras, vendas e leads." />
+      <PageHeader title="Tarefas" description="O que tem de ser feito, por quem e até quando. Em todos os negócios, obras, vendas e leads." actions={<ViewToggle view={view} query={query} basePath="/tarefas" cookieName="tasks_view" />} />
       <div className="mb-4 flex flex-wrap gap-2">
         {chip("Abertas", counts.open, "/tarefas")}
         {chip("Atrasadas", counts.overdue, "/tarefas?overdue=1", counts.overdue ? "border-destructive/40" : undefined)}
@@ -50,6 +61,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
       </div>
 
       <form method="get" className="mb-4 flex flex-wrap items-center gap-2">
+        <input type="hidden" name="view" value={view} />
         <NativeSelect name="owner" defaultValue={sp.owner ?? ""} className="h-10 w-auto md:h-9" aria-label="Responsável">
           <option value="">Responsável</option>
           <option value="none">Sem responsável</option>
@@ -67,7 +79,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
             </option>
           ))}
         </NativeSelect>
-        <NativeSelect name="status" defaultValue={sp.status ?? "abertas"} className="h-10 w-auto md:h-9" aria-label="Estado">
+        <NativeSelect name="status" defaultValue={sp.status ?? "abertas"} className="h-10 w-auto md:h-9" aria-label="Estado" disabled={view === "kanban"} title={view === "kanban" ? "No Kanban os estados são as colunas." : undefined}>
           <option value="abertas">Abertas</option>
           {TASK_STATUSES.map((s) => (
             <option key={s.value} value={s.value}>
@@ -84,7 +96,9 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
         </button>
       </form>
 
-      {tasks.length === 0 ? (
+      {view === "kanban" ? (
+        <TasksKanban tasks={board} today={today} />
+      ) : tasks.length === 0 ? (
         <p className="rounded-xl border border-dashed px-4 py-10 text-center text-sm text-muted-foreground">Sem tarefas para estes filtros.</p>
       ) : (
         <ul className="divide-y rounded-xl border bg-card">

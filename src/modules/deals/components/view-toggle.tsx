@@ -7,13 +7,13 @@ import { cn } from "@/lib/utils";
 export type DealsView = "list" | "kanban";
 
 /** Alterna Lista/Kanban. Guarda a escolha num cookie para a próxima visita. */
-export function ViewToggle({ view, query }: { view: DealsView; query: string }) {
+export function ViewToggle({ view, query, basePath = "/deals", cookieName = "deals_view" }: { view: DealsView; query: string; basePath?: string; cookieName?: string }) {
   function remember(v: DealsView) {
     // Escrita explícita via setter, para o compilador do React não a tratar como mutação de valor.
     const set = Object.getOwnPropertyDescriptor(Document.prototype, "cookie")?.set;
-    set?.call(document, `deals_view=${v}; path=/; max-age=31536000; samesite=lax`);
+    set?.call(document, `${cookieName}=${v}; path=/; max-age=31536000; samesite=lax`);
   }
-  const base = query ? `/deals?${query}&` : "/deals?";
+  const base = query ? `${basePath}?${query}&` : `${basePath}?`;
   const item = (v: DealsView, Icon: typeof List, label: string) => (
     <Link
       href={`${base}view=${v}`}
