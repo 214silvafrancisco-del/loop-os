@@ -4,6 +4,9 @@ import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/core/auth/current-user";
+
+/** Só o admin (Founder) regista, edita ou apaga semanas do funil; os restantes só consultam. */
+const ONLY_ADMIN = { ok: false as const, error: "Só o admin regista o funil comercial." };
 import { db } from "@/core/db/client";
 import { dbErrorMessage } from "@/core/db/errors";
 import { getSuggestedCounts } from "./queries";
@@ -38,6 +41,7 @@ export type FunnelWeekInput = z.input<typeof weekSchema>;
 /** Grava (ou cria) o registo de uma semana. A semana é normalizada para a segunda-feira. */
 export async function saveFunnelWeek(input: FunnelWeekInput): Promise<Result> {
   const user = await requireUser("funil");
+  if (user.role !== "admin") return ONLY_ADMIN;
   const parsed = weekSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]!.message };
   const d = parsed.data;
@@ -62,6 +66,7 @@ export async function saveFunnelWeek(input: FunnelWeekInput): Promise<Result> {
 /** Preenche a semana com os valores sugeridos pela app (substitui o que lá estiver). */
 export async function applySuggestedFunnelWeek(weekStart: string): Promise<Result> {
   const user = await requireUser("funil");
+  if (user.role !== "admin") return ONLY_ADMIN;
   const s = await getSuggestedCounts(user.organizationId, weekStartOf(weekStart));
   return saveFunnelWeek({ weekStart, leads: s.leads, visits: s.visits, proposals: s.proposals, purchases: s.purchases });
 }
@@ -69,6 +74,7 @@ export async function applySuggestedFunnelWeek(weekStart: string): Promise<Resul
 /** Apaga o registo de uma semana (volta a «por preencher»). */
 export async function deleteFunnelWeek(weekStart: string): Promise<Result> {
   const user = await requireUser("funil");
+  if (user.role !== "admin") return ONLY_ADMIN;
   await db.delete(funnelWeeks).where(and(eq(funnelWeeks.organizationId, user.organizationId), eq(funnelWeeks.weekStart, weekStartOf(weekStart))));
   revalidatePath("/dashboard");
   revalidatePath("/funil");

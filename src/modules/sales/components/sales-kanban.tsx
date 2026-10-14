@@ -126,7 +126,7 @@ export function SalesKanban({ sales: initial }: { sales: SaleListRow[] }) {
         })}
       </div>
 
-      <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}>
+      <DndContext id="sales-kanban" sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}>
         <div className="hidden gap-3 overflow-x-auto pb-3 md:flex">
           {BOARD_STAGES.map((st) => (
             <Column key={st.value} stage={st} sales={sales.filter((s) => s.stage === st.value)} active={Boolean(activeId)} />

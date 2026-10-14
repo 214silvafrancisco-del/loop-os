@@ -173,7 +173,7 @@ export function TasksKanban({ tasks: initial, today }: { tasks: TaskListRow[]; t
         })}
       </div>
 
-      <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}>
+      <DndContext id="tasks-kanban" sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}>
         <div className="hidden gap-3 overflow-x-auto pb-3 md:flex">
           {TASK_STATUSES.map((st) => (
             <Column key={st.value} status={st.value} label={st.label} tasks={byStatus(st.value)} today={today} active={Boolean(activeId)} />

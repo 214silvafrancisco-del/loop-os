@@ -157,7 +157,7 @@ export function KanbanBoard({ stages, deals: initialDeals }: Props) {
         })}
       </div>
 
-      <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}>
+      <DndContext id="deals-kanban" sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}>
         <div className="hidden gap-3 overflow-x-auto pb-3 md:flex">
           {stages.map((s) => (
             <Column key={s.id} stage={s} deals={deals.filter((d) => d.stageId === s.id)} active={activeId !== null} />

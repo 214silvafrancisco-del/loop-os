@@ -14,13 +14,14 @@ export const metadata: Metadata = { title: "Funil comercial" };
 /** Histórico completo do funil semanal, editável, e a previsão derivada. */
 export default async function FunnelPage() {
   const user = await requireUser("funil");
+  const isAdmin = user.role === "admin";
   const today = todayIso();
   const [rows, forecast] = await Promise.all([listAllFunnelWeeks(user.organizationId, today), getFunnelForecast(user.organizationId, today)]);
   return (
     <div className="mx-auto max-w-5xl">
       <PageHeader
         title="Funil comercial"
-        description="Todas as semanas registadas. Edita diretamente nas células; a previsão recalcula-se a cada gravação."
+        description={isAdmin ? "Todas as semanas registadas. Edita diretamente nas células; a previsão recalcula-se a cada gravação." : "Todas as semanas registadas pelo admin e a previsão derivada."}
         actions={
           <Button asChild variant="outline" size="sm">
             <Link href="/dashboard">Voltar ao dashboard</Link>
@@ -34,9 +35,9 @@ export default async function FunnelPage() {
       <section className="mb-6">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-semibold">Histórico ({rows.length} semanas)</h2>
-          <AddWeekForm existing={rows.map((r) => r.weekStart)} />
+          {isAdmin ? <AddWeekForm existing={rows.map((r) => r.weekStart)} /> : null}
         </div>
-        <FunnelTable rows={rows} />
+        <FunnelTable rows={rows} readOnly={!isAdmin} />
       </section>
     </div>
   );

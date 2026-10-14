@@ -176,7 +176,7 @@ export default async function DashboardPage() {
         <>
           <section className="mb-6">
             <h2 className="mb-2 text-sm font-semibold">Funil comercial</h2>
-            <FunnelTable rows={funnel} historyHref="/funil" />
+            <FunnelTable rows={funnel} historyHref="/funil" readOnly={user.role !== "admin"} />
           </section>
 
           <section className="mb-6">

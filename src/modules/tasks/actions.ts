@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, ne, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { hasModule, moduleForEntity } from "@/core/auth/access";
@@ -54,6 +54,16 @@ function revalidate(paths: string[]) {
 }
 
 const NO_ACCESS = { ok: false as const, error: "Sem acesso ao módulo deste registo." };
+const DUPLICATE = { ok: false as const, error: "Já existe uma tarefa aberta com este título neste registo." };
+
+/** Evita duplicados por engano (duplo clique, submissão repetida): mesma tarefa aberta no mesmo registo. */
+async function hasOpenDuplicate(organizationId: string, entityType: TaskEntity, entityId: string, title: string, exceptId?: string): Promise<boolean> {
+  const [dup] = await db
+    .select({ id: tasks.id })
+    .from(tasks)
+    .where(and(eq(tasks.organizationId, organizationId), eq(tasks.entityType, entityType), eq(tasks.entityId, entityId), ne(tasks.status, "concluida"), sql`lower(${tasks.title}) = lower(${title})`, ...(exceptId ? [ne(tasks.id, exceptId)] : [])));
+  return Boolean(dup);
+}
 
 export async function createTask(entityType: TaskEntity, entityId: string, input: TaskInput): Promise<Result<{ id: string }>> {
   const user = await requireUser();
@@ -64,6 +74,7 @@ export async function createTask(entityType: TaskEntity, entityId: string, input
   const entity = await resolveEntity(user.organizationId, entityType, entityId);
   if (!entity) return { ok: false, error: "Registo não encontrado." };
   if (!(await assigneeOk(user.organizationId, parsed.data.assigneeUserId))) return { ok: false, error: "O responsável tem de ser um utilizador ativo." };
+  if (await hasOpenDuplicate(user.organizationId, entityType, entityId, parsed.data.title)) return DUPLICATE;
   try {
     const [created] = await db
       .insert(tasks)
@@ -122,6 +133,8 @@ export async function completeTask(id: string, next?: TaskInput | null): Promise
   const [t] = await db.select().from(tasks).where(and(eq(tasks.id, id), eq(tasks.organizationId, user.organizationId)));
   if (!t) return { ok: false, error: "Tarefa não encontrada." };
   if (next?.title?.trim() && !hasModule(user, moduleForEntity(t.entityType))) return NO_ACCESS;
+  // Verifica a seguinte antes de concluir, para não deixar a atual concluída sem a seguinte criada.
+  if (next?.title?.trim() && (await hasOpenDuplicate(user.organizationId, t.entityType, t.entityId, next.title.trim(), id))) return DUPLICATE;
   const r = await updateTask(id, { status: "concluida" });
   if (!r.ok) return r;
   if (!next || !next.title?.trim()) return { ok: true, nextId: null };

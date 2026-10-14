@@ -82,6 +82,10 @@ wget -qO- --header="Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3000/ap
 
 Definições → Utilizadores e acessos (só o admin): matriz utilizadores × módulos. Novo colaborador: `pnpm user:invite <email> "<Nome>" user` no PC, depois ligar os módulos na matriz (começa sem nenhum). Para desativar: botão «Desativar» na mesma página; as tarefas abertas podem ser reatribuídas ali.
 
+### 3d. Verificação de acessos (Fase 5)
+
+Com a app a correr localmente (`pnpm dev`), `pnpm access:check` cria um utilizador temporário só com Negócios, verifica redirecionamentos, 403 nas rotas API, mascaramento de tarefas, dashboards, políticas da base de dados e 46 páginas de regressão, e apaga tudo no fim (incluindo auditoria). Contra outro ambiente: `BASE_URL=https://… pnpm access:check`. Relatório completo da entrega em `docs/08-entrega-acessos-tarefas-dashboards.md`.
+
 ## 4. Migrações da base de dados
 
 As migrações não correm dentro da imagem. Correm a partir do teu PC (o Drizzle liga-se ao Supabase):
