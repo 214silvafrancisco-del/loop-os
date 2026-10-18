@@ -181,3 +181,13 @@ Por etapa: 🟢 PWA e câmara (dias), 🟡 cartões e filtros (uma a duas sessõ
 Cada etapa é uma sessão no formato habitual: ficheiros exatos, comandos, como testar num telemóvel real (abrir `https://app.89.58.58.97.sslip.io` no Safari ou Chrome) e no emulador de 375 px que usei aqui.
 
 **Nada foi alterado nesta análise.** Só depois da tua aprovação começo pela etapa M1.
+
+## M8 · Navegação fluida no telemóvel (2026-10-18)
+
+Sintoma reportado: «a barra de navegação fica presa». Causa: todas as páginas são dinâmicas (consultam a base de dados a cada pedido) e não havia `loading.tsx`, por isso ao tocar num separador nada mudava no ecrã até o servidor responder (1–3 s), e o `next/link` não pré-carrega páginas dinâmicas sem estado de carregamento.
+
+Correção:
+- `src/app/(app)/loading.tsx` (esqueleto de página, `PageSkeleton`) e `loading.tsx` em `deals/[id]`, `projects/[id]`, `sales/[id]` (`TabSkeleton`: o cabeçalho da ficha fica, só o separador mostra o esqueleto). Componentes em `src/core/ui/page-skeleton.tsx`.
+- Barra inferior (`mobile-nav.tsx`): o item tocado fica ativo de imediato (estado otimista até o `pathname` mudar) e mostra um ponto a pulsar com `useLinkStatus` enquanto a navegação está pendente; `-webkit-tap-highlight-color` transparente.
+
+Medido no browser a 375 px: toque → separador ativo, ponto e esqueleto em ~60 ms; página completa em ~1,9 s (servidor de desenvolvimento). Em produção a espera é menor, mas o feedback imediato é o que torna a navegação fluida.
