@@ -40,7 +40,8 @@ const s = StyleSheet.create({
   logo: { width: 96 },
   headerRight: { alignItems: "flex-end" },
   small: { fontSize: 8, color: C.muted },
-  title: { fontSize: 17, fontFamily: "Helvetica-Bold", letterSpacing: 0.4 },
+  // lineHeight explícito: o valor da página resolve-se em pontos (9 × 1.4) e seria herdado pelo título, que ficava mais baixo do que as letras.
+  title: { fontSize: 17, lineHeight: 1.25, fontFamily: "Helvetica-Bold", letterSpacing: 0.4, marginBottom: 2 },
   draft: { marginTop: 3, fontSize: 8, color: C.warn, fontFamily: "Helvetica-Bold", letterSpacing: 1, textTransform: "uppercase" },
   cols: { flexDirection: "row", gap: 16, marginBottom: 14 },
   col: { flex: 1, backgroundColor: C.canvas, borderRadius: 5, padding: 9 },
@@ -51,7 +52,7 @@ const s = StyleSheet.create({
   stats: { flexDirection: "row", gap: 8, marginBottom: 14 },
   stat: { flex: 1, borderWidth: 1, borderColor: C.line, borderRadius: 5, padding: 8 },
   statLabel: { fontSize: 7, color: C.muted, letterSpacing: 0.8, textTransform: "uppercase" },
-  statValue: { fontSize: 12, fontFamily: "Helvetica-Bold", marginTop: 2 },
+  statValue: { fontSize: 12, lineHeight: 1.3, fontFamily: "Helvetica-Bold", marginTop: 2 },
   table: { borderTopWidth: 1, borderTopColor: C.ink },
   tr: { flexDirection: "row", borderBottomWidth: 0.5, borderBottomColor: C.line, paddingVertical: 3 },
   th: { fontSize: 7.5, color: C.muted, fontFamily: "Helvetica-Bold", textTransform: "uppercase", letterSpacing: 0.5 },
