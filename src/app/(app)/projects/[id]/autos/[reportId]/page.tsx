@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { db } from "@/core/db/client";
 import { eq } from "drizzle-orm";
 import { AdvanceAutoCard } from "@/modules/projects/components/advance-auto-card";
+import { ExportAutoButton } from "@/modules/projects/components/export-auto-button";
 import { MeasurementEditor, type MeasurementLeafView } from "@/modules/projects/components/measurement-editor";
 import { getLastClosedMeasurement, getMeasurement, getMeasurementLines, getMeasurementProgress, listBudgetLeaves } from "@/modules/projects/measurements/queries";
 import { documents } from "@/modules/documents/schema";
@@ -32,6 +33,7 @@ export default async function MeasurementPage({ params }: { params: Promise<{ id
           </Button>
           <h2 className="text-base font-semibold">Auto de adiantamento n.º {report.number}</h2>
           {supplierRow ? <span className="rounded bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">{supplierRow.name}</span> : null}
+          <span className="ml-auto"><ExportAutoButton reportId={report.id} projectId={id} status={report.status} /></span>
         </div>
         <AdvanceAutoCard
           report={{ id: report.id, number: report.number, reportDate: report.reportDate, amount: Number(report.totalPeriod), advancePct: Number(report.advancePct ?? 0), notes: report.notes, status: report.status }}
@@ -80,6 +82,7 @@ export default async function MeasurementPage({ params }: { params: Promise<{ id
         </Button>
         <h2 className="text-base font-semibold">Auto de trabalho n.º {report.number}</h2>
         {supplier ? <span className="rounded bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">{supplier.name}</span> : null}
+        <span className="ml-auto"><ExportAutoButton reportId={report.id} projectId={id} status={report.status} /></span>
       </div>
       <MeasurementEditor
         key={report.updatedAt.toISOString()}

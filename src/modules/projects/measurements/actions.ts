@@ -8,6 +8,7 @@ import { requireUser } from "@/core/auth/current-user";
 import { db } from "@/core/db/client";
 import { invoices, measurementLines, measurementReports, projectSuppliers, projects } from "../schema";
 import { calcMeasurement, firstOfMonth, nextMonth, type LeafForMeasurement } from "./calc";
+import { exportAutoPdf } from "./pdf-service";
 import { getLastClosedMeasurement, getMeasurement, getMeasurementProgress, listBudgetLeaves } from "./queries";
 
 type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string };
@@ -251,4 +252,21 @@ export async function deleteAdvanceMeasurement(reportId: string): Promise<Result
   await db.delete(measurementReports).where(eq(measurementReports.id, reportId));
   revalidatePath(`/projects/${report.projectId}`, "layout");
   redirect(`/projects/${report.projectId}/autos`);
+}
+
+/**
+ * Exporta o auto para PDF (rascunho ou fechado) e arquiva-o nos Documentos da
+ * obra; devolve a versão para abrir/partilhar com o fornecedor.
+ */
+export async function exportMeasurementPdf(reportId: string): Promise<Result<{ documentId: string; versionId: string; fileName: string }>> {
+  const user = await requireUser("obras");
+  const report = await getMeasurement(user.organizationId, reportId);
+  if (!report) return { ok: false, error: "Auto não encontrado." };
+  try {
+    const out = await exportAutoPdf(user, report);
+    revalidatePath(`/projects/${report.projectId}`, "layout");
+    return { ok: true, ...out };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Não foi possível gerar o PDF." };
+  }
 }

@@ -1,11 +1,10 @@
 import "server-only";
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { renderToBuffer, type DocumentProps } from "@react-pdf/renderer";
 import { and, desc, eq, like, sql } from "drizzle-orm";
 import { createElement, type ReactElement } from "react";
 import { db } from "@/core/db/client";
 import { organizations } from "@/core/db/schema/core";
+import { loadPdfLogo } from "@/core/pdf/brand";
 import { contacts } from "@/modules/contacts/schema";
 import { deals } from "@/modules/deals/schema";
 import { createDocumentWithFile } from "@/modules/documents/service";
@@ -25,16 +24,6 @@ export type GenerateInput = {
   conditions: string | null;
   observations: string | null;
 };
-
-/** Logótipo para o PDF (PNG com fundo transparente). `null` se não existir. */
-async function loadLogo(): Promise<string | null> {
-  try {
-    const buf = await readFile(path.join(process.cwd(), "public", "brand", "logo.png"));
-    return `data:image/png;base64,${buf.toString("base64")}`;
-  } catch {
-    return null;
-  }
-}
 
 /** P-2026-001: sequência por ano, dentro da transação. */
 async function nextProposalNumber(tx: typeof db, organizationId: string, year: number) {
@@ -118,7 +107,7 @@ export async function generateProposal(user: Actor, dealId: string, input: Gener
 
   const snapshot = await buildSnapshot(user, dealId, input, number, versionNo);
   const Layout = getLayout(template.layoutKey);
-  const logoSrc = await loadLogo();
+  const logoSrc = await loadPdfLogo();
   // O layout devolve um <Document>; o tipo de props do componente é o nosso, daí o cast.
   const element = createElement(Layout, { data: snapshot, logoSrc }) as unknown as ReactElement<DocumentProps>;
   const pdf = await renderToBuffer(element);

@@ -97,6 +97,11 @@ Barra superior: pesquisa global (⌘K: negócios, imóveis, contactos, documento
 - A única parte pessoal é «Próximas tarefas»: chips (por iniciar, em curso, atrasadas, próximos 7 dias, bloqueadas, concluídas 7 dias) e lista das tarefas **do próprio utilizador** com prazo até ao fim da semana (atrasadas incluídas); link «Ver todas as minhas» para `/tarefas?owner=<id>`. Tarefas de módulos sem acesso aparecem sem link nem registo. O admin vê o mesmo layout, com as suas tarefas; a visão de equipa faz-se em `/tarefas` (filtro Responsável, lista ou Kanban).
 - Consultas: `getTaskStats` em `src/modules/dashboard/queries.ts`; o resto vem das consultas de cada módulo. Decisão do Founder (2026-10-13): dashboards uniformes em vez de dashboard pessoal/Founder distintos; a vista por colaborador, carga por pessoa, «exigem atenção», indicadores e atividade recente foram retirados.
 
+### 3.2f Exportar auto para PDF (2026-10-25)
+- Na ficha de um auto (trabalho ou adiantamento, rascunho ou fechado) o botão **Exportar PDF** gera o auto em PDF com a identidade LOOP (logótipo, dono de obra, obra, fornecedor, período, data, totais, artigos por capítulo com % anterior/acumulada, acumulado e valor neste auto, adiantamento a descontar e líquido a faturar, notas, assinaturas) e arquiva-o nos Documentos da obra (Técnico → Auto de medição, ligado ao auto: `entity_type = measurement_report`). Repetir a exportação cria uma nova versão do mesmo documento. Depois de gerado abre num separador novo (no telemóvel o visualizador tem «Partilhar») e fica o link «Abrir PDF».
+- Rascunhos saem marcados «Rascunho · sujeito a alteração» e com «(rascunho)» no nome do ficheiro. Nos autos fechados os totais são os guardados no fecho.
+- Código: `src/modules/projects/measurements/pdf/auto-template.tsx` (react-pdf), `pdf-service.ts` (`buildAutoPdfData`, `exportAutoPdf`), action `exportMeasurementPdf` (acesso Obras), botão `components/export-auto-button.tsx`; logótipo e cores partilhados em `src/core/pdf/brand.ts` (também usado pelas propostas).
+
 ### 3.3 Negócios — lista
 - Objetivo: encontrar e trabalhar negócios ativos.
 - Informação: tabela com Ref, Nome/Morada, Freguesia, Tipologia, Piso, Preço pedido, Fase, Fonte, Próxima ação (texto + data), Responsável, Lucro estimado e ROE do cenário ativo, Data de entrada.
