@@ -132,14 +132,8 @@ export function AutoPdf({ data, logoSrc }: { data: AutoPdfData; logoSrc: string 
           </View>
         </View>
 
-        {isWork ? (
-          <View style={s.stats}>
-            <Stat label="Orçamentado" value={money(data.totals.budget)} />
-            <Stat label="Executado acumulado" value={`${money(data.totals.cumulative)} · ${pct(data.totals.progress)}`} />
-            <Stat label="Executado neste auto" value={money(data.totals.period)} />
-            {data.advance ? <Stat label={`A faturar (−${pct(data.advance.pct)} adiant.)`} value={money(data.advance.netToInvoice)} /> : null}
-          </View>
-        ) : (
+        {/* Auto de trabalho: sem fila de totais (o Total da tabela chega); no de adiantamento são a informação principal. */}
+        {isWork ? null : (
           <View style={s.stats}>
             <Stat label="Valor do adiantamento" value={money(data.advanceAuto?.amount ?? 0)} />
             <Stat label="Percentagem a descontar nos autos seguintes" value={pct(data.advanceAuto?.pct ?? 0)} />
