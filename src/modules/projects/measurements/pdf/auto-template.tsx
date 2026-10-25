@@ -36,19 +36,18 @@ const pct = (v: number) => `${Math.round(v * 1000) / 10} %`;
 
 const s = StyleSheet.create({
   page: { paddingTop: 40, paddingBottom: 56, paddingHorizontal: 40, fontSize: 9, color: C.ink, fontFamily: "Helvetica", lineHeight: 1.4 },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 },
   logo: { width: 96 },
   headerRight: { alignItems: "flex-end" },
   small: { fontSize: 8, color: C.muted },
   // lineHeight explícito: o valor da página resolve-se em pontos (9 × 1.4) e seria herdado pelo título, que ficava mais baixo do que as letras.
   title: { fontSize: 17, lineHeight: 1.25, fontFamily: "Helvetica-Bold", letterSpacing: 0.4, marginBottom: 2 },
   draft: { marginTop: 3, fontSize: 8, color: C.warn, fontFamily: "Helvetica-Bold", letterSpacing: 1, textTransform: "uppercase" },
-  cols: { flexDirection: "row", gap: 16, marginBottom: 14 },
-  col: { flex: 1, backgroundColor: C.canvas, borderRadius: 5, padding: 9 },
-  colTitle: { fontSize: 7.5, color: C.orange, fontFamily: "Helvetica-Bold", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 },
-  kv: { flexDirection: "row", marginBottom: 1.5 },
-  k: { width: 62, color: C.muted },
-  v: { flex: 1 },
+  cols: { flexDirection: "row", gap: 14, marginBottom: 10, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: C.line },
+  col: { flex: 1 },
+  colTitle: { fontSize: 7, color: C.orange, fontFamily: "Helvetica-Bold", letterSpacing: 1, textTransform: "uppercase", marginBottom: 1 },
+  colName: { fontFamily: "Helvetica-Bold", fontSize: 9.5 },
+  colDetail: { fontSize: 8, color: C.muted, lineHeight: 1.3 },
   stats: { flexDirection: "row", gap: 8, marginBottom: 14 },
   stat: { flex: 1, borderWidth: 1, borderColor: C.line, borderRadius: 5, padding: 8 },
   statLabel: { fontSize: 7, color: C.muted, letterSpacing: 0.8, textTransform: "uppercase" },
@@ -68,14 +67,11 @@ const s = StyleSheet.create({
   footer: { position: "absolute", left: 40, right: 40, bottom: 24, flexDirection: "row", justifyContent: "space-between", borderTopWidth: 1, borderTopColor: C.line, paddingTop: 6, fontSize: 7.5, color: C.muted },
 });
 
-function KV({ k, v }: { k: string; v: string | null | undefined }) {
-  if (!v) return null;
-  return (
-    <View style={s.kv}>
-      <Text style={s.k}>{k}</Text>
-      <Text style={s.v}>{v}</Text>
-    </View>
-  );
+/** Detalhes numa linha corrida: "NIF 123 · Email x · Telefone y" (saltam os vazios). */
+function Details({ items }: { items: [string, string | null | undefined][] }) {
+  const parts = items.filter(([, v]) => v).map(([k, v]) => (k ? `${k} ${v}` : String(v)));
+  if (parts.length === 0) return null;
+  return <Text style={s.colDetail}>{parts.join(" · ")}</Text>;
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
@@ -113,22 +109,20 @@ export function AutoPdf({ data, logoSrc }: { data: AutoPdfData; logoSrc: string 
         <View style={s.cols}>
           <View style={s.col}>
             <Text style={s.colTitle}>Dono de obra</Text>
-            <Text style={{ fontFamily: "Helvetica-Bold" }}>{data.company.name}</Text>
-            <KV k="NIF" v={data.company.nif} />
-            <KV k="Morada" v={data.company.address} />
+            <Text style={s.colName}>{data.company.name}</Text>
+            <Details items={[["NIF", data.company.nif], ["", data.company.address]]} />
           </View>
-          <View style={s.col}>
+          <View style={[s.col, { flex: 1.4 }]}>
             <Text style={s.colTitle}>Obra</Text>
-            <Text style={{ fontFamily: "Helvetica-Bold" }}>{data.project.name}</Text>
-            <KV k="Referência" v={data.project.ref} />
-            <KV k="Local" v={data.project.address} />
+            <Text style={s.colName}>
+              {data.project.name} · {data.project.ref}
+            </Text>
+            <Details items={[["", data.project.address]]} />
           </View>
           <View style={s.col}>
             <Text style={s.colTitle}>Fornecedor</Text>
-            <Text style={{ fontFamily: "Helvetica-Bold" }}>{data.supplier.name}</Text>
-            <KV k="NIF" v={data.supplier.nif} />
-            <KV k="Email" v={data.supplier.email} />
-            <KV k="Telefone" v={data.supplier.phone} />
+            <Text style={s.colName}>{data.supplier.name}</Text>
+            <Details items={[["NIF", data.supplier.nif], ["", data.supplier.email], ["", data.supplier.phone]]} />
           </View>
         </View>
 
