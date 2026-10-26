@@ -56,10 +56,10 @@ export async function loadDealContext(organizationId: string, dealId: string): P
       .where(and(eq(bpComparables.businessPlanId, plan.id), eq(bpComparables.isIncluded, true)));
     comparablesCount = c?.n ?? 0;
     const [s] = await db
-      .select({ ltvPct: bpScenarios.ltvPct, calculatedAt: bpScenarios.calculatedAt })
+      .select({ ltvPct: bpScenarios.ltvPct, purchasePrice: bpScenarios.purchasePrice, salePrice: bpScenarios.salePrice })
       .from(bpScenarios)
       .where(and(eq(bpScenarios.businessPlanId, plan.id), eq(bpScenarios.isActive, true)));
-    if (s) activeScenario = { ltvPct: num(s.ltvPct) ?? 0 };
+    if (s) activeScenario = { ltvPct: num(s.ltvPct) ?? 0, purchasePrice: num(s.purchasePrice) ?? 0, salePrice: num(s.salePrice) ?? 0 };
   }
 
   const [p] = await db

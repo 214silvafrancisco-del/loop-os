@@ -40,7 +40,8 @@ export type DealContext = {
   /** Nomes normalizados das categorias com documentos ativos no imóvel. */
   docCategories: string[];
   comparablesCount: number;
-  activeScenario: { ltvPct: number } | null;
+  /** Cenário ativo do Business Plan (o BP cria dois por defeito; «preenchido» = com preço de compra e de venda). */
+  activeScenario: { ltvPct: number; purchasePrice: number; salePrice: number } | null;
   proposals: { count: number; sent: number; decided: number };
   /** YYYY-MM-DD */
   today: string;
@@ -138,7 +139,12 @@ const DEAL_RULES: Record<string, (c: DealContext) => RuleResult> = {
     return n === fields.length ? done() : pending(countOf(n, fields.length));
   },
   "deal.comparables": (c) => (c.comparablesCount >= 3 ? done(String(c.comparablesCount)) : pending(countOf(c.comparablesCount, 3))),
-  "deal.business_plan": (c) => (c.activeScenario ? done() : pending()),
+  "deal.business_plan": (c) => {
+    const s = c.activeScenario;
+    if (!s) return pending("sem Business Plan");
+    const missing = [!pos(s.purchasePrice) && "preço de compra", !pos(s.salePrice) && "preço de venda"].filter(Boolean) as string[];
+    return missing.length === 0 ? done() : pending(`cenário sem ${missing.join(" e ")}`);
+  },
   "deal.max_price": (c) => (pos(c.deal.maxPrice) ? done() : pending()),
   "deal.proposal_generated": (c) => (c.proposals.count > 0 ? done(String(c.proposals.count)) : pending()),
   "deal.proposal_sent": (c) => (c.proposals.sent > 0 ? done() : pending()),

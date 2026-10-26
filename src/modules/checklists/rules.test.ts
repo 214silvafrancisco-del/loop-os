@@ -25,7 +25,7 @@ const readyDeal: DealContext = {
   property: { addressLine: "Rua A 12", parish: "Benfica", municipality: "Lisboa", typology: "T2", grossArea: 80, floor: "2", constructionYear: 1975, condition: "para_obras" },
   docCategories: ["caderneta predial", "certidao permanente", "fotografias"],
   comparablesCount: 4,
-  activeScenario: { ltvPct: 0.6 },
+  activeScenario: { ltvPct: 0.6, purchasePrice: 230000, salePrice: 320000 },
   proposals: { count: 1, sent: 1, decided: 0 },
   today: "2026-10-01",
 };
@@ -41,7 +41,10 @@ describe("regras do negócio", () => {
     expect(evaluateRule("deal.contact", deal(freshLead)).status).toBe("pending");
     expect(evaluateRule("deal.property_data", deal(freshLead))).toEqual({ status: "pending", detail: "1 de 5" });
     expect(evaluateRule("deal.comparables", deal(freshLead))).toEqual({ status: "pending", detail: "1 de 3" });
-    expect(evaluateRule("deal.business_plan", deal(freshLead)).status).toBe("pending");
+    expect(evaluateRule("deal.business_plan", deal(freshLead))).toEqual({ status: "pending", detail: "sem Business Plan" });
+    // O BP cria cenários vazios por defeito: só conta quando tem preço de compra e de venda.
+    expect(evaluateRule("deal.business_plan", deal({ ...freshLead, activeScenario: { ltvPct: 0, purchasePrice: 0, salePrice: 0 } }))).toEqual({ status: "pending", detail: "cenário sem preço de compra e preço de venda" });
+    expect(evaluateRule("deal.business_plan", deal({ ...freshLead, activeScenario: { ltvPct: 0, purchasePrice: 200000, salePrice: 0 } }))).toEqual({ status: "pending", detail: "cenário sem preço de venda" });
     expect(evaluateRule("doc:Caderneta predial", deal(freshLead)).status).toBe("pending");
   });
 
@@ -89,7 +92,7 @@ describe("condições de contexto", () => {
   });
   it("financiamento só com LTV no cenário ativo", () => {
     expect(evaluateCondition("has_financing", deal(readyDeal))).toBe(true);
-    expect(evaluateCondition("has_financing", deal({ ...readyDeal, activeScenario: { ltvPct: 0 } }))).toBe(false);
+    expect(evaluateCondition("has_financing", deal({ ...readyDeal, activeScenario: { ltvPct: 0, purchasePrice: 230000, salePrice: 320000 } }))).toBe(false);
     expect(evaluateCondition("has_financing", deal(freshLead))).toBe(false);
   });
   it("compra: itens só a partir da fase Compra", () => {

@@ -56,7 +56,7 @@ export const NOVO_NEGOCIO: TemplateDef = {
   code: "novo_negocio",
   name: "Novo Negócio",
   entityType: "deal",
-  version: 3,
+  version: 4,
   items: [
     // Registo
     { code: "registo.identificacao", section: "registo", label: "Identificação", help: "Nome do negócio ou tipologia e freguesia do imóvel.", kind: "auto", ruleKey: "deal.identified", linkPath: "resumo" },
@@ -78,8 +78,8 @@ export const NOVO_NEGOCIO: TemplateDef = {
 
     // Análise
     { code: "analise.dados_imovel", section: "analise", label: "Dados do imóvel completos", help: "Área bruta, tipologia, andar, ano de construção e estado.", kind: "auto", ruleKey: "deal.property_data", linkPath: "resumo" },
-    { code: "analise.comparaveis", section: "analise", label: "Comparáveis (mínimo 3)", kind: "auto", ruleKey: "deal.comparables", required: true, linkPath: "analise" },
-    { code: "analise.business_plan", section: "analise", label: "Business Plan com cenário ativo", kind: "auto", ruleKey: "deal.business_plan", required: true, gates: ["hard:proposal:generate", "warn:deal:stage:proposta"], linkPath: "business-plan" },
+    { code: "analise.comparaveis", section: "analise", label: "Análise feita (comparáveis, mínimo 3)", kind: "auto", ruleKey: "deal.comparables", required: true, gates: ["hard:proposal:generate", "hard:deal:stage:proposta"], linkPath: "analise" },
+    { code: "analise.business_plan", section: "analise", label: "Business Plan preenchido (cenário com compra e venda)", help: "Pelo menos um cenário ativo com preço de compra e preço de venda.", kind: "auto", ruleKey: "deal.business_plan", required: true, gates: ["hard:proposal:generate", "hard:deal:stage:proposta"], linkPath: "business-plan" },
     { code: "analise.preco_maximo", section: "analise", label: "Preço máximo definido", help: "Calculado no Business Plan e aplicado ao negócio.", kind: "auto", ruleKey: "deal.max_price", gates: ["warn:proposal:generate", "warn:deal:stage:proposta"], linkPath: "business-plan" },
 
     // Decisão

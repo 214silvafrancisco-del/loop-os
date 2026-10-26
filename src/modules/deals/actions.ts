@@ -4,7 +4,7 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/core/auth/current-user";
-import { gateForStage, type GateMissing } from "@/modules/checklists/gate-rules";
+import { gateForStage, missingSentence, type GateMissing } from "@/modules/checklists/gate-rules";
 import { checkGate } from "@/modules/checklists/gates";
 import { db } from "@/core/db/client";
 import { z } from "zod";
@@ -235,15 +235,14 @@ export async function changeDealStage(
     .where(and(eq(dealStages.id, stageId), eq(dealStages.organizationId, user.organizationId)));
   if (!stage) return { ok: false, error: "Fase inválida." };
 
-  // Porta do processo (só avisa): ao avançar para Proposta ou Compra com passos em falta.
-  if (!options?.force) {
-    const [current] = await db.select({ sort: dealStages.sort }).from(dealStages).where(eq(dealStages.id, deal.stageId));
-    const gate = gateForStage(current ?? { sort: 0 }, stage);
-    if (gate) {
-      const g = await checkGate(user.organizationId, "deal", dealId, gate, user.id);
-      const missing = [...g.hard, ...g.warn];
-      if (missing.length) return { ok: false, needsConfirm: true, missing };
-    }
+  // Porta do processo ao avançar para Proposta ou Compra: os passos «hard» bloqueiam sempre
+  // (ex.: análise e Business Plan antes da Proposta); os «warn» pedem confirmação, salvo com `force`.
+  const [current] = await db.select({ sort: dealStages.sort }).from(dealStages).where(eq(dealStages.id, deal.stageId));
+  const gate = gateForStage(current ?? { sort: 0 }, stage);
+  if (gate) {
+    const g = await checkGate(user.organizationId, "deal", dealId, gate, user.id);
+    if (g.hard.length) return { ok: false, error: missingSentence(g.hard, `Não é possível passar a ${stage.name} sem`) };
+    if (!options?.force && g.warn.length) return { ok: false, needsConfirm: true, missing: g.warn };
   }
 
   const patch: Partial<typeof deals.$inferInsert> = { stageId, updatedBy: user.id };
